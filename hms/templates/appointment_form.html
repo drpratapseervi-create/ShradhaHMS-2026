@@ -1,0 +1,13 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>New Appointment</title></head>
+<body>
+  <h3>Book Appointment</h3>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save & Print OPD</button>
+  </form>
+  <p><a href="/">Back</a></p>
+</body>
+</html>

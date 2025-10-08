@@ -1,0 +1,41 @@
+<!doctype html>
+<title>Final Bill Summary</title>
+<h2>Final Bill Summary — {{ admission.patient_name }} (IPD #{{ admission.id }})</h2>
+<p>MRN: {{ admission.mrn }} | Ward/Bed: {{ admission.ward }}/{{ admission.bed }} | Category: {{ admission.category }}</p>
+
+{% for code, title in
+  ("PROC","GYNAECOLOGY & OBSTETRICS / PROCEDURES"),
+  ("INV","INVESTIGATIONS / LAB / USG / X-RAY"),
+  ("BED","BED CHARGES"),
+  ("CONS","CONSULTATION"),
+  ("PHARM","PHARMACY"),
+  ("NURS","NURSING / GENERAL"),
+  ("COMP","COMPULSORY / REGISTRATION"),
+  ("ER","EMERGENCY / CASUALTY") %}
+  <h3>{{ title }}</h3>
+  <table border="1" cellpadding="6" cellspacing="0" width="100%">
+    <tr><th>Date</th><th>Particulars</th><th align="right">Qty</th><th align="right">Rate</th><th align="right">Amount</th></tr>
+    {% for r in admission.charges.all|dictsort:"id" %}
+      {% if r.type == code %}
+        <tr>
+          <td>{{ r.date }}</td><td>{{ r.particulars }}</td>
+          <td align="right">{{ r.qty }}</td><td align="right">{{ r.rate }}</td>
+          <td align="right">{{ r.amount }}</td>
+        </tr>
+      {% endif %}
+    {% endfor %}
+  </table>
+{% endfor %}
+
+<h3>Totals</h3>
+<table border="1" cellpadding="6" cellspacing="0">
+  <tr><th>Gross</th><td>{{ bill.gross }}</td></tr>
+  <tr><th>Discount</th><td>{{ bill.discount }}</td></tr>
+  <tr><th>CGST</th><td>{{ bill.cgst }}</td></tr>
+  <tr><th>SGST</th><td>{{ bill.sgst }}</td></tr>
+  <tr><th>Net Amount</th><td>{{ bill.net_amount }}</td></tr>
+  <tr><th>Advance Total</th><td>{{ bill.advance_total }}</td></tr>
+  <tr><th>Net Payable</th><td><b>{{ bill.net_payable }}</b></td></tr>
+</table>
+
+<p><a href="{% url 'billing:bill_pdf' admission.id %}" target="_blank">Download PDF</a></p>

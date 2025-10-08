@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OPD Receipt</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 24px; }
+    .head { display: flex; justify-content: space-between; }
+    .big { font-size: 22px; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    td { padding: 8px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <div class="head">
+    <div>
+      <div class="big">SHRADHA HOSPITAL & MULTISPECIALITY CENTRE</div>
+      <div>Pani Ki Do Tanki, Surajpole, Pali (Rajasthan) — Phone: 94141-22542</div>
+    </div>
+    <div><b>Date:</b> {{ date }}<br><b>Receipt #</b> {{ receipt_no }}</div>
+  </div>
+
+  <table>
+    <tr><td><b>UHID</b> {{ uhid }}</td><td><b>Visit No</b> {{ visit_no }}</td></tr>
+    <tr><td><b>Patient</b> {{ patient_name }}</td><td><b>Age/Gender</b> {{ age }} / {{ gender }}</td></tr>
+    <tr><td><b>Doctor</b> {{ doctor_name }}</td><td><b>Purpose</b> {{ purpose }}</td></tr>
+    <tr><td colspan="2"><b>OPD Fee:</b> ₹ {{ fee }}</td></tr>
+  </table>
+
+  <p style="margin-top:24px;">Printed: {{ created_at }}</p>
+  <script>window.print()</script>
+</body>
+</html>

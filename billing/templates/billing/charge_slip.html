@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Charge Slip</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; }
+    .head { text-align:center; border-bottom:1px solid #000; margin-bottom:8px; }
+    .row { margin: 4px 0; }
+    table { width:100%; border-collapse: collapse; margin-top:8px;}
+    th, td { border:1px solid #444; padding:6px; text-align:left; }
+    .right { text-align:right; }
+    .muted { color:#555; font-size:11px; }
+    @media print { .no-print { display:none; } }
+  </style>
+</head>
+<body>
+  <div class="head">
+    <h2 style="margin:4px 0;">{{ hospital_name }}</h2>
+    <div class="muted">{{ hospital_addr }} | GSTIN: {{ gstin }} | Ph: {{ phone }}</div>
+  </div>
+
+  <div class="row"><b>IPD / MRN:</b> {{ ad.mrn|default:ad.id }} &nbsp;&nbsp; <b>Patient:</b> {{ ad.patient_name }}</div>
+  <div class="row"><b>Doctor:</b> {{ ad.doctor }} &nbsp;&nbsp; <b>Date:</b> {{ charge.date }}</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:35%">Particulars</th>
+        <th style="width:15%">Type</th>
+        <th class="right" style="width:10%">Qty</th>
+        <th class="right" style="width:20%">Rate (₹)</th>
+        <th class="right" style="width:20%">Amount (₹)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ charge.particulars }}</td>
+        <td>{{ charge.get_type_display }}</td>
+        <td class="right">{{ charge.qty }}</td>
+        <td class="right">{{ charge.rate|floatformat:2 }}</td>
+        <td class="right">{{ amount|floatformat:2 }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="row" style="margin-top:8px;">
+    <b>Total:</b> ₹ {{ amount|floatformat:2 }}
+  </div>
+
+  <p class="muted">Printed: {{ now|date:"d-m-Y H:i" }}</p>
+
+  <div class="no-print" style="margin-top:10px;">
+    <a href="{% url 'billing:charge_slip_pdf' charge.id %}">Download PDF</a> |
+    <button onclick="window.print()">Print</button>
+  </div>
+</body>
+</html>

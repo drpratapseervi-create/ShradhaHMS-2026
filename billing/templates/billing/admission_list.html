@@ -1,0 +1,19 @@
+<!doctype html>
+<title>Admissions</title>
+<h1>Admissions</h1>
+<p><a href="{% url 'billing:admission_create' %}">+ New Admission</a></p>
+<table border="1" cellpadding="6" cellspacing="0">
+  <tr><th>ID</th><th>Patient</th><th>Ward/Bed</th><th>Doctor</th><th>Admit</th><th>Action</th></tr>
+  {% for a in items %}
+  <tr>
+    <td>#{{ a.id }}</td>
+    <td>{{ a.patient_name }} ({{ a.mrn }})</td>
+    <td>{{ a.ward }}/{{ a.bed }}</td>
+    <td>{{ a.doctor }}</td>
+    <td>{{ a.admit_at|date:"d-m-Y H:i" }}</td>
+    <td><a href="{% url 'billing:admission_detail' a.id %}">Open</a></td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="6">No admissions.</td></tr>
+  {% endfor %}
+</table>

@@ -1,0 +1,45 @@
+<!doctype html>
+<title>Admission #{{ adm.id }}</title>
+<h2>Admission #{{ adm.id }} — {{ adm.patient_name }}</h2>
+<p>
+  MRN/IPD: <b>{{ adm.mrn }}</b> | Ward/Bed: <b>{{ adm.ward }}/{{ adm.bed }}</b> |
+  Category: <b>{{ adm.category }}</b> | Doctor: <b>{{ adm.doctor }}</b><br>
+  DOA: {{ adm.admit_at }} | DOD: {{ adm.discharge_at|default:"-" }}
+</p>
+
+<p>
+  <a href="{% url 'billing:charge_add' adm.id %}">+ Add Charge</a> |
+  <a href="{% url 'billing:advance_add' adm.id %}">+ Add Advance</a> |
+  <a href="{% url 'billing:finalbill_edit' adm.id %}">Edit Final Bill Head</a> |
+  <a href="{% url 'billing:bill_summary' adm.id %}">View Summary</a> |
+  <a href="{% url 'billing:bill_pdf' adm.id %}" target="_blank">Download PDF</a>
+</p>
+
+<h3>Charges</h3>
+<table border="1" cellpadding="6" cellspacing="0">
+  <tr><th>Date</th><th>Type</th><th>Particulars</th><th>Qty</th><th>Rate</th><th>Amount</th></tr>
+  {% for c in charges %}
+  <tr>
+    <td>{{ c.date }}</td><td>{{ c.get_type_display }}</td><td>{{ c.particulars }}</td>
+    <td>{{ c.qty }}</td><td>{{ c.rate }}</td><td>{{ c.amount }}</td>
+  </tr>{% empty %}<tr><td colspan="6">No charges yet.</td></tr>{% endfor %}
+</table>
+
+<h3>Advances</h3>
+<table border="1" cellpadding="6" cellspacing="0">
+  <tr><th>Date</th><th>Receipt</th><th>Amount</th><th>Notes</th></tr>
+  {% for a in advances %}
+  <tr><td>{{ a.date }}</td><td>{{ a.receipt_no }}</td><td>{{ a.amount }}</td><td>{{ a.notes }}</td></tr>
+  {% empty %}<tr><td colspan="4">No advances yet.</td></tr>{% endfor %}
+</table>
+
+<h3>Totals</h3>
+<table border="1" cellpadding="6" cellspacing="0">
+  <tr><th>Gross</th><td>{{ bill.gross }}</td></tr>
+  <tr><th>Discount</th><td>{{ bill.discount }}</td></tr>
+  <tr><th>CGST</th><td>{{ bill.cgst }}</td></tr>
+  <tr><th>SGST</th><td>{{ bill.sgst }}</td></tr>
+  <tr><th>Net Amount</th><td>{{ bill.net_amount }}</td></tr>
+  <tr><th>Advance Total</th><td>{{ bill.advance_total }}</td></tr>
+  <tr><th>Net Payable</th><td><b>{{ bill.net_payable }}</b></td></tr>
+</table>
