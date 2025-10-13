@@ -1,9 +1,0 @@
-<!doctype html>
-<title>{{ title }}</title>
-<h1>{{ title }}</h1>
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Save</button>
-  <a href="{% url 'billing:admission_list' %}">Cancel</a>
-</form>

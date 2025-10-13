@@ -12,8 +12,7 @@ urlpatterns = [
     path('', include('hms.urls')),
 
     # Billing module (PDF Final Bill, Advance Slip etc.)
-    path('billing/', include(('billing.urls', 'billing'), namespace='billing')),
-
+    
     # OPD prescription module
     path('opd/', include('opd.urls')),
 

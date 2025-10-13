@@ -1,9 +1,0 @@
-<!doctype html>
-<title>Edit Final Bill Head</title>
-<h2>Final Bill — Admission #{{ adm.id }} ({{ adm.patient_name }})</h2>
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Save</button>
-  <a href="{% url 'billing:admission_detail' adm.id %}">Back</a>
-</form>
