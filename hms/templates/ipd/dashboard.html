@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}IPD Dashboard{% endblock %}
+
+{% block content %}
+
+<style>
+.ipd-wrap{ font-family:'Segoe UI',sans-serif; padding:24px; }
+
+.ipd-header{ margin-bottom:26px; }
+.ipd-header h2{
+    color:#e2e8f0; font-size:22px; font-weight:700; margin:0 0 4px;
+    display:flex; align-items:center; gap:10px;
+}
+.ipd-header p{ color:#8892a4; font-size:13px; margin:0; }
+
+.ward-block{ margin-bottom:30px; }
+.ward-title{
+    color:#00b8a9; font-size:15px; font-weight:700;
+    margin-bottom:12px; padding-bottom:6px;
+    border-bottom:2px solid #1e3a3a;
+    display:flex; align-items:center; gap:8px;
+}
+.ward-title .ward-count{
+    background:#1e3a3a; color:#00b8a9; font-size:11px; font-weight:600;
+    padding:2px 9px; border-radius:20px;
+}
+
+.bed-grid{ display:flex; gap:12px; flex-wrap:wrap; }
+
+.bed-card{
+    width:150px; min-height:64px; border-radius:10px; padding:12px 14px;
+    text-decoration:none; display:block; transition:.18s;
+    box-shadow:0 2px 8px rgba(0,0,0,0.25);
+}
+
+.bed-free{
+    background:#0f2e28; border:1px solid #1a6e5a;
+    color:#4ade80; font-weight:700; text-align:center;
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; letter-spacing:.3px;
+}
+.bed-free:hover{ background:#124535; border-color:#22c68f; transform:translateY(-2px); box-shadow:0 6px 16px rgba(34,198,143,0.2); }
+
+.bed-occupied{
+    background:#2a0f14; border:1px solid #7a2530;
+    color:#fca5a5;
+}
+.bed-occupied b{ color:#fff; font-size:14px; }
+.bed-patient{ font-size:12px; color:#fca5a5; margin-top:5px; font-weight:500; }
+.bed-ipdno{ font-size:11px; color:#f87171; opacity:.8; margin-top:2px; }
+
+.bed-actions{ display:flex; gap:6px; margin-top:8px; }
+.bed-btn{
+    flex:1; text-align:center; font-size:10.5px; font-weight:700;
+    padding:4px 0; border-radius:6px; text-decoration:none; transition:.15s;
+}
+.bed-btn-open{ background:#1e3a3a; color:#00d4c0; }
+.bed-btn-open:hover{ background:#155555; }
+.bed-btn-discharge{ background:#3a1418; color:#fca5a5; }
+.bed-btn-discharge:hover{ background:#4a1a20; }
+
+/* ── Admitted patients section ── */
+.ipd-divider{ border:none; border-top:1px solid #2a2a2a; margin:34px 0 22px; }
+
+.ipd-section-title{
+    color:#e2e8f0; font-size:16px; font-weight:700; margin-bottom:16px;
+    display:flex; align-items:center; gap:10px;
+}
+.ipd-section-title .count-badge{
+    background:#1e3a3a; color:#00b8a9; font-size:12px; font-weight:600;
+    padding:3px 12px; border-radius:20px;
+}
+
+.ipd-table-wrap{
+    background:#111111; border:1px solid #2a2a2a; border-radius:12px;
+    overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.3);
+}
+.ipd-table{ width:100%; border-collapse:collapse; font-size:13px; }
+.ipd-table thead tr{ background:linear-gradient(135deg,#005555,#007676); }
+.ipd-table th{
+    padding:12px 14px; color:#fff; font-weight:600; text-align:left;
+    font-size:11px; text-transform:uppercase; letter-spacing:.5px;
+}
+.ipd-table tbody tr{ border-bottom:1px solid #1e1e1e; transition:.12s; }
+.ipd-table tbody tr:hover{ background:#161616; }
+.ipd-table td{ padding:11px 14px; color:#cbd5e1; vertical-align:middle; }
+.ipd-table td.name{ color:#e2e8f0; font-weight:600; }
+
+.ipd-no-pill{
+    background:#0f1e2e; color:#38bdf8; padding:3px 10px;
+    border-radius:6px; font-weight:600; font-size:12px;
+}
+.ward-bed-pill{
+    background:#1a1a1a; color:#8892a4; padding:3px 10px;
+    border-radius:6px; font-size:12px; border:1px solid #2a2a2a;
+}
+
+.action-open{
+    background:#1e3a3a; color:#00d4c0; padding:5px 12px; border-radius:6px;
+    text-decoration:none; font-size:11.5px; font-weight:700; transition:.15s;
+}
+.action-open:hover{ background:#155555; }
+.action-discharge{
+    background:#3a1418; color:#fca5a5; padding:5px 12px; border-radius:6px;
+    text-decoration:none; font-size:11.5px; font-weight:700; margin-left:6px; transition:.15s;
+}
+.action-discharge:hover{ background:#4a1a20; }
+
+.ipd-empty{
+    background:#111111; border:1px dashed #2a2a2a; border-radius:12px;
+    padding:30px; text-align:center; color:#8892a4; font-size:14px;
+}
+</style>
+
+<div class="ipd-wrap">
+
+<div class="ipd-header">
+    <h2>🛏️ IPD Bed Dashboard</h2>
+    <p>Live ward occupancy &amp; patient admission overview</p>
+</div>
+
+<!-- ================= BED CARDS ================= -->
+
+{% for ward in wards %}
+<div class="ward-block">
+
+    <div class="ward-title">
+        {{ ward.name }}
+        <span class="ward-count">{{ ward.bed_set.all|length }} beds</span>
+    </div>
+
+    <div class="bed-grid">
+    {% for bed in ward.bed_set.all|dictsort:"bed_number" %}
+
+        {% if bed.is_occupied %}
+            <div class="bed-card bed-occupied">
+                <b>Bed {{ bed.bed_number }}</b>
+                {% for admission in admissions %}
+                    {% if admission.bed.id == bed.id %}
+                        <div class="bed-patient">{{ admission.patient.full_name }}</div>
+                        <div class="bed-ipdno">{{ admission.ipd_no }}</div>
+                        <div class="bed-actions">
+                            <a class="bed-btn bed-btn-open" href="{% url 'hms:ipd_patient_file' admission.id %}">Open</a>
+                            <a class="bed-btn bed-btn-discharge"
+                               href="{% url 'hms:ipd_discharge' admission.id %}"
+                               onclick="return confirm('Discharge {{ admission.patient.full_name }}?')">Discharge</a>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <a class="bed-card bed-free" href="{% url 'hms:admit_bed' bed.id %}">
+                Bed {{ bed.bed_number }}
+            </a>
+        {% endif %}
+
+    {% endfor %}
+    </div>
+</div>
+{% endfor %}
+
+<!-- ================= ADMITTED PATIENT TABLE ================= -->
+
+<hr class="ipd-divider">
+
+<div class="ipd-section-title">
+    Currently Admitted Patients
+    <span class="count-badge">{{ admissions|length }} patients</span>
+</div>
+
+{% if admissions %}
+<div class="ipd-table-wrap">
+<table class="ipd-table">
+    <thead>
+        <tr>
+            <th>S.No.</th>
+            <th>Patient Name</th>
+            <th>Age/Sex</th>
+            <th>UHID</th>
+            <th>IPD No.</th>
+            <th>Doctor</th>
+            <th>Department</th>
+            <th>Diagnosis</th>
+            <th>Admission Date</th>
+            <th>Ward / Bed</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for admission in admissions %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td class="name">{{ admission.patient.full_name }}</td>
+            <td>{% if admission.patient.age %}{{ admission.patient.age }}Y{% endif %} / {{ admission.patient.gender|slice:":1" }}</td>
+            <td>{{ admission.patient.uhid }}</td>
+            <td><span class="ipd-no-pill">{{ admission.ipd_no }}</span></td>
+            <td>{% if admission.doctor %}Dr. {{ admission.doctor.full_name }}{% else %}—{% endif %}</td>
+            <td>{% if admission.doctor.department %}{{ admission.doctor.department.name }}{% else %}—{% endif %}</td>
+            <td>{{ admission.diagnosis|default:"—" }}</td>
+            <td>{{ admission.admission_date|date:"d M Y" }}</td>
+            <td><span class="ward-bed-pill">{{ admission.ward.name }} / Bed {{ admission.bed.bed_number }}</span></td>
+            <td>
+                <a class="action-open" href="{% url 'hms:ipd_patient_file' admission.id %}">Open</a>
+                <a class="action-discharge"
+                   href="{% url 'hms:ipd_discharge' admission.id %}"
+                   onclick="return confirm('Discharge {{ admission.patient.full_name }}?')">Discharge</a>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<div class="ipd-empty">No patients currently admitted.</div>
+{% endif %}
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+{% block title %}Construction Expenses{% endblock %}
+
+{% block extra_css %}
+<style>
+  .construction-table { background: #1a2634 !important; border-color: #2d3f4f !important; }
+  .construction-table thead tr th {
+    background-color: #152230 !important;
+    color: #8aaec8 !important;
+    border-color: #2d3f4f !important;
+    font-size: 12px;
+  }
+  .construction-table tbody tr {
+    background-color: #1e2a35 !important;
+    color: #d0dce8 !important;
+    border-color: #2d3f4f !important;
+  }
+  .construction-table tbody tr:hover td {
+    background-color: #243342 !important;
+    color: #e0ecf8 !important;
+  }
+  .construction-table tbody tr td {
+    background-color: transparent !important;
+    border-color: #2d3f4f !important;
+    color: inherit;
+  }
+  .construction-table-wrap {
+    background: #1a2634 !important;
+    border: 1px solid #2d3f4f !important;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="d-flex align-items-center gap-2">
+      <div class="rounded p-2" style="background:#e8f4fd">
+        <i class="fas fa-hard-hat" style="color:#1a73e8;font-size:18px"></i>
+      </div>
+      <div>
+        <h5 class="mb-0 fw-semibold">Construction Expenses</h5>
+        <small class="text-muted">Hospital building &amp; civil works tracker</small>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+  <a href="{% url 'hms:partner_deposits' %}" class="btn btn-sm" 
+     style="background:#1e3a5f;color:#4da6e8;border:1px solid #2d3f4f">
+    <i class="fas fa-wallet me-1"></i> Partner Deposits
+  </a>
+  <a href="{% url 'hms:construction_expense_create' %}" class="btn btn-primary btn-sm">
+    <i class="fas fa-plus me-1"></i> New Expense
+  </a>
+</div>
+  </div>
+
+  <!-- Messages -->
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+    {{ msg }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <!-- Summary Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0" style="background:#e8f4fd">
+        <div class="card-body py-3">
+          <div style="font-size:12px;color:#555">Total Entries</div>
+          <div style="font-size:24px;font-weight:600;color:#1a73e8">{{ totals.count|default:0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0" style="background:#e6f4ea">
+        <div class="card-body py-3">
+          <div style="font-size:12px;color:#555">Total Amount (excl. GST)</div>
+          <div style="font-size:24px;font-weight:600;color:#1e7e34">
+            ₹{% if totals.grand_total %}{{ totals.grand_total|floatformat:0 }}{% else %}0{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0" style="background:#fff8e1">
+        <div class="card-body py-3">
+          <div style="font-size:12px;color:#555">Total GST Paid</div>
+          <div style="font-size:24px;font-weight:600;color:#f57c00">
+            ₹{% if totals.total_gst %}{{ totals.total_gst|floatformat:0 }}{% else %}0{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0" style="background:#fce4ec">
+        <div class="card-body py-3">
+          <div style="font-size:12px;color:#555">Grand Total (incl. GST)</div>
+          <div style="font-size:24px;font-weight:600;color:#c62828">
+            ₹{% if totals.grand_total and totals.total_gst %}
+              {{ totals.grand_total|add:totals.total_gst|floatformat:0 }}
+            {% elif totals.grand_total %}
+              {{ totals.grand_total|floatformat:0 }}
+            {% else %}0{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card mb-3">
+    <div class="card-body py-2">
+      <form method="GET" class="row g-2 align-items-end">
+        <div class="col-md-2">
+          <input type="text" name="q" class="form-control form-control-sm"
+                 placeholder="Search expense ID, description..." value="{{ f_q }}">
+        </div>
+        <div class="col-md-2">
+          <select name="expense_head" class="form-select form-select-sm">
+            <option value="">All Heads</option>
+            <option value="Soil Removal / Excavation" {% if f_head == "Soil Removal / Excavation" %}selected{% endif %}>Soil Removal / Excavation</option>
+            <option value="Soil Transport" {% if f_head == "Soil Transport" %}selected{% endif %}>Soil Transport</option>
+            <option value="PCC Work" {% if f_head == "PCC Work" %}selected{% endif %}>PCC Work</option>
+            <option value="RCC Work" {% if f_head == "RCC Work" %}selected{% endif %}>RCC Work</option>
+            <option value="Raft Foundation" {% if f_head == "Raft Foundation" %}selected{% endif %}>Raft Foundation</option>
+            <option value="Brickwork / Masonry" {% if f_head == "Brickwork / Masonry" %}selected{% endif %}>Brickwork / Masonry</option>
+            <option value="Concrete / RMC" {% if f_head == "Concrete / RMC" %}selected{% endif %}>Concrete / RMC</option>
+            <option value="Stone Work" {% if f_head == "Stone Work" %}selected{% endif %}>Stone Work</option>
+            <option value="Civil Work (General)" {% if f_head == "Civil Work (General)" %}selected{% endif %}>Civil Work (General)</option>
+            <option value="Cement" {% if f_head == "Cement" %}selected{% endif %}>Cement</option>
+            <option value="Steel / TMT Bars" {% if f_head == "Steel / TMT Bars" %}selected{% endif %}>Steel / TMT Bars</option>
+            <option value="Sand" {% if f_head == "Sand" %}selected{% endif %}>Sand</option>
+            <option value="Bricks" {% if f_head == "Bricks" %}selected{% endif %}>Bricks</option>
+            <option value="Stone / Gitti / Aggregate" {% if f_head == "Stone / Gitti / Aggregate" %}selected{% endif %}>Stone / Gitti / Aggregate</option>
+            <option value="RMC (Ready Mix Concrete)" {% if f_head == "RMC (Ready Mix Concrete)" %}selected{% endif %}>RMC (Ready Mix Concrete)</option>
+            <option value="Tiles" {% if f_head == "Tiles" %}selected{% endif %}>Tiles</option>
+            <option value="Granite / Marble" {% if f_head == "Granite / Marble" %}selected{% endif %}>Granite / Marble</option>
+            <option value="Paint" {% if f_head == "Paint" %}selected{% endif %}>Paint</option>
+            <option value="Plaster Work" {% if f_head == "Plaster Work" %}selected{% endif %}>Plaster Work</option>
+            <option value="False Ceiling" {% if f_head == "False Ceiling" %}selected{% endif %}>False Ceiling</option>
+            <option value="Electrical Work" {% if f_head == "Electrical Work" %}selected{% endif %}>Electrical Work</option>
+            <option value="Wiring & Conduit" {% if f_head == "Wiring & Conduit" %}selected{% endif %}>Wiring & Conduit</option>
+            <option value="Electrical Fittings" {% if f_head == "Electrical Fittings" %}selected{% endif %}>Electrical Fittings</option>
+            <option value="Plumbing Work" {% if f_head == "Plumbing Work" %}selected{% endif %}>Plumbing Work</option>
+            <option value="Plumbing Material" {% if f_head == "Plumbing Material" %}selected{% endif %}>Plumbing Material</option>
+            <option value="AC Ducting / HVAC" {% if f_head == "AC Ducting / HVAC" %}selected{% endif %}>AC Ducting / HVAC</option>
+            <option value="Doors" {% if f_head == "Doors" %}selected{% endif %}>Doors</option>
+            <option value="Windows" {% if f_head == "Windows" %}selected{% endif %}>Windows</option>
+            <option value="Aluminium / UPVC Work" {% if f_head == "Aluminium / UPVC Work" %}selected{% endif %}>Aluminium / UPVC Work</option>
+            <option value="Furniture" {% if f_head == "Furniture" %}selected{% endif %}>Furniture</option>
+            <option value="Hospital Furniture" {% if f_head == "Hospital Furniture" %}selected{% endif %}>Hospital Furniture</option>
+            <option value="OT Construction" {% if f_head == "OT Construction" %}selected{% endif %}>OT Construction</option>
+            <option value="Labour Room Construction" {% if f_head == "Labour Room Construction" %}selected{% endif %}>Labour Room Construction</option>
+            <option value="Labour Charges" {% if f_head == "Labour Charges" %}selected{% endif %}>Labour Charges</option>
+            <option value="Contractor Payment" {% if f_head == "Contractor Payment" %}selected{% endif %}>Contractor Payment</option>
+            <option value="Building Worker Expense" {% if f_head == "Building Worker Expense" %}selected{% endif %}>Building Worker Expense</option>
+            <option value="Salary - Security Guard" {% if f_head == "Salary - Security Guard" %}selected{% endif %}>Salary - Security Guard</option>
+            <option value="Salary - Site Supervisor" {% if f_head == "Salary - Site Supervisor" %}selected{% endif %}>Salary - Site Supervisor</option>
+            <option value="Transport / Vehicle" {% if f_head == "Transport / Vehicle" %}selected{% endif %}>Transport / Vehicle</option>
+            <option value="Petrol / Diesel" {% if f_head == "Petrol / Diesel" %}selected{% endif %}>Petrol / Diesel</option>
+            <option value="Crane / JCB / Machinery" {% if f_head == "Crane / JCB / Machinery" %}selected{% endif %}>Crane / JCB / Machinery</option>
+            <option value="Government Fee / NOC" {% if f_head == "Government Fee / NOC" %}selected{% endif %}>Government Fee / NOC</option>
+            <option value="Architect / Engineer Fee" {% if f_head == "Architect / Engineer Fee" %}selected{% endif %}>Architect / Engineer Fee</option>
+            <option value="Misc / Other" {% if f_head == "Misc / Other" %}selected{% endif %}>Misc / Other</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select name="area_location" class="form-select form-select-sm">
+            <option value="">All Areas</option>
+            <option value="Soil Removal / Excavation" {% if f_area == "Soil Removal / Excavation" %}selected{% endif %}>Soil Removal / Excavation</option>
+            <option value="Basement" {% if f_area == "Basement" %}selected{% endif %}>Basement</option>
+            <option value="Ground Floor" {% if f_area == "Ground Floor" %}selected{% endif %}>Ground Floor</option>
+            <option value="First Floor" {% if f_area == "First Floor" %}selected{% endif %}>First Floor</option>
+            <option value="Second Floor" {% if f_area == "Second Floor" %}selected{% endif %}>Second Floor</option>
+            <option value="Third Floor" {% if f_area == "Third Floor" %}selected{% endif %}>Third Floor</option>
+            <option value="Fourth Floor" {% if f_area == "Fourth Floor" %}selected{% endif %}>Fourth Floor</option>
+            <option value="Terrace" {% if f_area == "Terrace" %}selected{% endif %}>Terrace</option>
+            <option value="Reception" {% if f_area == "Reception" %}selected{% endif %}>Reception</option>
+            <option value="OPD" {% if f_area == "OPD" %}selected{% endif %}>OPD</option>
+            <option value="OT" {% if f_area == "OT" %}selected{% endif %}>OT</option>
+            <option value="Labour Room" {% if f_area == "Labour Room" %}selected{% endif %}>Labour Room</option>
+            <option value="Ward" {% if f_area == "Ward" %}selected{% endif %}>Ward</option>
+            <option value="ICU" {% if f_area == "ICU" %}selected{% endif %}>ICU</option>
+            <option value="Pharmacy" {% if f_area == "Pharmacy" %}selected{% endif %}>Pharmacy</option>
+            <option value="Lab" {% if f_area == "Lab" %}selected{% endif %}>Lab</option>
+            <option value="General Building" {% if f_area == "General Building" %}selected{% endif %}>General Building</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select name="approval_status" class="form-select form-select-sm">
+            <option value="">All Statuses</option>
+            <option value="Pending" {% if f_status == "Pending" %}selected{% endif %}>Pending</option>
+            <option value="Approved" {% if f_status == "Approved" %}selected{% endif %}>Approved</option>
+            <option value="Rejected" {% if f_status == "Rejected" %}selected{% endif %}>Rejected</option>
+          </select>
+        </div>
+        <div class="col-md-1">
+          <input type="date" name="date_from" class="form-control form-control-sm" value="{{ f_date_from }}">
+        </div>
+        <div class="col-md-1">
+          <input type="date" name="date_to" class="form-control form-control-sm" value="{{ f_date_to }}">
+        </div>
+        <div class="col-md-2 d-flex gap-1">
+          <button type="submit" class="btn btn-primary btn-sm flex-fill">Filter</button>
+          <a href="{% url 'hms:construction_expense_list' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="construction-table-wrap">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0 construction-table">
+        <thead>
+          <tr>
+            <th style="width:100px">Exp. ID</th>
+            <th style="width:90px">Date</th>
+            <th>Expense Head</th>
+            <th>Description</th>
+            <th>Area</th>
+            <th>Vendor</th>
+            <th class="text-end">Amount</th>
+            <th class="text-end">GST</th>
+            <th class="text-end">Total</th>
+            <th>Paid By</th>
+            <th>Approval</th>
+            <th>Work</th>
+            <th style="width:90px">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for exp in expenses %}
+          <tr>
+            <td><span style="font-size:11px;font-family:monospace;background:#2d3f4f;color:#a0c4e0;padding:2px 7px;border-radius:4px;border:1px solid #3d5060">{{ exp.expense_id }}</span></td>
+            <td style="font-size:12px">{{ exp.date }}</td>
+            <td style="font-size:13px">{{ exp.expense_head }}</td>
+            <td style="font-size:12px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
+                title="{{ exp.description }}">{{ exp.description }}</td>
+            <td style="font-size:12px">{{ exp.area_location|default:"—" }}</td>
+            <td style="font-size:12px">{{ exp.vendor.name|default:exp.vendor_mobile|default:"—" }}</td>
+            <td class="text-end" style="font-size:13px">₹{{ exp.amount|floatformat:0 }}</td>
+            <td class="text-end" style="font-size:12px;color:#7a9ab0">₹{{ exp.gst_amount|default:0|floatformat:0 }}</td>
+            <td class="text-end fw-semibold" style="font-size:13px;color:#4da6e8">₹{{ exp.total_amount|floatformat:0 }}</td>
+            <td style="font-size:12px">{{ exp.paid_by|default:"—" }}</td>
+            <td>
+              {% if exp.approval_status == "Approved" %}
+                <span style="font-size:11px;background:#1a3d2b;color:#4caf80;padding:2px 8px;border-radius:4px;border:1px solid #2a5c3f">Approved</span>
+              {% elif exp.approval_status == "Rejected" %}
+                <span style="font-size:11px;background:#3d1a1a;color:#e07070;padding:2px 8px;border-radius:4px;border:1px solid #5c2a2a">Rejected</span>
+              {% else %}
+                <span style="font-size:11px;background:#3d3010;color:#e0b840;padding:2px 8px;border-radius:4px;border:1px solid #5c4a18">Pending</span>
+              {% endif %}
+            </td>
+            <td style="font-size:12px">
+              {% if exp.work_status == "Done" %}
+                <span style="color:#4caf80"><i class="fas fa-check-circle"></i> Done</span>
+              {% elif exp.work_status == "Partial" %}
+                <span style="color:#e0b840"><i class="fas fa-adjust"></i> Partial</span>
+              {% else %}
+                <span style="color:#5a7a8a">—</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'hms:construction_expense_receipt' exp.pk %}"
+                 class="btn btn-xs btn-outline-success py-0 px-1" style="font-size:11px" target="_blank" title="Print Receipt">
+                <i class="fas fa-print"></i>
+              </a>
+              <a href="{% url 'hms:construction_expense_edit' exp.pk %}"
+                 class="btn btn-xs btn-outline-primary py-0 px-1" style="font-size:11px" title="Edit">
+                <i class="fas fa-edit"></i>
+              </a>
+              <form method="POST" action="{% url 'hms:construction_expense_delete' exp.pk %}"
+                    style="display:inline"
+                    onsubmit="return confirm('Delete {{ exp.expense_id }}?')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size:11px" title="Delete">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="13" class="text-center py-4" style="color:#5a7a8a">
+              <i class="fas fa-inbox fa-2x mb-2 d-block" style="color:#3d5060"></i>
+              No expenses found. <a href="{% url 'hms:construction_expense_create' %}" style="color:#4da6e8">Add the first one.</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

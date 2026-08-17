@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<title>OPD Register</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+
+*{box-sizing:border-box;margin:0;padding:0;}
+
+:root{
+  --teal:#0d7a6e;
+  --teal-dark:#095f55;
+  --teal-light:#e6f5f3;
+  --teal-mid:#b2ddd8;
+  --accent:#f0a500;
+  --bg:#f0f2f4;
+  --surface:#ffffff;
+  --border:#dde2e7;
+  --text:#1a2332;
+  --muted:#6b7a8d;
+  --row-hover:#f5fbfa;
+  --shadow:0 2px 8px rgba(13,122,110,0.08);
+}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  padding:0;
+}
+
+/* ── Top bar ── */
+.topbar{
+  background:var(--teal);
+  padding:14px 28px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.topbar-title{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:#fff;
+}
+
+.topbar-title .icon{
+  width:32px;height:32px;
+  background:rgba(255,255,255,0.2);
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;
+}
+
+.topbar-title h1{
+  font-size:18px;
+  font-weight:600;
+  letter-spacing:0.01em;
+}
+
+.topbar-back{
+  display:flex;align-items:center;gap:6px;
+  color:rgba(255,255,255,0.85);
+  text-decoration:none;
+  font-size:13px;
+  padding:6px 12px;
+  border:1px solid rgba(255,255,255,0.3);
+  border-radius:6px;
+  transition:background 0.15s;
+}
+
+.topbar-back:hover{background:rgba(255,255,255,0.12);}
+
+/* ── Main content ── */
+.main{padding:24px 28px;}
+
+/* ── Stats row ── */
+.stats-row{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px;
+  margin-bottom:20px;
+}
+
+.stat-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:16px 20px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  box-shadow:var(--shadow);
+}
+
+.stat-icon{
+  width:44px;height:44px;
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;
+  flex-shrink:0;
+}
+
+.stat-icon.patients{background:#e6f5f3;}
+.stat-icon.collection{background:#fff8e6;}
+.stat-icon.date{background:#eef2ff;}
+
+.stat-label{font-size:12px;color:var(--muted);font-weight:500;margin-bottom:2px;text-transform:uppercase;letter-spacing:0.05em;}
+.stat-value{font-size:22px;font-weight:600;color:var(--text);}
+.stat-value.money{color:var(--teal);}
+
+/* ── Filter bar ── */
+.filter-bar{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px 18px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-bottom:18px;
+  box-shadow:var(--shadow);
+  flex-wrap:wrap;
+}
+
+.filter-group{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:1;
+  min-width:180px;
+}
+
+.filter-group label{
+  font-size:13px;
+  color:var(--muted);
+  font-weight:500;
+  white-space:nowrap;
+}
+
+.filter-group input{
+  width:100%;
+  padding:8px 12px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  font-size:14px;
+  font-family:'DM Sans',sans-serif;
+  color:var(--text);
+  background:var(--bg);
+  outline:none;
+  transition:border 0.15s,box-shadow 0.15s;
+}
+
+.filter-group input:focus{
+  border-color:var(--teal);
+  box-shadow:0 0 0 3px rgba(13,122,110,0.1);
+  background:#fff;
+}
+
+.filter-divider{width:1px;height:32px;background:var(--border);}
+
+/* ── Table ── */
+.table-wrap{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+  box-shadow:var(--shadow);
+}
+
+table{
+  border-collapse:collapse;
+  width:100%;
+}
+
+thead{
+  background:var(--teal);
+}
+
+th{
+  padding:11px 14px;
+  font-size:12px;
+  font-weight:600;
+  color:rgba(255,255,255,0.9);
+  text-align:center;
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+  border:none;
+}
+
+tbody tr{
+  border-bottom:1px solid var(--border);
+  transition:background 0.1s;
+}
+
+tbody tr:last-child{border-bottom:none;}
+
+tbody tr:hover{background:var(--row-hover);}
+
+td{
+  padding:10px 14px;
+  font-size:13.5px;
+  text-align:center;
+  border:none;
+  color:var(--text);
+}
+
+/* Receipt no */
+td:first-child{
+  font-family:'DM Mono',monospace;
+  font-size:12px;
+  color:var(--muted);
+  font-weight:500;
+}
+
+/* Date */
+td:nth-child(2){
+  font-size:12.5px;
+  color:var(--muted);
+}
+
+/* Patient name */
+td:nth-child(3){
+  font-weight:600;
+  text-align:left;
+  color:var(--teal-dark);
+}
+
+/* Age/Sex badge */
+td:nth-child(4) span{
+  display:inline-block;
+  background:var(--teal-light);
+  color:var(--teal-dark);
+  border-radius:20px;
+  padding:2px 10px;
+  font-size:12px;
+  font-weight:500;
+}
+
+/* Doctor */
+td:nth-child(5){
+  font-weight:500;
+}
+
+/* Fee */
+td.fee{
+  font-family:'DM Mono',monospace;
+  font-size:13px;
+  font-weight:600;
+  color:#1a5c52;
+}
+
+td.fee::before{content:'₹';}
+
+/* Empty row */
+.empty-row td{
+  padding:40px;
+  color:var(--muted);
+  font-size:15px;
+}
+
+/* Print link */
+.print-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:5px 12px;
+  background:var(--teal-light);
+  color:var(--teal-dark);
+  border:1px solid var(--teal-mid);
+  border-radius:6px;
+  font-size:12px;
+  font-weight:600;
+  text-decoration:none;
+  transition:background 0.15s,border 0.15s;
+  letter-spacing:0.02em;
+}
+
+.print-btn:hover{
+  background:var(--teal-mid);
+  border-color:var(--teal);
+}
+
+/* ── Footer summary ── */
+.footer-summary{
+  margin-top:18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 20px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  box-shadow:var(--shadow);
+}
+
+.summary-info{
+  font-size:14px;
+  color:var(--muted);
+}
+
+.summary-info strong{color:var(--text);}
+
+.summary-total{
+  font-size:18px;
+  font-weight:700;
+  color:var(--teal);
+  font-family:'DM Mono',monospace;
+}
+
+/* ── Responsive ── */
+@media(max-width:640px){
+  .main{padding:14px;}
+  .stats-row{grid-template-columns:1fr;}
+  .filter-divider{display:none;}
+}
+
+</style>
+
+<script>
+
+function filterTable(){
+
+  let search = document.getElementById("searchInput").value.toLowerCase();
+  let date   = document.getElementById("dateInput").value;
+
+  let rows  = document.querySelectorAll("#opdTable tbody tr:not(.empty-row)");
+  let total = 0;
+  let count = 0;
+
+  rows.forEach(row => {
+
+    let rowText = row.innerText.toLowerCase();
+    let rowDate = row.getAttribute("data-date");
+
+    let searchMatch = rowText.includes(search);
+    let dateMatch   = !date || rowDate === date;
+
+    if(searchMatch && dateMatch){
+
+      row.style.display = "";
+      let feeEl = row.querySelector(".fee");
+      let fee   = parseFloat(feeEl ? feeEl.getAttribute("data-fee") : 0) || 0;
+      total += fee;
+      count++;
+
+    } else {
+
+      row.style.display = "none";
+
+    }
+
+  });
+
+  document.getElementById("totalAmount").innerText  = "₹ " + total.toFixed(2);
+  document.getElementById("patientCount").innerText = count;
+
+}
+
+window.onload = filterTable;
+
+</script>
+
+</head>
+
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="topbar-title">
+    <div class="icon">🏥</div>
+    <h1>OPD Register</h1>
+  </div>
+  <a href="/" class="topbar-back">← Back to Dashboard</a>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Stats -->
+  <div class="stats-row">
+
+    <div class="stat-card">
+      <div class="stat-icon patients">👤</div>
+      <div>
+        <div class="stat-label">Total Patients</div>
+        <div class="stat-value" id="patientCount">0</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon collection">💰</div>
+      <div>
+        <div class="stat-label">Total Collection</div>
+        <div class="stat-value money" id="totalAmount">₹ 0.00</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon date">📅</div>
+      <div>
+        <div class="stat-label">Filtered By</div>
+        <div class="stat-value" style="font-size:14px;padding-top:4px;" id="filterLabel">All Records</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+
+    <div class="filter-group">
+      <label>🔍 Search</label>
+      <input type="text" id="searchInput" onkeyup="filterTable();updateLabel();" placeholder="Patient or Doctor name…">
+    </div>
+
+    <div class="filter-divider"></div>
+
+    <div class="filter-group" style="max-width:220px;">
+      <label>📅 Date</label>
+      <input type="date" id="dateInput" onchange="filterTable();updateLabel();">
+    </div>
+
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table id="opdTable">
+
+      <thead>
+        <tr>
+          <th>Receipt #</th>
+          <th>Date</th>
+          <th style="text-align:left;">Patient</th>
+          <th>Age / Sex</th>
+          <th>Doctor</th>
+          <th>Fee</th>
+          <th>Print</th>
+        </tr>
+      </thead>
+
+      <tbody>
+
+        {% for a in appointments %}
+
+        <tr data-date="{{ a.date|date:'Y-m-d' }}">
+
+          <td>{{ a.id }}</td>
+
+          <td>{{ a.date|date:"d M Y" }}</td>
+
+          <td>{{ a.patient.full_name }}</td>
+
+          <td><span>{{ a.patient.age }} / {{ a.patient.gender }}</span></td>
+
+          <td>{{ a.doctor.full_name }}</td>
+
+          <td class="fee" data-fee="{{ a.doctor.op_fee }}">{{ a.doctor.op_fee }}</td>
+
+          <td>
+            <a class="print-btn" href="{% url 'hms:print_opd' a.id %}" target="_blank">
+              🖨 Print
+            </a>
+          </td>
+
+        </tr>
+
+        {% empty %}
+
+        <tr class="empty-row">
+          <td colspan="7">No OPD records found</td>
+        </tr>
+
+        {% endfor %}
+
+      </tbody>
+
+    </table>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer-summary">
+    <div class="summary-info">
+      Showing <strong id="patientCount2">—</strong> patient(s)
+    </div>
+    <div class="summary-total" id="totalAmount2">₹ 0.00</div>
+  </div>
+
+</div>
+
+<script>
+
+function updateLabel(){
+  let date   = document.getElementById("dateInput").value;
+  let search = document.getElementById("searchInput").value.trim();
+  let label  = "";
+  if(date) label += date;
+  if(search) label += (label ? " · " : "") + '"' + search + '"';
+  document.getElementById("filterLabel").innerText = label || "All Records";
+}
+
+// Sync footer counts with header counts
+const origFilter = filterTable;
+filterTable = function(){
+  origFilter();
+  let count  = document.getElementById("patientCount").innerText;
+  let total  = document.getElementById("totalAmount").innerText;
+  document.getElementById("patientCount2").innerText = count;
+  document.getElementById("totalAmount2").innerText  = total;
+};
+
+window.onload = function(){
+  filterTable();
+  updateLabel();
+};
+
+</script>
+
+</body>
+</html>

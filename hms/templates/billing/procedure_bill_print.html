@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Procedure Bill – {{ bill.patient.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container py-3" style="max-width:720px">
+
+  <!-- Print Button -->
+  <div class="d-print-none mb-3 d-flex gap-2">
+    <button onclick="window.print()" class="btn btn-success">🖨 Print Receipt</button>
+    <a href="{% url 'hms:procedure_billing' %}" class="btn btn-outline-secondary">← New Bill</a>
+  </div>
+
+  <!-- RECEIPT -->
+  <div id="receipt" style="font-family:'Courier New',monospace;font-size:13px;border:1px solid #ccc;padding:20px;color:#000;">
+
+    <!-- Header -->
+    <div style="text-align:center;margin-bottom:8px;">
+      <div style="font-size:16px;font-weight:900;letter-spacing:1px;">SHRADHA HOSPITAL &amp; MULTISPECIALITY CENTRE</div>
+      <div style="font-size:12px;font-weight:700;">OPP. PANI KI DO TANKI SURAJ POLE, PALI 306401 (RAJ.)</div>
+      <div style="font-size:12px;font-weight:700;">CALL - 02932-222429, 94141-22542(M)</div>
+      <hr style="border:1.5px solid #000;margin:8px 0;">
+      <div style="font-size:14px;font-weight:900;letter-spacing:3px;">GENERAL RECEIPT</div>
+      <hr style="border:1px solid #000;margin:8px 0;">
+    </div>
+
+    <!-- Patient Info -->
+    <table style="width:100%;font-size:12px;margin-bottom:10px;font-weight:600;">
+      <tr>
+        <td><strong>Rec.No :</strong> {{ bill.id }}</td>
+        <td style="text-align:right"><strong>Date :</strong> {{ bill.created_at|date:"d/m/Y" }}</td>
+      </tr>
+      <tr>
+        <td><strong>UHID :</strong> {{ bill.patient.uhid }}</td>
+        <td style="text-align:right"><strong>Age/Sex :</strong>
+          {% if bill.patient.age %}{{ bill.patient.age }} Yrs{% endif %}
+          {% if bill.patient.gender %} /{{ bill.patient.gender|slice:":1" }}{% endif %}
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Time :</strong> {{ bill.created_at|date:"H:i:s" }}</td>
+        <td style="text-align:right"><strong>Mob. #</strong> {{ bill.patient.mobile_no|default:"" }}</td>
+      </tr>
+      <tr>
+        <td><strong>Add :</strong> {{ bill.patient.city|default:"" }}</td>
+        <td></td>
+      </tr>
+      {% if bill.consultant %}
+      <tr>
+        <td colspan="2"><strong>CONSULTANT :</strong> {{ bill.consultant|upper }}</td>
+      </tr>
+      {% endif %}
+      <tr>
+        <td colspan="2"><strong>Name :</strong> {{ bill.patient.full_name|upper }}</td>
+      </tr>
+    </table>
+
+    <hr style="border:1px dashed #000;margin:6px 0;">
+
+    <!-- Items Table -->
+    <table style="width:100%;font-size:12px;font-weight:600;">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding-bottom:6px;font-weight:900;">Test Description</th>
+          <th style="text-align:right;padding-bottom:6px;font-weight:900;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in bill.items.all %}
+        <tr>
+          <td style="padding:3px 0;">{{ item.procedure.name|upper }}</td>
+          <td style="text-align:right;">{{ item.price|floatformat:0 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <hr style="border:1px dashed #000;margin:6px 0;">
+
+    <!-- Totals -->
+    <table style="width:100%;font-size:12px;font-weight:600;">
+      <tr>
+        <td><strong>Total Amount</strong></td>
+        <td style="text-align:right;"><strong>{{ bill.total_amount|floatformat:0 }}</strong></td>
+      </tr>
+      <tr>
+        <td>Discount in Rs.</td>
+        <td style="text-align:right;">{{ bill.discount|floatformat:0 }}</td>
+      </tr>
+      <tr style="border-top:1.5px solid #000;">
+        <td><strong>Net Amount</strong></td>
+        <td style="text-align:right;">
+          <strong>
+            {% if bill.payment_mode == "FREE" %}Rs. 0
+            {% else %}Rs. {{ bill.net_amount|floatformat:0 }}{% endif %}
+          </strong>
+        </td>
+      </tr>
+    </table>
+
+    {% if bill.payment_mode == "FREE" %}
+    <div style="text-align:center;margin-top:6px;font-size:12px;font-weight:700;">( Free of Cost )</div>
+    {% endif %}
+
+    <hr style="border:1px dashed #000;margin:8px 0;">
+    <div style="text-align:center;font-size:12px;font-weight:700;">Payment Mode: {{ bill.get_payment_mode_display }}</div>
+
+  </div>
+</div>
+
+<style>
+@media print {
+  /* Hide everything */
+  body * { visibility: hidden; }
+
+  /* Show only receipt */
+  #receipt, #receipt * { visibility: visible; }
+
+  #receipt {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    border: none !important;
+    padding: 10mm !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  @page {
+    size: A5 portrait;
+    margin: 8mm;
+  }
+}
+</style>
+{% endblock %}

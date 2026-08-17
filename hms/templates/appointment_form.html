@@ -1,13 +1,289 @@
-<!doctype html>
-<html>
-<head><meta charset="utf-8"><title>New Appointment</title></head>
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Book Appointment | Shradha HMS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+<style>
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ font-family:'Segoe UI',sans-serif; background:#0d0d0d; color:#e2e8f0; }
+
+header{
+    background:linear-gradient(135deg,#005555,#007676);
+    color:white; padding:14px 30px;
+    display:flex; align-items:center; gap:14px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.5);
+}
+header img{ height:46px; background:white; padding:4px; border-radius:6px; }
+header h1{ font-size:20px; font-weight:700; margin:0; }
+header p{ font-size:12px; opacity:0.82; margin-top:2px; }
+
+.container{ max-width:800px; margin:28px auto 30px; padding:0 20px; }
+.card{ background:#111111; border-radius:14px; box-shadow:0 4px 24px rgba(0,0,0,0.7); overflow:hidden; border:1px solid #2a2a2a; }
+.card-header{
+    background:linear-gradient(135deg,#005555,#007676);
+    padding:16px 26px; display:flex; align-items:center; justify-content:space-between;
+}
+.card-header h2{ margin:0; color:white; font-size:18px; font-weight:700; }
+.card-header .badge{ background:rgba(255,255,255,0.2); color:white; padding:4px 14px; border-radius:20px; font-size:12px; font-weight:600; }
+.card-body{ padding:24px 26px; }
+
+.section-title{ margin:20px 0 12px; padding-bottom:7px; border-bottom:2px solid #00b8a9; color:#00b8a9; font-size:14px; font-weight:700; }
+.section-title:first-child{ margin-top:0; }
+
+.form-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.form-grid.g2{ grid-template-columns:repeat(2,1fr); }
+.full{ grid-column:1/-1; }
+.span2{ grid-column:span 2; }
+
+label{ font-weight:600; font-size:13px; color:#8892a4; margin-bottom:5px; display:block; }
+input, select, textarea{
+    width:100%; height:42px; padding:10px 12px;
+    border-radius:7px; border:1px solid #2a2a2a;
+    font-size:13px; font-family:'Segoe UI',sans-serif; color:#e2e8f0;
+    background:#1a1a1a !important;
+    transition:border-color .2s, box-shadow .2s;
+}
+input:focus, select:focus, textarea:focus{
+    background:#1a1a1a !important;
+    border-color:#00b8a9 !important;
+    outline:none;
+    box-shadow:0 0 0 2px rgba(0,184,169,.2) !important;
+    color:#e2e8f0 !important;
+}
+textarea{ height:42px; min-height:42px; resize:vertical; }
+input::placeholder, textarea::placeholder{ color:#444 !important; }
+option{ background:#1a1a1a; color:#e2e8f0; }
+
+/* Browser autofill dark override */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0px 1000px #1a1a1a inset !important;
+    -webkit-text-fill-color: #e2e8f0 !important;
+    caret-color: #e2e8f0 !important;
+    border-color: #2a2a2a !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Date/time input dark */
+input[type=date], input[type=time]{
+    color-scheme: dark;
+}
+
+.new-patient-banner{
+    display:flex; align-items:center; justify-content:space-between;
+    background:#0f1e1e; border:1px solid #1a3a3a;
+    border-radius:9px; padding:12px 16px; margin-top:14px;
+}
+.new-patient-banner p{ font-size:13px; color:#8892a4; margin:0; }
+.new-patient-banner a{
+    background:#00b8a9; color:#000; text-decoration:none;
+    padding:7px 16px; border-radius:7px; font-size:13px; font-weight:700;
+    white-space:nowrap; transition:.2s;
+}
+.new-patient-banner a:hover{ background:#00d4c0; }
+
+.patient-preselected{
+    background:#0f1e1e; border:1px solid #00b8a9;
+    border-radius:8px; padding:10px 14px; margin-bottom:10px;
+    font-size:13px; color:#00b8a9; font-weight:600; display:none;
+}
+
+.btn{ padding:11px 22px; border-radius:8px; font-weight:700; border:none; cursor:pointer; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:.2s; }
+.btn-green{ background:#166534; color:#4ade80; border:1px solid #166534; } .btn-green:hover{ background:#14532d; color:#86efac; }
+.btn-teal{ background:#1e3a3a; color:#00b8a9; border:1px solid #00b8a9; } .btn-teal:hover{ background:#155555; color:#00d4c0; }
+.btn-gray{ background:#1e1e1e; color:#8892a4; border:1px solid #2a2a2a; } .btn-gray:hover{ background:#2a2a2a; color:#e2e8f0; }
+.form-actions{ margin-top:22px; display:flex; gap:10px; flex-wrap:wrap; }
+
+.field-error{ color:#f87171; font-size:12px; margin-top:3px; }
+.form-error-banner{ background:#2a0a0a; border:1px solid #5a2d2d; color:#fca5a5; padding:10px 14px; border-radius:6px; margin-bottom:16px; font-weight:600; font-size:13px; }
+
+/* ── Select2 dark theme ── */
+.select2-container{ width:100% !important; }
+.select2-container--default .select2-selection--single{
+    height:42px !important; background:#1a1a1a !important;
+    border:1px solid #2a2a2a !important; border-radius:7px !important;
+    display:flex; align-items:center; padding:0 12px !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered{
+    color:#e2e8f0 !important; padding:0 !important; line-height:normal !important; font-size:13px;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow{ height:40px !important; }
+.select2-container--default .select2-selection--single .select2-selection__arrow b{ border-color:#8892a4 transparent transparent transparent !important; }
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--single{
+    border-color:#00b8a9 !important; box-shadow:0 0 0 2px rgba(0,184,169,.2) !important;
+}
+.select2-dropdown{
+    background:#111111 !important; border:1px solid #2a2a2a !important;
+    border-radius:8px !important; box-shadow:0 8px 24px rgba(0,0,0,0.6) !important;
+}
+.select2-search--dropdown{ padding:7px !important; background:#111111 !important; }
+.select2-container--default .select2-search--dropdown .select2-search__field{
+    background:#1a1a1a !important; color:#e2e8f0 !important;
+    border:1px solid #2a2a2a !important; border-radius:6px !important;
+    padding:7px 10px !important; font-size:13px !important;
+}
+.select2-results__option{ padding:9px 13px !important; font-size:13px !important; color:#e2e8f0 !important; background:#111111 !important; }
+.select2-container--default .select2-results__option--highlighted[aria-selected]{ background:#00b8a9 !important; color:#000 !important; }
+.select2-container--default .select2-results__option[aria-selected=true]{ background:#1e3a3a !important; color:#00b8a9 !important; }
+.select2-container--default .select2-selection--single .select2-selection__placeholder{ color:#444 !important; }
+.select2-container--default .select2-selection--single .select2-selection__clear{ color:#8892a4 !important; }
+
+footer{ text-align:center; padding:10px 0 20px; font-size:13px; color:#444; }
+</style>
+</head>
 <body>
-  <h3>Book Appointment</h3>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Save & Print OPD</button>
-  </form>
-  <p><a href="/">Back</a></p>
+
+<header>
+    <img src="{% static 'hms/img/hospital_logo.jpg' %}" alt="">
+    <div>
+        <h1>Shradha Hospital Management System</h1>
+        <p>Pani Ki Do Tanki, Surajpole, Pali (Raj) | 9414122542</p>
+    </div>
+</header>
+
+<div class="container">
+<div class="card">
+<div class="card-header">
+    <h2>📅 Book Appointment</h2>
+    <span class="badge">OPD Booking</span>
+</div>
+<div class="card-body">
+
+<form method="post" autocomplete="off">
+{% csrf_token %}
+
+{% if form.errors %}
+<div class="form-error-banner">⚠️ Please fix the errors below before saving.</div>
+{% endif %}
+
+<div class="section-title">Patient</div>
+<div id="patient-preselected-box" class="patient-preselected">
+    ✅ Patient auto-selected from registration
+</div>
+<div>
+    <label>Select Patient *</label>
+    {{ form.patient }}
+    {% if form.patient.errors %}<div class="field-error">{{ form.patient.errors|join:", " }}</div>{% endif %}
+</div>
+
+<div class="new-patient-banner">
+    <p>🆕 New patient not registered yet?</p>
+    <a href="{% url 'hms:patient_create' %}">+ Register New Patient</a>
+</div>
+
+<div class="section-title">Appointment Details</div>
+<div class="form-grid">
+    <div>
+        <label>Department</label>
+        {{ form.department }}
+    </div>
+    <div>
+        <label>Doctor *</label>
+        {{ form.doctor }}
+        {% if form.doctor.errors %}<div class="field-error">{{ form.doctor.errors|join:", " }}</div>{% endif %}
+    </div>
+    <div>
+        <label>Visit Type</label>
+        <select name="appointment_type">
+            <option value="New">New Patient</option>
+            <option value="Follow-up">Follow-up</option>
+            <option value="Review">Review</option>
+            <option value="Emergency">Emergency</option>
+        </select>
+    </div>
+    <div>
+        <label>Date *</label>
+        {{ form.date }}
+        {% if form.date.errors %}<div class="field-error">{{ form.date.errors|join:", " }}</div>{% endif %}
+    </div>
+    <div>
+        <label>Time *</label>
+        {{ form.time }}
+        {% if form.time.errors %}<div class="field-error">{{ form.time.errors|join:", " }}</div>{% endif %}
+    </div>
+    <div>
+        <label>Fee (₹)</label>
+        <input type="number" name="fee" placeholder="0" min="0" value="{{ form.fee.value|default:'200' }}">
+    </div>
+    <div>
+        <label>Payment Mode</label>
+        <select name="payment_mode">
+            <option value="CASH">Cash</option>
+            <option value="UPI">UPI</option>
+            <option value="CARD">Card</option>
+            <option value="FREE">Free</option>
+        </select>
+    </div>
+    <div class="full">
+        <label>Purpose / Chief Complaint</label>
+        {{ form.purpose }}
+    </div>
+</div>
+
+<div class="form-actions">
+    <button type="submit" class="btn btn-green">💾 Save &amp; Print OPD Receipt</button>
+    <button type="submit" name="go_to_consultation" value="1" class="btn btn-teal">🩺 Save &amp; Start Consultation</button>
+    <a href="/" class="btn btn-gray">← Back to Dashboard</a>
+</div>
+
+</form>
+</div>
+</div>
+</div>
+
+<footer>© 2026 Shradha Hospital • HMS Cloud Interface</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(function(){
+    $('#id_patient').select2({ placeholder:'🔍 Search patient by name or UHID...', allowClear:true, width:'100%' });
+    $('#id_department').select2({ placeholder:'Select department...', allowClear:true, width:'100%' });
+    $('#id_doctor').select2({ placeholder:'Select doctor...', allowClear:true, width:'100%' });
+
+    $('#id_department').on('change', function(){
+    var d=$(this).val();
+    $('#id_doctor').empty().append('<option value="">Select doctor...</option>').trigger('change');
+    if(!d) return;
+    $.getJSON('/appointments/get-doctors/?department_id='+d, function(r){
+        $.each(r.doctors,function(i,doc){ $('#id_doctor').append(new Option(doc.full_name,doc.id)); });
+        $('#id_doctor').trigger('change.select2');
+    });
+});
+
+// NEW: populate doctors immediately if department is already pre-selected on page load
+if ($('#id_department').val()) {
+    $('#id_department').trigger('change');
+}
+
+    var now=new Date(), today=now.toISOString().split('T')[0];
+    var hm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+    var df=$('#id_date'); if(df.length&&!df.val()){ df.val(today); df.attr('min',today); }
+    var tf=$('#id_time'); if(tf.length&&!tf.val()) tf.val(hm);
+
+    var urlParams=new URLSearchParams(window.location.search), patientId=urlParams.get('patient');
+    if(patientId){
+        $.getJSON('/patients/api/get/?id='+patientId, function(data){
+            if(data&&data.id){
+                var label=data.full_name+' ('+data.uhid+')';
+                var option=new Option(label,data.id,true,true);
+                $('#id_patient').append(option).trigger('change');
+                $('#patient-preselected-box').text('✅ Patient auto-selected: '+label).show();
+            }
+        }).fail(function(){ $('#id_patient').val(patientId).trigger('change'); });
+    }
+});
+</script>
 </body>
 </html>

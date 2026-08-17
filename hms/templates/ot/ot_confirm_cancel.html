@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="card p-4 border-danger">
+    <h2 class="text-danger">Cancel OT Booking</h2>
+    <p class="mt-3">Are you sure you want to cancel the following booking?</p>
+
+    <table class="table table-bordered mt-3">
+      <tr><th>UHID</th><td>{{ booking.uhid }}</td></tr>
+      <tr><th>Procedure</th><td>{{ booking.procedure }}</td></tr>
+      <tr><th>Surgeon</th><td>{{ booking.surgeon }}</td></tr>
+      <tr><th>Date</th><td>{{ booking.ot_date }}</td></tr>
+      <tr><th>Time</th><td>{{ booking.ot_time }}</td></tr>
+    </table>
+
+    <form method="post" class="mt-3">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger px-4">Yes, Cancel Booking</button>
+      <a href="{% url 'hms:ot_detail' booking.id %}" class="btn btn-secondary ms-2">Go Back</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

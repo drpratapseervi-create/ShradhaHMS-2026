@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>OT Booking Detail</h2>
+    <div>
+      <a href="{% url 'hms:ot_print' booking.id %}" class="btn btn-outline-dark" target="_blank">🖨 Print Slip</a>
+      <a href="{% url 'hms:ot_edit' booking.id %}" class="btn btn-warning ms-2">✏️ Edit</a>
+      <a href="{% url 'hms:ot_notes' booking.id %}" class="btn btn-success ms-2">📋 OT Notes</a>
+      <a href="{% url 'hms:ot_cancel' booking.id %}" class="btn btn-danger ms-2">✖ Cancel</a>
+      <a href="{% url 'hms:ot_dashboard' %}" class="btn btn-secondary ms-2">← Back</a>
+    </div>
+  </div>
+
+  <!-- Status Badge -->
+  <div class="mb-3">
+    {% if booking.status == "Scheduled" %}
+      <span class="badge bg-primary fs-6">{{ booking.status }}</span>
+    {% elif booking.status == "Completed" %}
+      <span class="badge bg-success fs-6">{{ booking.status }}</span>
+    {% else %}
+      <span class="badge bg-danger fs-6">{{ booking.status }}</span>
+    {% endif %}
+
+    <!-- Quick Status Update -->
+    <form method="post" action="{% url 'hms:ot_status_update' booking.id %}" class="d-inline ms-3">
+      {% csrf_token %}
+      <select name="status" class="form-select form-select-sm d-inline w-auto">
+        <option value="Scheduled"  {% if booking.status == "Scheduled"  %}selected{% endif %}>Scheduled</option>
+        <option value="Completed"  {% if booking.status == "Completed"  %}selected{% endif %}>Completed</option>
+        <option value="Cancelled"  {% if booking.status == "Cancelled"  %}selected{% endif %}>Cancelled</option>
+      </select>
+      <button type="submit" class="btn btn-sm btn-outline-primary ms-1">Update Status</button>
+    </form>
+  </div>
+
+  <!-- Booking Details -->
+  <div class="card mb-4">
+    <div class="card-header bg-dark text-white">Booking Information</div>
+    <div class="card-body p-0">
+      <table class="table table-bordered mb-0">
+        <tr><th style="width:30%">UHID</th><td>{{ booking.uhid }}</td></tr>
+        <tr><th>Patient Name</th><td>{{ booking.patient.full_name }}</td></tr>
+        <tr><th>Surgeon</th><td>{{ booking.surgeon }}</td></tr>
+        <tr><th>Assistant</th><td>{{ booking.assistant|default:"—" }}</td></tr>
+        <tr><th>Anesthetist</th><td>{{ booking.anesthetist }}</td></tr>
+        <tr><th>Procedure</th><td>{{ booking.procedure }}</td></tr>
+        <tr><th>Date</th><td>{{ booking.ot_date|date:"d M Y" }}</td></tr>
+        <tr><th>Time</th><td>{{ booking.ot_time|time:"h:i A" }}</td></tr>
+        <tr><th>Room</th><td>{{ booking.ot_room }}</td></tr>
+        <tr><th>Case Type</th><td>{{ booking.case_type }}</td></tr>
+        <tr><th>Anesthesia</th><td>{{ booking.anesthesia_type }}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- OT Notes (if saved) -->
+  {% if booking.otnotes %}
+  <div class="card">
+    <div class="card-header bg-success text-white">OT Notes</div>
+    <div class="card-body p-0">
+      <table class="table table-bordered mb-0">
+        <tr><th style="width:30%">Start Time</th><td>{{ booking.otnotes.start_time|time:"h:i A" }}</td></tr>
+        <tr><th>End Time</th><td>{{ booking.otnotes.end_time|time:"h:i A" }}</td></tr>
+        <tr><th>Blood Loss</th><td>{{ booking.otnotes.blood_loss|default:"—" }}</td></tr>
+        <tr><th>Findings</th><td>{{ booking.otnotes.findings }}</td></tr>
+        <tr><th>Procedure Done</th><td>{{ booking.otnotes.procedure_done }}</td></tr>
+        <tr><th>Complications</th><td>{{ booking.otnotes.complications|default:"None" }}</td></tr>
+        <tr><th>Post-Op Condition</th><td>{{ booking.otnotes.post_op_condition }}</td></tr>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-warning">
+    No OT notes recorded yet.
+    <a href="{% url 'hms:ot_notes' booking.id %}" class="alert-link">Add OT Notes →</a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Discharge Summary</title>
+
+<style>
+
+body{
+font-family: Arial, Helvetica, sans-serif;
+margin:40px;
+line-height:1.5;
+}
+
+.header{
+text-align:center;
+margin-bottom:10px;
+}
+
+.hospital-name{
+font-size:22px;
+font-weight:bold;
+}
+
+.hospital-address{
+font-size:14px;
+}
+
+.title{
+text-align:center;
+font-size:18px;
+font-weight:bold;
+margin-top:10px;
+margin-bottom:10px;
+}
+
+.info-table{
+width:100%;
+border-collapse:collapse;
+margin-top:10px;
+}
+
+.info-table td{
+border:1px solid #000;
+padding:6px;
+font-size:14px;
+}
+
+.section{
+margin-top:20px;
+}
+
+.section-title{
+font-size:16px;
+font-weight:bold;
+margin-bottom:5px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:10px;
+}
+
+th,td{
+border:1px solid #ccc;
+padding:6px;
+text-align:left;
+font-size:14px;
+}
+
+th{
+background:#f2f2f2;
+}
+
+.signature{
+margin-top:40px;
+text-align:right;
+page-break-inside:avoid;
+}
+
+.print-btn{
+position:absolute;
+right:40px;
+top:40px;
+padding:6px 15px;
+background:#198754;
+color:white;
+border:none;
+border-radius:4px;
+cursor:pointer;
+}
+
+@media print{
+
+.print-btn{
+display:none;
+}
+
+body{
+margin:20px;
+font-size:12px;
+}
+
+table{
+page-break-inside:avoid;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<button class="print-btn" onclick="window.print()">Print</button>
+
+<div class="header">
+
+<div class="hospital-name">
+SHRADHA HOSPITAL & MULTISPECIALITY CENTRE
+</div>
+
+<div class="hospital-address">
+Pani Ki Do Tanki, Surajpole, Pali (Rajasthan) – 306401 <br>
+Mobile: 9414122542
+</div>
+
+</div>
+
+<hr>
+
+<div class="title">
+DISCHARGE SUMMARY
+</div>
+
+<table class="info-table">
+
+<tr>
+<td><b>Patient Name</b></td>
+<td>{{ patient.full_name }}</td>
+
+<td><b>Age / Sex</b></td>
+<td>{{ patient.age }} / {{ patient.gender }}</td>
+</tr>
+
+<tr>
+<td><b>UHID</b></td>
+<td>{{ patient.uhid }}</td>
+
+<td><b>Consultant</b></td>
+<td>Dr. {{ doctor.full_name }}</td>
+</tr>
+
+<tr>
+<td><b>IPD No</b></td>
+<td>{{ admission.ipd_no }}</td>
+
+<td><b>Ward / Bed</b></td>
+<td>{{ ward.name }} / {{ bed.bed_number }}</td>
+</tr>
+
+<tr>
+<td><b>Admission Date</b></td>
+<td>{{ admission.admission_date }}</td>
+
+<td><b>Discharge Date</b></td>
+<td>{{ admission.discharge_date|date:"M d, Y, H:i" }}</td>
+</tr>
+
+</table>
+
+<div class="section">
+<div class="section-title">Diagnosis</div>
+
+{{ admission.diagnosis|default:"-" }}
+
+</div>
+
+<div class="section">
+<div class="section-title">Procedure Performed</div>
+{{ admission.procedure_done }}
+</div>
+
+<div class="section">
+<div class="section-title">Course in Hospital</div>
+{{ admission.course_in_hospital }}
+</div>
+
+<div class="section">
+<div class="section-title">Condition at Discharge</div>
+{{ admission.condition_at_discharge }}
+</div>
+
+<div class="section">
+
+<div class="section-title">Discharge Medications</div>
+
+<table>
+
+<tr>
+<th>Medicine</th>
+<th>Dose</th>
+<th>Route</th>
+<th>Frequency</th>
+</tr>
+
+{% for m in medications %}
+
+<tr>
+<td>{{ m.medicine_name }}</td>
+<td>{{ m.dose }}</td>
+<td>{{ m.route }}</td>
+<td>{{ m.frequency }}</td>
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="4">No medicines recorded</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+<div class="section">
+
+<div class="section-title">Advice</div>
+
+{{ admission.discharge_advice }}
+
+</div>
+
+<div class="section">
+
+<b>Follow Up Date:</b> {{ admission.follow_up_date }}
+
+</div>
+
+<div class="section">
+
+<div class="section-title">Vitals During Admission</div>
+
+<table>
+
+<tr>
+<th>Date</th>
+<th>Pulse</th>
+<th>BP</th>
+<th>Temperature</th>
+<th>SpO2</th>
+<th>RR</th>
+</tr>
+
+{% for v in vitals %}
+
+<tr>
+<td>{{ v.recorded_at }}</td>
+<td>{{ v.pulse }}</td>
+<td>{{ v.bp }}</td>
+<td>{{ v.temperature }}</td>
+<td>{{ v.spo2 }}</td>
+<td>{{ v.rr }}</td>
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="6">No vitals recorded</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+<div class="signature">
+
+Doctor Signature <br><br>
+
+Dr. {{ doctor.full_name }}
+
+</div>
+
+</body>
+</html>

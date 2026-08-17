@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Radiology Upload{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:900px">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">🩻 Radiology Upload</h4>
+    <a href="{% url 'hms:lab_reports' %}" class="btn btn-sm btn-outline-secondary">← Lab Reports</a>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show">
+        {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="card mb-4">
+      <div class="card-header fw-bold">Patient</div>
+      <div class="card-body">
+        {% if patient %}
+          <input type="hidden" name="patient_id" value="{{ patient.id }}">
+          <p class="mb-0">
+            <strong>{{ patient.full_name }}</strong>
+            <span class="text-muted ms-2">{{ patient.uhid }}</span>
+            {% if patient.age %} | {{ patient.age }} yrs{% endif %}
+            | {{ patient.gender }}
+          </p>
+        {% else %}
+          <label class="form-label fw-bold">Select Patient</label>
+          <select name="patient_id" class="form-select" required>
+            <option value="">-- Select Patient --</option>
+            {% for p in patients %}
+              <option value="{{ p.id }}">{{ p.uhid }} - {{ p.full_name }}</option>
+            {% endfor %}
+          </select>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header fw-bold">Image Details</div>
+      <div class="card-body">
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Image Type</label>
+          <select name="image_type" class="form-select" required>
+            <option value="">-- Select Type --</option>
+            <option value="XRAY">X-Ray</option>
+            <option value="USG">Ultrasound (USG)</option>
+            <option value="CT">CT Scan</option>
+            <option value="MRI">MRI</option>
+            <option value="ENDOSCOPY">Endoscopy</option>
+            <option value="OT">OT Photo</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Title</label>
+          <input type="text" name="title" class="form-control" placeholder="e.g. Chest X-Ray PA View" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Select Image</label>
+          <input type="file" name="image" class="form-control" accept="image/*,.pdf,.dcm" required>
+          <div class="form-text">
+            Accepted: JPG, PNG, PDF, DICOM (.dcm)
+            <span class="badge bg-info ms-2">DICOM files go to Orthanc PACS</span>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Report / Findings</label>
+          <textarea name="report_text" class="form-control" rows="4" placeholder="Enter radiologist findings here..."></textarea>
+        </div>
+
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-success btn-lg px-5">📤 Upload Image</button>
+  </form>
+
+  {% if recent_uploads %}
+  <div class="card mt-5">
+    <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+      <span>📋 Recent Uploads</span>
+      <a href="http://localhost:8042/ui/app/#/" target="_blank" class="btn btn-sm btn-outline-dark">
+        🏥 Open Orthanc PACS
+      </a>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Date</th>
+            <th>Patient</th>
+            <th>Type</th>
+            <th>Title</th>
+            <th>Preview</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for img in recent_uploads %}
+          <tr>
+            <td class="text-muted small">{{ img.created_at|date:"d-m-Y H:i" }}</td>
+            <td>
+              <strong>{{ img.patient.full_name }}</strong>
+              <br><small class="text-muted">{{ img.patient.uhid }}</small>
+            </td>
+            <td><span class="badge bg-secondary">{{ img.image_type }}</span></td>
+            <td>{{ img.title }}</td>
+            <td>
+              {% if img.is_dicom %}
+                <img src="http://localhost:8042/instances/{{ img.dicom_instance_id }}/preview"
+                     width="80" height="80"
+                     style="object-fit:cover; border-radius:4px; border:1px solid #dee2e6;"
+                     onerror="this.style.display='none'"
+                     alt="DICOM Preview">
+              {% elif img.image %}
+                <img src="{{ img.image.url }}"
+                     width="80" height="80"
+                     style="object-fit:cover; border-radius:4px; border:1px solid #dee2e6;"
+                     alt="Image Preview">
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if img.is_dicom %}
+                <span class="badge bg-primary mb-1">🏥 DICOM</span><br>
+                <a href="http://localhost:8042/instances/{{ img.dicom_instance_id }}/preview"
+                   target="_blank"
+                   class="btn btn-sm btn-primary mt-1">
+                  🔍 View X-Ray
+                </a>
+              {% elif img.image %}
+                <span class="badge bg-success mb-1">🖼️ Image</span><br>
+                <a href="{{ img.image.url }}"
+                   target="_blank"
+                   class="btn btn-sm btn-outline-primary mt-1">
+                  🖼️ View Image
+                </a>
+              {% else %}
+                <span class="text-muted small">-</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>OT Notes — {{ booking.procedure }}</h2>
+    <a href="{% url 'hms:ot_detail' booking.id %}" class="btn btn-secondary">← Back</a>
+  </div>
+
+  <!-- Booking Summary -->
+  <div class="alert alert-info mb-4">
+    <strong>Patient:</strong> {{ booking.patient.full_name }} ({{ booking.uhid }}) &nbsp;|&nbsp;
+    <strong>Surgeon:</strong> {{ booking.surgeon }} &nbsp;|&nbsp;
+    <strong>Date:</strong> {{ booking.ot_date }} &nbsp;|&nbsp;
+    <strong>Room:</strong> {{ booking.ot_room }}
+  </div>
+
+  <div class="card p-4">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+
+        <div class="col-md-4">
+          <label class="form-label">Start Time</label>
+          <input type="time" name="start_time" class="form-control"
+                 value="{{ notes.start_time|time:'H:i' }}" required>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">End Time</label>
+          <input type="time" name="end_time" class="form-control"
+                 value="{{ notes.end_time|time:'H:i' }}" required>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Blood Loss (ml)</label>
+          <input type="text" name="blood_loss" class="form-control"
+                 value="{{ notes.blood_loss }}" placeholder="e.g. 200 ml">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Intraoperative Findings</label>
+          <textarea name="findings" class="form-control" rows="4"
+                    required>{{ notes.findings }}</textarea>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Procedure Done</label>
+          <textarea name="procedure_done" class="form-control" rows="4"
+                    required>{{ notes.procedure_done }}</textarea>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Complications (if any)</label>
+          <textarea name="complications" class="form-control" rows="3">{{ notes.complications }}</textarea>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Post-Op Condition</label>
+          <textarea name="post_op_condition" class="form-control" rows="3"
+                    required>{{ notes.post_op_condition }}</textarea>
+        </div>
+
+      </div>
+      <div class="mt-4">
+        <button type="submit" class="btn btn-success px-4">Save Notes & Mark Completed</button>
+        <a href="{% url 'hms:ot_detail' booking.id %}" class="btn btn-outline-secondary ms-2">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

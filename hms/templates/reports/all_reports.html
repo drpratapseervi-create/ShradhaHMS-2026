@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+{% block title %}All Payment Reports{% endblock %}
+{% block content %}
+
+<style>
+.rpt-wrap { padding: 10px 0; }
+.rpt-title { font-size: 22px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+
+/* FILTER CARD */
+.filter-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 18px;
+}
+.filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+}
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 160px;
+}
+.filter-group label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.filter-group select,
+.filter-group input[type="date"] {
+    padding: 7px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
+    background: white;
+    color: #1e293b;
+}
+.btn-filter {
+    background: linear-gradient(135deg, #007676, #009e9e);
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    height: 34px;
+}
+.btn-reset {
+    background: #e2e8f0;
+    color: #475569;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    height: 34px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* TYPE FILTER PILLS */
+.type-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+.pill {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid transparent;
+    text-decoration: none;
+    transition: 0.2s;
+}
+.pill-all     { background: #1e293b; color: white; }
+.pill-opd     { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+.pill-lab     { background: #ede9fe; color: #6d28d9; border-color: #c4b5fd; }
+.pill-proc    { background: #dcfce7; color: #15803d; border-color: #86efac; }
+.pill-adv     { background: #fef9c3; color: #92400e; border-color: #fde68a; }
+.pill-dis     { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+.pill.active  { box-shadow: 0 0 0 3px rgba(0,118,118,0.3); border-color: #007676 !important; }
+
+/* DEPT PILLS (lab sub-types) */
+.dept-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    background: #f0fdf4;
+    border-radius: 8px;
+    border: 1px solid #bbf7d0;
+}
+.dept-pill {
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    background: white;
+    border: 1px solid #86efac;
+    color: #166534;
+    text-decoration: none;
+    transition: 0.2s;
+}
+.dept-pill:hover, .dept-pill.active {
+    background: #007676;
+    color: white;
+    border-color: #007676;
+}
+
+/* SUMMARY CARDS */
+.summary-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+}
+.sum-card {
+    flex: 1;
+    min-width: 130px;
+    background: white;
+    border-radius: 8px;
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.sum-card .sc-label { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; }
+.sum-card .sc-value { font-size: 18px; font-weight: 700; color: #0f172a; margin-top: 2px; }
+.sum-card .sc-count { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+.sum-card.total-card { background: linear-gradient(135deg, #007676, #009e9e); color: white; border: none; }
+.sum-card.total-card .sc-label,
+.sum-card.total-card .sc-value,
+.sum-card.total-card .sc-count { color: white; }
+
+/* EXPORT BUTTONS */
+.export-row { display: flex; gap: 8px; margin-bottom: 14px; }
+.btn-csv  { background: #16a34a; color: white; padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; text-decoration: none; }
+.btn-xlsx { background: #1d4ed8; color: white; padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; text-decoration: none; }
+.btn-pdf  { background: #dc2626; color: white; padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; text-decoration: none; }
+
+/* TABLE */
+.rpt-table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid #e2e8f0; }
+.rpt-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rpt-table thead tr { background: #1e293b; color: white; }
+.rpt-table th { padding: 10px 12px; text-align: left; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.rpt-table td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; }
+.rpt-table tr:last-child td { border-bottom: none; }
+.rpt-table tr:nth-child(even) td { background: #f8fafc; }
+.rpt-table tr:hover td { background: #e0f2f1; }
+.amt { text-align: right; font-weight: 600; }
+
+/* TYPE BADGES */
+.badge { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.badge-OPD      { background: #dbeafe; color: #1d4ed8; }
+.badge-Lab      { background: #ede9fe; color: #6d28d9; }
+.badge-Procedure{ background: #dcfce7; color: #15803d; }
+.badge-Advance  { background: #fef9c3; color: #92400e; }
+.badge-Discharge{ background: #fee2e2; color: #b91c1c; }
+</style>
+
+<div class="rpt-wrap">
+<div class="rpt-title">📊 All Payment Receipts</div>
+
+<!-- ═══════════════ FILTER FORM ═══════════════ -->
+<form method="GET" action="">
+<div class="filter-card">
+    <div class="filter-row">
+        <div class="filter-group">
+            <label>From Date</label>
+            <input type="date" name="from_date" value="{{ from_date }}">
+        </div>
+        <div class="filter-group">
+            <label>To Date</label>
+            <input type="date" name="to_date" value="{{ to_date }}">
+        </div>
+        <div class="filter-group">
+            <label>Doctor</label>
+            <select name="doctor_filter">
+                <option value="">All Doctors</option>
+                {% for doc in doctors %}
+                <option value="{{ doc.full_name }}" {% if doctor_filter == doc.full_name %}selected{% endif %}>
+                    Dr. {{ doc.full_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <input type="hidden" name="type_filter" id="type_hidden" value="{{ type_filter }}">
+        <input type="hidden" name="dept_filter" id="dept_hidden" value="{{ dept_filter }}">
+        <button type="submit" class="btn-filter">🔍 Filter</button>
+        <a href="{% url 'hms:all_reports' %}" class="btn-reset">✕ Reset</a>
+    </div>
+</div>
+</form>
+
+<!-- ═══════════════ TYPE PILLS ═══════════════ -->
+<div class="type-pills">
+    <a href="#" onclick="setType('')"     class="pill pill-all  {% if not type_filter %}active{% endif %}">All</a>
+    <a href="#" onclick="setType('OPD')"  class="pill pill-opd  {% if type_filter == 'OPD' %}active{% endif %}">🩺 OPD</a>
+    <a href="#" onclick="setType('Lab')"  class="pill pill-lab  {% if type_filter == 'Lab' %}active{% endif %}">🧪 Laboratory</a>
+    <a href="#" onclick="setType('Procedure')" class="pill pill-proc {% if type_filter == 'Procedure' %}active{% endif %}">💉 Procedure</a>
+    <a href="#" onclick="setType('Advance')"   class="pill pill-adv  {% if type_filter == 'Advance' %}active{% endif %}">💰 Advance</a>
+    <a href="#" onclick="setType('Discharge')" class="pill pill-dis  {% if type_filter == 'Discharge' %}active{% endif %}">🏥 Discharge</a>
+</div>
+
+<!-- ═══════════════ LAB DEPT PILLS ═══════════════ -->
+<div class="dept-pills" id="dept-pills-row" style="{% if type_filter != 'Lab' %}display:none{% endif %}">
+    <span style="font-size:11px;font-weight:700;color:#166534;align-self:center;">Lab Dept:</span>
+    <a href="#" onclick="setDept('')"               class="dept-pill {% if not dept_filter %}active{% endif %}">All Lab</a>
+    <a href="#" onclick="setDept('Hematology')"     class="dept-pill {% if dept_filter == 'Hematology' %}active{% endif %}">🩸 Hematology</a>
+    <a href="#" onclick="setDept('Biochemistry')"   class="dept-pill {% if dept_filter == 'Biochemistry' %}active{% endif %}">⚗️ Biochemistry</a>
+    <a href="#" onclick="setDept('Microbiology')"   class="dept-pill {% if dept_filter == 'Microbiology' %}active{% endif %}">🦠 Microbiology</a>
+    <a href="#" onclick="setDept('serology')"       class="dept-pill {% if dept_filter == 'serology' %}active{% endif %}">🧫 Serology</a>
+    <a href="#" onclick="setDept('Histopathology')" class="dept-pill {% if dept_filter == 'Histopathology' %}active{% endif %}">🔬 Pathology</a>
+    <a href="#" onclick="setDept('Radiology')"      class="dept-pill {% if dept_filter == 'Radiology' %}active{% endif %}">🩻 Radiology</a>
+    <a href="#" onclick="setDept('xray')"           class="dept-pill {% if dept_filter == 'xray' %}active{% endif %}">📷 X-Ray</a>
+    <a href="#" onclick="setDept('usg')"            class="dept-pill {% if dept_filter == 'usg' %}active{% endif %}">🔊 USG</a>
+    <a href="#" onclick="setDept('ECG')"            class="dept-pill {% if dept_filter == 'ECG' %}active{% endif %}">💓 ECG</a>
+    <a href="#" onclick="setDept('Endoscopy')"      class="dept-pill {% if dept_filter == 'Endoscopy' %}active{% endif %}">🔭 Endoscopy</a>
+</div>
+
+<!-- ═══════════════ SUMMARY CARDS ═══════════════ -->
+<div class="summary-row">
+    <div class="sum-card total-card">
+        <div class="sc-label">💰 Total Collection</div>
+        <div class="sc-value">₹{{ total|floatformat:2 }}</div>
+        <div class="sc-count">{{ data|length }} receipts</div>
+    </div>
+</div>
+
+<!-- ═══════════════ EXPORT BUTTONS ═══════════════ -->
+<div class="export-row">
+    <a href="{% url 'hms:export_all_csv' %}?from_date={{ from_date }}&to_date={{ to_date }}&type_filter={{ type_filter }}&dept_filter={{ dept_filter }}&doctor_filter={{ doctor_filter }}" class="btn-csv">↑ CSV</a>
+    <a href="{% url 'hms:export_all_excel' %}?from_date={{ from_date }}&to_date={{ to_date }}&type_filter={{ type_filter }}&dept_filter={{ dept_filter }}&doctor_filter={{ doctor_filter }}" class="btn-xlsx">↑ Excel</a>
+    <a href="{% url 'hms:export_all_pdf' %}?from_date={{ from_date }}&to_date={{ to_date }}&type_filter={{ type_filter }}&dept_filter={{ dept_filter }}&doctor_filter={{ doctor_filter }}" class="btn-pdf">↑ PDF</a>
+</div>
+
+<!-- ═══════════════ TABLE ═══════════════ -->
+<div class="rpt-table-wrap">
+<table class="rpt-table">
+    <thead>
+        <tr>
+            <th>Receipt No</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Patient</th>
+            <th>Type</th>
+            <th>Doctor</th>
+            <th>Department</th>
+            <th class="amt">Amount (₹)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in data %}
+        <tr>
+            <td><strong>{{ row.receipt_no }}</strong></td>
+            <td>{{ row.date|date:"d-m-Y" }}</td>
+            <td>{{ row.time }}</td>
+            <td>{{ row.patient }}</td>
+            <td><span class="badge badge-{{ row.type }}">{{ row.type }}</span></td>
+            <td>{% if row.doctor %}{{ row.doctor }}{% else %}-{% endif %}</td>
+            <td>{{ row.department }}</td>
+            <td class="amt">₹{{ row.amount|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="8" style="text-align:center;padding:30px;color:#94a3b8;">No records found for selected filters.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    {% if data %}
+    <tfoot>
+        <tr style="background:#1e293b;color:white;">
+            <td colspan="7" style="padding:10px 12px;font-weight:700;font-size:13px;">TOTAL ({{ data|length }} records)</td>
+            <td class="amt" style="padding:10px 12px;font-weight:700;font-size:14px;">₹{{ total|floatformat:2 }}</td>
+        </tr>
+    </tfoot>
+    {% endif %}
+</table>
+</div>
+
+</div>
+
+<script>
+function setType(val) {
+    document.getElementById('type_hidden').value = val;
+    document.getElementById('dept_hidden').value = '';
+    // show/hide lab dept pills
+    document.getElementById('dept-pills-row').style.display = (val === 'Lab') ? 'flex' : 'none';
+    document.querySelector('form').submit();
+}
+
+function setDept(val) {
+    document.getElementById('dept_hidden').value = val;
+    document.getElementById('type_hidden').value = 'Lab';
+    document.querySelector('form').submit();
+}
+</script>
+
+{% endblock %}

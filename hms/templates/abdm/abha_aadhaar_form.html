@@ -1,0 +1,73 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Create ABHA | Shradha HMS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f0f2f5; }
+header { background: #007676; color: white; padding: 16px 30px; }
+.header-flex { display: flex; align-items: center; gap: 15px; }
+.header-flex img { height: 46px; background: white; padding: 4px; border-radius: 6px; }
+.container { max-width: 600px; margin: 40px auto; background: white; padding: 35px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+h2 { color: #007676; margin-bottom: 5px; }
+.subtitle { color: #666; margin-bottom: 25px; font-size: 14px; }
+.patient-info { background: #f8f9fa; border-left: 4px solid #007676; padding: 12px 16px; border-radius: 6px; margin-bottom: 25px; }
+label { font-weight: 600; display: block; margin-bottom: 6px; }
+input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 15px; }
+.btn { padding: 11px 22px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn-save { background: #007676; color: white; }
+.btn-back { background: #6c757d; color: white; margin-left: 10px; }
+.form-actions { margin-top: 25px; }
+.messages { margin-bottom: 20px; }
+.msg-error { background: #fff3f3; border: 1px solid #dc3545; color: #dc3545; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px; }
+.msg-success { background: #f0fff4; border: 1px solid #28a745; color: #155724; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px; }
+footer { text-align: center; margin-top: 40px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+<div class="header-flex">
+    <img src="{% static 'hms/img/hospital_logo.jpg' %}">
+    <h2>Shradha Hospital Management System</h2>
+</div>
+</header>
+
+<div class="container">
+    <h2>Create ABHA (Health ID)</h2>
+    <p class="subtitle">Step 1 of 2 — Enter Aadhaar number to receive OTP</p>
+
+    <div class="patient-info">
+        <strong>Patient:</strong> {{ patient.full_name }}<br>
+        <strong>UHID:</strong> {{ patient.uhid }}<br>
+        <strong>Mobile:</strong> {{ patient.mobile_no }}
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <div class="{% if message.tags == 'error' %}msg-error{% else %}msg-success{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" autocomplete="off">
+        {% csrf_token %}
+        <div>
+            <label>Aadhaar Number *</label>
+            <input type="text" name="aadhaar_number" maxlength="12" placeholder="Enter 12-digit Aadhaar number" required>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-save">Send OTP</button>
+            <a href="{% url 'hms:patient_update' pk=patient.id %}" class="btn btn-back">Back</a>
+        </div>
+    </form>
+</div>
+
+<footer>© 2026 Shradha Hospital HMS</footer>
+</body>
+</html>

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>OT Dashboard — Today's Schedule</h2>
+    <a href="{% url 'hms:ot_create' %}" class="btn btn-primary">+ New OT Booking</a>
+  </div>
+
+  {% if ot_list %}
+  <table class="table table-bordered table-striped">
+    <thead class="table-dark">
+      <tr>
+        <th>UHID</th>
+        <th>Patient</th>
+        <th>Surgeon</th>
+        <th>Procedure</th>
+        <th>Time</th>
+        <th>Room</th>
+        <th>Case</th>
+        <th>Anesthesia</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in ot_list %}
+      <tr>
+        <td>{{ b.uhid }}</td>
+        <td>{{ b.patient.full_name }}</td>
+        <td>{{ b.surgeon }}</td>
+        <td>{{ b.procedure }}</td>
+        <td>{{ b.ot_time|time:"h:i A" }}</td>
+        <td>{{ b.ot_room }}</td>
+        <td>{{ b.case_type }}</td>
+        <td>{{ b.anesthesia_type }}</td>
+        <td>
+          {% if b.status == "Scheduled" %}
+            <span class="badge bg-primary">{{ b.status }}</span>
+          {% elif b.status == "Completed" %}
+            <span class="badge bg-success">{{ b.status }}</span>
+          {% else %}
+            <span class="badge bg-danger">{{ b.status }}</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'hms:ot_detail' b.id %}" class="btn btn-sm btn-info">View</a>
+          <a href="{% url 'hms:ot_notes' b.id %}" class="btn btn-sm btn-success ms-1">Notes</a>
+          <a href="{% url 'hms:ot_print' b.id %}" class="btn btn-sm btn-outline-dark ms-1" target="_blank">Print</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="alert alert-info">No OT bookings scheduled for today.</div>
+  {% endif %}
+</div>
+
+{% endblock %}

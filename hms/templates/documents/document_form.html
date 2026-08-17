@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Document — Shradha HMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold mb-0" style="color:#1a6b5a;">
+          <i class="fa-solid fa-file-circle-plus me-2"></i>{{ action }} Document
+        </h4>
+        <a href="{% url 'hms:document_list' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="fa-solid fa-arrow-left me-1"></i>Back to List
+        </a>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-5">
+                <label class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
+                <select name="category" id="id_category" class="form-select" required>
+                  <option value="">— Select Category —</option>
+                  <option value="hospital"  {% if doc.category == 'hospital'  or category_pre == 'hospital'  %}selected{% endif %}>🏥 Hospital</option>
+                  <option value="doctor"    {% if doc.category == 'doctor'    or category_pre == 'doctor'    %}selected{% endif %}>👨‍⚕️ Doctor</option>
+                  <option value="staff"     {% if doc.category == 'staff'     or category_pre == 'staff'     %}selected{% endif %}>👩‍💼 Staff</option>
+                  <option value="equipment" {% if doc.category == 'equipment' or category_pre == 'equipment' %}selected{% endif %}>🔧 Equipment AMC / Certificate</option>
+                </select>
+              </div>
+              <div class="col-md-7">
+                <label class="form-label fw-semibold">Document Type <span class="text-danger">*</span></label>
+                <select name="doc_type" id="id_doc_type" class="form-select" required>
+                  <option value="">— Select Category First —</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Document Title <span class="text-danger">*</span></label>
+              <input type="text" name="title" value="{{ doc.title|default:'' }}"
+                     class="form-control" placeholder="e.g. Hospital Registration Certificate 2024" required>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6" id="person_name_col" style="display:none;">
+                <label class="form-label fw-semibold">Doctor / Staff Name</label>
+                <input type="text" name="person_name" value="{{ doc.person_name|default:'' }}"
+                       class="form-control" placeholder="Full name">
+              </div>
+              <div class="col-md-6" id="equipment_name_col" style="display:none;">
+                <label class="form-label fw-semibold">Equipment Name / Serial No.</label>
+                <input type="text" name="equipment_name" value="{{ doc.equipment_name|default:'' }}"
+                       class="form-control" placeholder="e.g. X-Ray Machine SN-001">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Issuing Authority</label>
+              <input type="text" name="issued_by" value="{{ doc.issued_by|default:'' }}"
+                     class="form-control" placeholder="e.g. Chief Medical Officer">
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Issue Date</label>
+                <input type="date" name="issue_date"
+                       value="{{ doc.issue_date|date:'Y-m-d'|default:'' }}" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Expiry Date</label>
+                <input type="date" name="expiry_date"
+                       value="{{ doc.expiry_date|date:'Y-m-d'|default:'' }}" class="form-control">
+                <div class="form-text">Leave blank if no expiry</div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Upload File (PDF / Image)</label>
+              {% if doc.document_file %}
+              <div class="mb-2">
+                <a href="{{ doc.document_file.url }}" target="_blank" class="btn btn-sm btn-outline-success">
+                  <i class="fa-solid fa-file me-1"></i>View Current File
+                </a>
+                <span class="text-muted small ms-2">Upload new file to replace</span>
+              </div>
+              {% endif %}
+              <input type="file" name="document_file" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.webp">
+              <div class="form-text">Accepted: PDF, JPG, PNG (max 10 MB)</div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Notes</label>
+              <textarea name="notes" class="form-control" rows="2"
+                        placeholder="Any additional notes...">{{ doc.notes|default:'' }}</textarea>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-success px-4">
+                <i class="fa-solid fa-check-circle me-1"></i>Save Document
+              </button>
+              <a href="{% url 'hms:document_list' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DOC_TYPES = {
+  hospital: [
+    ["hospital_certification", "Hospital Certification"],
+    ["pollution_noc",          "Pollution NOC"],
+    ["bmw_udyog",              "BMW / Udyog Certificate"],
+    ["clinical_establishment", "Clinical Establishment Certificate"],
+    ["fire_noc",               "Fire NOC"],
+    ["hospital_pan",           "Hospital PAN Card"],
+    ["bank_details",           "Bank Details Document"],
+    ["other_hospital",         "Other"]
+  ],
+  doctor: [
+    ["doctor_aadhaar",  "Aadhaar Card"],
+    ["doctor_pan",      "PAN Card"],
+    ["medical_council", "Medical Council Certificate"],
+    ["abdm_doctor",     "Professional Health ID (ABDM)"],
+    ["other_doctor",    "Other"]
+  ],
+  staff: [
+    ["staff_aadhaar",       "Aadhaar Card"],
+    ["staff_pan",           "PAN Card"],
+    ["degree_certificate",  "Degree Certificate"],
+    ["nursing_certificate", "Nursing Certificate"],
+    ["abdm_staff",          "Professional Health ID (ABDM)"],
+    ["other_staff",         "Other"]
+  ],
+  equipment: [
+    ["xray",                "X-Ray"],
+    ["carm",                "C-ARM"],
+    ["lab_machine",         "Lab Machine"],
+    ["anaesthetic_machine", "Anaesthetic Machine"],
+    ["ecg",                 "ECG Machine"],
+    ["defibrillator",       "Defibrillator"],
+    ["ot_light",            "OT Light"],
+    ["autoclave",           "Autoclave"],
+    ["other_equipment",     "Other Equipment"]
+  ]
+};
+
+const catSelect   = document.getElementById('id_category');
+const typeSelect  = document.getElementById('id_doc_type');
+const personCol   = document.getElementById('person_name_col');
+const equipCol    = document.getElementById('equipment_name_col');
+const existingType = "{{ doc.doc_type|default:'' }}";
+
+function updateDocTypes(cat) {
+  const types = DOC_TYPES[cat] || [];
+  typeSelect.innerHTML = '<option value="">— Select Type —</option>';
+  types.forEach(([val, label]) => {
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = label;
+    if (existingType && val === existingType) opt.selected = true;
+    typeSelect.appendChild(opt);
+  });
+  personCol.style.display = (cat === 'doctor' || cat === 'staff') ? '' : 'none';
+  equipCol.style.display  = (cat === 'equipment') ? '' : 'none';
+}
+
+catSelect.addEventListener('change', function() { updateDocTypes(this.value); });
+if (catSelect.value) updateDocTypes(catSelect.value);
+</script>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Documents — Shradha HMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0 fw-bold" style="color:#1a6b5a;">
+      <i class="fa-solid fa-folder-open me-2"></i>All Documents
+    </h4>
+    <div class="d-flex gap-2">
+      <a href="{% url 'hms:document_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fa-solid fa-gauge me-1"></i>Dashboard
+      </a>
+      <a href="{% url 'hms:document_add' %}" class="btn btn-success btn-sm">
+        <i class="fa-solid fa-plus-circle me-1"></i>Add Document
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-12 col-md-3">
+          <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm"
+                 placeholder="Search title, person, equipment...">
+        </div>
+        <div class="col-6 col-md-2">
+          <select name="category" class="form-select form-select-sm">
+            <option value="">All Categories</option>
+            <option value="hospital"  {% if category == 'hospital'  %}selected{% endif %}>Hospital</option>
+            <option value="doctor"    {% if category == 'doctor'    %}selected{% endif %}>Doctor</option>
+            <option value="staff"     {% if category == 'staff'     %}selected{% endif %}>Staff</option>
+            <option value="equipment" {% if category == 'equipment' %}selected{% endif %}>Equipment AMC</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <select name="status" class="form-select form-select-sm">
+            <option value="">All Status</option>
+            <option value="expired"       {% if status == 'expired'       %}selected{% endif %}>Expired</option>
+            <option value="expiring_soon" {% if status == 'expiring_soon' %}selected{% endif %}>Expiring Soon</option>
+            <option value="valid"         {% if status == 'valid'         %}selected{% endif %}>Valid</option>
+            <option value="no_expiry"     {% if status == 'no_expiry'     %}selected{% endif %}>No Expiry</option>
+          </select>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+          <a href="{% url 'hms:document_list' %}" class="btn btn-outline-secondary btn-sm ms-1">Clear</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Category Pills -->
+  <div class="mb-3">
+    <a href="{% url 'hms:document_list' %}"
+       class="btn btn-sm me-1 {% if not category %}btn-dark{% else %}btn-outline-secondary{% endif %}">All</a>
+    <a href="{% url 'hms:document_list' %}?category=hospital"
+       class="btn btn-sm me-1 {% if category == 'hospital' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      <i class="fa-solid fa-hospital me-1"></i>Hospital</a>
+    <a href="{% url 'hms:document_list' %}?category=doctor"
+       class="btn btn-sm me-1 {% if category == 'doctor' %}text-white{% else %}btn-outline-secondary{% endif %}"
+       {% if category == 'doctor' %}style="background:#7c3aed;"{% endif %}>
+      <i class="fa-solid fa-user-doctor me-1"></i>Doctor</a>
+    <a href="{% url 'hms:document_list' %}?category=staff"
+       class="btn btn-sm me-1 {% if category == 'staff' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+      <i class="fa-solid fa-people-group me-1"></i>Staff</a>
+    <a href="{% url 'hms:document_list' %}?category=equipment"
+       class="btn btn-sm me-1 {% if category == 'equipment' %}btn-info text-white{% else %}btn-outline-info{% endif %}">
+      <i class="fa-solid fa-screwdriver-wrench me-1"></i>Equipment AMC</a>
+  </div>
+
+  <!-- Document Table -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      {% if docs %}
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th>#</th>
+              <th>Category</th>
+              <th>Document Type</th>
+              <th>Title / Name</th>
+              <th>Issued By</th>
+              <th>Issue Date</th>
+              <th>Expiry Date</th>
+              <th>Status</th>
+              <th>File</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in docs %}
+            <tr>
+              <td class="text-muted small">{{ forloop.counter }}</td>
+              <td>
+                {% if d.category == 'hospital' %}
+                  <span class="badge bg-primary">Hospital</span>
+                {% elif d.category == 'doctor' %}
+                  <span class="badge" style="background:#7c3aed;">Doctor</span>
+                {% elif d.category == 'staff' %}
+                  <span class="badge bg-warning text-dark">Staff</span>
+                {% else %}
+                  <span class="badge bg-info text-dark">Equipment</span>
+                {% endif %}
+              </td>
+              <td class="small">{{ d.get_doc_type_display }}</td>
+              <td>
+                <div class="fw-semibold">{{ d.title }}</div>
+                {% if d.person_name %}
+                  <div class="text-muted small"><i class="fa-solid fa-user me-1"></i>{{ d.person_name }}</div>
+                {% endif %}
+                {% if d.equipment_name %}
+                  <div class="text-muted small"><i class="fa-solid fa-screwdriver-wrench me-1"></i>{{ d.equipment_name }}</div>
+                {% endif %}
+              </td>
+              <td class="small text-muted">{{ d.issued_by|default:"—" }}</td>
+              <td class="small">{{ d.issue_date|date:"d M Y"|default:"—" }}</td>
+              <td class="small">{{ d.expiry_date|date:"d M Y"|default:"—" }}</td>
+              <td>
+                {% if d.expiry_status == 'expired' %}
+                  <span class="badge bg-danger">Expired</span>
+                {% elif d.expiry_status == 'expiring_soon' %}
+                  <span class="badge bg-warning text-dark">{{ d.days_to_expiry }}d left</span>
+                {% elif d.expiry_status == 'valid' %}
+                  <span class="badge bg-success">Valid</span>
+                {% else %}
+                  <span class="badge bg-secondary">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if d.document_file %}
+                  <a href="{{ d.document_file.url }}" target="_blank"
+                     class="btn btn-outline-success btn-sm py-0" title="Download">
+                    <i class="fa-solid fa-download"></i>
+                  </a>
+                {% else %}
+                  <span class="text-muted small">No file</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'hms:document_edit' d.id %}"
+                   class="btn btn-sm btn-outline-primary py-0 me-1">
+                  <i class="fa-solid fa-pen"></i>
+                </a>
+                <form method="post" action="{% url 'hms:document_delete' d.id %}"
+                      class="d-inline"
+                      onsubmit="return confirm('Delete this document?')">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-danger py-0">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center text-muted py-5">
+        <i class="fa-solid fa-folder-open fs-1 text-secondary"></i>
+        <div class="mt-3 fs-5">No documents found.</div>
+        <a href="{% url 'hms:document_add' %}" class="btn btn-success mt-3">
+          <i class="fa-solid fa-plus-circle me-1"></i>Add First Document
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

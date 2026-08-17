@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OT Booking Slip</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 13px; margin: 20px; color: #000; }
+    .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 16px; }
+    .header h2 { margin: 0; font-size: 20px; }
+    .header p { margin: 2px 0; font-size: 12px; }
+    .title { text-align: center; font-size: 16px; font-weight: bold;
+             background: #007bff; color: white; padding: 6px; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    td, th { border: 1px solid #999; padding: 7px 10px; }
+    th { background: #f0f0f0; width: 35%; font-weight: bold; }
+    .section-title { background: #343a40; color: white; padding: 5px 10px;
+                     font-weight: bold; margin: 16px 0 6px; font-size: 13px; }
+    .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
+    .sig-box { text-align: center; width: 30%; }
+    .sig-line { border-top: 1px solid #000; margin-top: 40px; padding-top: 4px; font-size: 11px; }
+    .badge-scheduled { background:#0d6efd; color:white; padding:2px 10px; border-radius:4px; }
+    .badge-completed  { background:#198754; color:white; padding:2px 10px; border-radius:4px; }
+    .badge-cancelled  { background:#dc3545; color:white; padding:2px 10px; border-radius:4px; }
+    @media print {
+      .no-print { display: none !important; }
+      body { margin: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Print Button -->
+  <div class="no-print" style="text-align:right; margin-bottom:12px;">
+    <button onclick="window.print()" style="padding:8px 20px; background:#007bff; color:white;
+            border:none; border-radius:4px; cursor:pointer; font-size:14px;">🖨 Print</button>
+    <a href="{% url 'hms:ot_detail' booking.id %}"
+       style="margin-left:10px; padding:8px 20px; background:#6c757d; color:white;
+              border-radius:4px; text-decoration:none; font-size:14px;">← Back</a>
+  </div>
+
+  <!-- Hospital Header -->
+  <div class="header">
+    <h2>Shradha Hospital</h2>
+    <p>Pani Ki Do Tanki, Surajpole, Pali (Raj) | 📞 9414122542</p>
+  </div>
+
+  <div class="title">OT BOOKING SLIP</div>
+
+  <!-- Booking Info -->
+  <div class="section-title">Patient & Booking Details</div>
+  <table>
+    <tr>
+      <th>UHID</th>
+      <td>{{ booking.uhid }}</td>
+      <th>Patient Name</th>
+      <td>{{ booking.patient.full_name }}</td>
+    </tr>
+    <tr>
+      <th>Date</th>
+      <td>{{ booking.ot_date|date:"d-m-Y" }}</td>
+      <th>Time</th>
+      <td>{{ booking.ot_time|time:"h:i A" }}</td>
+    </tr>
+    <tr>
+      <th>OT Room</th>
+      <td>{{ booking.ot_room }}</td>
+      <th>Case Type</th>
+      <td>{{ booking.case_type }}</td>
+    </tr>
+    <tr>
+      <th>Procedure</th>
+      <td colspan="3">{{ booking.procedure }}</td>
+    </tr>
+    <tr>
+      <th>Status</th>
+      <td colspan="3">
+        {% if booking.status == "Scheduled" %}
+          <span class="badge-scheduled">{{ booking.status }}</span>
+        {% elif booking.status == "Completed" %}
+          <span class="badge-completed">{{ booking.status }}</span>
+        {% else %}
+          <span class="badge-cancelled">{{ booking.status }}</span>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+
+  <!-- OT Team -->
+  <div class="section-title">OT Team</div>
+  <table>
+    <tr>
+      <th>Surgeon</th>
+      <td>{{ booking.surgeon }}</td>
+    </tr>
+    <tr>
+      <th>Assistant</th>
+      <td>{{ booking.assistant|default:"—" }}</td>
+    </tr>
+    <tr>
+      <th>Anesthetist</th>
+      <td>{{ booking.anesthetist }}</td>
+    </tr>
+    <tr>
+      <th>Anesthesia Type</th>
+      <td>{{ booking.anesthesia_type }}</td>
+    </tr>
+  </table>
+
+  <!-- OT Notes (if available) -->
+  {% if notes %}
+  <div class="section-title">Intraoperative Notes</div>
+  <table>
+    <tr>
+      <th>Start Time</th>
+      <td>{{ notes.start_time|time:"h:i A" }}</td>
+      <th>End Time</th>
+      <td>{{ notes.end_time|time:"h:i A" }}</td>
+    </tr>
+    <tr>
+      <th>Blood Loss</th>
+      <td colspan="3">{{ notes.blood_loss|default:"—" }}</td>
+    </tr>
+    <tr>
+      <th>Findings</th>
+      <td colspan="3">{{ notes.findings }}</td>
+    </tr>
+    <tr>
+      <th>Procedure Done</th>
+      <td colspan="3">{{ notes.procedure_done }}</td>
+    </tr>
+    <tr>
+      <th>Complications</th>
+      <td colspan="3">{{ notes.complications|default:"None" }}</td>
+    </tr>
+    <tr>
+      <th>Post-Op Condition</th>
+      <td colspan="3">{{ notes.post_op_condition }}</td>
+    </tr>
+  </table>
+  {% endif %}
+
+  <!-- Signatures -->
+  <div class="signatures">
+    <div class="sig-box">
+      <div class="sig-line">Surgeon<br>{{ booking.surgeon }}</div>
+    </div>
+    <div class="sig-box">
+      <div class="sig-line">Anesthetist<br>{{ booking.anesthetist }}</div>
+    </div>
+    <div class="sig-box">
+      <div class="sig-line">OT In-Charge</div>
+    </div>
+  </div>
+
+  <p style="text-align:center; margin-top:30px; font-size:11px; color:#666;">
+    Printed on {% now "d-m-Y H:i" %} &nbsp;|&nbsp; Shradha Hospital Management System
+  </p>
+
+</body>
+</html>

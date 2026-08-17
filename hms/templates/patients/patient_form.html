@@ -1,0 +1,433 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Patient Registration | Shradha HMS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ font-family:'Segoe UI',sans-serif; background:#0d0d0d; color:#e2e8f0; }
+
+header{
+    background:linear-gradient(135deg,#005555,#007676);
+    color:white; padding:14px 30px;
+    display:flex; align-items:center; gap:14px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.5);
+}
+header img{ height:46px; background:white; padding:4px; border-radius:6px; }
+header h1{ font-size:20px; font-weight:700; margin:0; }
+header p{ font-size:12px; opacity:0.82; margin-top:2px; }
+
+.container{ max-width:900px; margin:28px auto 30px; padding:0 20px; }
+.card{ background:#111111; border-radius:14px; box-shadow:0 4px 24px rgba(0,0,0,0.7); overflow:hidden; border:1px solid #2a2a2a; }
+.card-header{
+    background:linear-gradient(135deg,#005555,#007676);
+    padding:16px 26px; display:flex; align-items:center; justify-content:space-between;
+}
+.card-header h2{ margin:0; color:white; font-size:18px; font-weight:700; }
+.card-header .badge{ background:rgba(255,255,255,0.2); color:white; padding:4px 14px; border-radius:20px; font-size:12px; font-weight:600; }
+.card-body{ padding:24px 26px; }
+
+.section-title{ margin:22px 0 12px; padding-bottom:7px; border-bottom:2px solid #00b8a9; color:#00b8a9; font-size:14px; font-weight:700; }
+.section-title:first-child{ margin-top:0; }
+
+.form-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.form-grid.g2{ grid-template-columns:repeat(2,1fr); }
+.full{ grid-column:1/-1; }
+.span2{ grid-column:span 2; }
+
+label{ font-weight:600; font-size:13px; color:#8892a4; margin-bottom:5px; display:block; }
+input, select, textarea{
+    width:100%; height:42px; padding:10px 12px;
+    border-radius:7px; border:1px solid #2a2a2a;
+    font-size:13px; font-family:'Segoe UI',sans-serif; color:#e2e8f0;
+    background:#1a1a1a !important;
+    transition:border-color .2s, box-shadow .2s;
+}
+input:focus, select:focus, textarea:focus{
+    background:#1a1a1a !important;
+    border-color:#00b8a9 !important;
+    outline:none;
+    box-shadow:0 0 0 2px rgba(0,184,169,.2) !important;
+    color:#e2e8f0 !important;
+}
+textarea{ height:42px; min-height:42px; resize:vertical; }
+input::placeholder, textarea::placeholder { color:#444 !important; }
+option { background:#1a1a1a; color:#e2e8f0; }
+
+/* Browser autofill dark override */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0px 1000px #1a1a1a inset !important;
+    -webkit-text-fill-color: #e2e8f0 !important;
+    caret-color: #e2e8f0 !important;
+    border-color: #2a2a2a !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+.dob-age-row{ display:flex; gap:8px; align-items:flex-start; }
+.dob-inline{
+    flex:1; display:flex; align-items:center;
+    border:1px solid #2a2a2a; border-radius:7px;
+    height:42px; padding:0 12px; background:#1a1a1a; cursor:text;
+    transition:border-color .2s,box-shadow .2s;
+}
+.dob-inline:focus-within{ border-color:#00b8a9; box-shadow:0 0 0 2px rgba(0,184,169,.2); }
+.dob-seg{
+    width:30px; text-align:center; border:none !important; outline:none;
+    background:transparent !important; font-size:15px; font-weight:600; color:#e2e8f0;
+    font-family:'Segoe UI',sans-serif; caret-color:transparent; padding:0; height:100%;
+    box-shadow:none !important;
+}
+.dob-seg::placeholder{ color:#444; font-weight:400; font-size:14px; }
+.dob-seg:focus{ background:#1e3a3a !important; border-radius:4px; color:#00b8a9; }
+.dob-seg-year{ width:46px; }
+.dob-sep{ color:#444; font-size:16px; padding:0 1px; user-select:none; }
+.dob-icon{ color:#00b8a9; font-size:15px; margin-left:6px; user-select:none; }
+
+.age-box{ position:relative; flex-shrink:0; height:42px; min-width:82px; }
+#ageDisplay{
+    background:#1e3a3a; border:1px solid #00b8a9; color:#00b8a9;
+    border-radius:7px; padding:0 10px; font-weight:700; font-size:13px;
+    white-space:nowrap; text-align:center; cursor:pointer;
+    height:42px; display:flex; align-items:center; justify-content:center;
+    gap:4px; user-select:none; transition:background .15s; width:100%;
+}
+#ageDisplay:hover{ background:#155555; }
+#ageDisplay .age-edit-hint{ font-size:10px; font-weight:400; opacity:.7; }
+#ageInputWrap{ display:none; position:relative; height:42px; }
+#ageInput{
+    height:42px; width:82px; text-align:center;
+    border:2px solid #00b8a9 !important; border-radius:7px;
+    font-size:15px; font-weight:700; color:#00b8a9;
+    background:#1e3a3a !important; padding:0 8px;
+}
+#ageInput:focus{ outline:none; box-shadow:0 0 0 2px rgba(0,184,169,.25) !important; }
+.age-suffix{ position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:11px; color:#00b8a9; font-weight:600; pointer-events:none; }
+.dob-hint{ margin-top:5px; font-size:11px; color:#555; }
+
+.more-toggle{
+    display:flex; align-items:center; justify-content:center;
+    gap:10px; width:100%; margin-top:22px;
+    padding:12px 20px; border-radius:9px;
+    border:2px dashed #2a4a4a; background:#0f1e1e;
+    color:#00b8a9; font-size:14px; font-weight:700;
+    cursor:pointer; transition:all .2s; user-select:none;
+}
+.more-toggle:hover{ background:#1a2e2e; border-color:#00b8a9; }
+.more-toggle .arr{ font-size:12px; transition:transform .3s; }
+.more-toggle.open .arr{ transform:rotate(180deg); }
+.more-toggle .badge-count{ background:#00b8a9; color:#000; font-size:11px; padding:2px 8px; border-radius:20px; font-weight:700; }
+
+.more-sections{ overflow:hidden; max-height:0; transition:max-height .5s ease; }
+.more-sections.open{ max-height:3000px; }
+
+.abha-box{ background:#0f1e1e; border:1px solid #1a3a3a; border-radius:9px; padding:14px 16px; margin-top:4px; }
+
+.ch-grid{ display:flex; flex-wrap:wrap; gap:7px; margin-top:7px; }
+.ch-pill{ background:#1a1a1a; border:1px solid #2a2a2a; border-radius:20px; padding:6px 14px; cursor:pointer; font-size:12px; font-weight:600; color:#8892a4; user-select:none; transition:.15s; }
+.ch-pill:hover{ background:#1e3a3a; border-color:#00b8a9; color:#00b8a9; }
+.ch-pill.active{ background:#00b8a9; border-color:#00b8a9; color:#000; font-weight:800; }
+
+.consent-row{ display:flex; align-items:center; gap:9px; margin-top:12px; }
+.consent-row input[type=checkbox]{ width:16px; height:16px; accent-color:#00b8a9; margin:0; cursor:pointer; }
+.consent-row label{ margin:0; font-weight:500; font-size:13px; color:#8892a4; cursor:pointer; }
+
+.btn{ padding:11px 22px; border-radius:8px; font-weight:700; border:none; cursor:pointer; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:.2s; }
+.btn-green{ background:#166534; color:#4ade80; border:1px solid #166534; } .btn-green:hover{ background:#14532d; color:#86efac; }
+.btn-teal{ background:#1e3a3a; color:#00b8a9; border:1px solid #00b8a9; } .btn-teal:hover{ background:#155555; }
+.btn-gray{ background:#1e1e1e; color:#8892a4; border:1px solid #2a2a2a; } .btn-gray:hover{ background:#2a2a2a; color:#e2e8f0; }
+.btn-disabled{ background:#1a1a1a; color:#444; border:1px solid #2a2a2a; cursor:not-allowed; }
+.form-actions{ margin-top:22px; display:flex; gap:10px; flex-wrap:wrap; }
+
+.error-banner{ background:#2a0a0a; border:1px solid #5a2d2d; border-radius:8px; margin-bottom:18px; overflow:hidden; }
+.error-banner-header{ display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; user-select:none; }
+.error-banner-header .err-icon{ font-size:16px; }
+.error-banner-header .err-msg{ flex:1; font-weight:700; font-size:13px; color:#fca5a5; }
+.error-banner-header .err-toggle{ font-size:12px; color:#fca5a5; transition:transform .2s; }
+.error-banner-header.open .err-toggle{ transform:rotate(180deg); }
+.error-fields{ padding:0 14px 10px; }
+.error-fields ul{ list-style:none; padding:0; margin:0; }
+.error-fields ul li{ font-size:12px; color:#fca5a5; padding:3px 0; display:flex; align-items:center; gap:6px; }
+.error-fields ul li::before{ content:'•'; font-size:16px; line-height:1; }
+.field-error{ color:#f87171; font-size:12px; margin-top:3px; }
+
+footer{ text-align:center; padding:10px 0 20px; font-size:13px; color:#444; }
+</style>
+</head>
+<body>
+
+<header>
+    <img src="{% static 'hms/img/hospital_logo.jpg' %}" alt="">
+    <div>
+        <h1>Shradha Hospital Management System</h1>
+        <p>Pani Ki Do Tanki, Surajpole, Pali (Raj) | 9414122542</p>
+    </div>
+</header>
+
+<div class="container">
+<div class="card">
+<div class="card-header">
+    <h2>🧑 Patient Registration</h2>
+    <span class="badge">New Patient</span>
+</div>
+<div class="card-body">
+
+<form method="post" autocomplete="off">
+{% csrf_token %}
+
+{% if form.errors %}
+<div class="error-banner">
+    <div class="error-banner-header" id="errHeader" onclick="toggleErr()">
+        <span class="err-icon">⚠️</span>
+        <span class="err-msg">Please fix the errors below before saving.</span>
+        <span class="err-toggle">▼</span>
+    </div>
+    <div class="error-fields" id="errFields" style="display:none;">
+        <ul>
+            {% for field in form %}
+                {% if field.errors %}
+                    <li><strong>{{ field.label }}</strong>: {{ field.errors|join:", " }}</li>
+                {% endif %}
+            {% endfor %}
+            {% if form.non_field_errors %}
+                <li>{{ form.non_field_errors|join:", " }}</li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+<div class="section-title">Basic Information</div>
+<div class="form-grid">
+    <div class="full">
+        <label>Full Name *</label>
+        {{ form.full_name }}
+        {% if form.full_name.errors %}<div class="field-error">{{ form.full_name.errors|join:", " }}</div>{% endif %}
+    </div>
+    <div class="span2">
+        <label>Date of Birth <span style="font-weight:400;color:#555;font-size:12px;">— or type Age directly →</span></label>
+        <div class="dob-age-row">
+            <div class="dob-inline" id="dobInline">
+                <input class="dob-seg" id="dobDD" maxlength="2" placeholder="DD" inputmode="numeric" autocomplete="off">
+                <span class="dob-sep">/</span>
+                <input class="dob-seg" id="dobMM" maxlength="2" placeholder="MM" inputmode="numeric" autocomplete="off">
+                <span class="dob-sep">/</span>
+                <input class="dob-seg dob-seg-year" id="dobYY" maxlength="4" placeholder="YYYY" inputmode="numeric" autocomplete="off">
+                <span class="dob-icon">📅</span>
+            </div>
+            <div class="age-box">
+                <div id="ageDisplay" onclick="switchToAgeInput()" title="Click to type age directly">
+                    <span id="ageText">Age</span>
+                    <span class="age-edit-hint" id="ageEditHint">✏</span>
+                </div>
+                <div id="ageInputWrap">
+                    <input type="number" id="ageInput" min="0" max="120" placeholder="0" inputmode="numeric" oninput="ageTyped()" onblur="ageBlur()">
+                    <span class="age-suffix">yrs</span>
+                </div>
+            </div>
+        </div>
+        <div class="dob-hint" id="dobHint">Type DD → MM → YYYY and age calculates automatically. Or click <strong style="color:#00b8a9;">Age</strong> to type it directly.</div>
+        <input type="hidden" name="date_of_birth" id="id_date_of_birth" value="{{ form.date_of_birth.value|default:'' }}">
+        <input type="hidden" name="age" id="id_age" value="{{ form.instance.age|default:'' }}">
+        {% if form.date_of_birth.errors %}<div class="field-error">{{ form.date_of_birth.errors|join:", " }}</div>{% endif %}
+    </div>
+    <div>
+        <label>Gender</label>
+        {{ form.gender }}
+        {% if form.gender.errors %}<div class="field-error">{{ form.gender.errors|join:", " }}</div>{% endif %}
+    </div>
+    <div>
+        <label>Mobile *</label>
+        {{ form.mobile_no }}
+        {% if form.mobile_no.errors %}<div class="field-error">{{ form.mobile_no.errors|join:", " }}</div>{% endif %}
+    </div>
+</div>
+
+<div class="section-title">Address</div>
+<div class="form-grid">
+    <div class="full">
+        <label>Address *</label>
+        {{ form.address }}
+        {% if form.address.errors %}<div class="field-error">{{ form.address.errors|join:", " }}</div>{% endif %}
+    </div>
+    <div><label>City</label>{{ form.city }}</div>
+    <div>
+        <label>District</label>
+        <input type="text" name="district" id="id_district" value="{{ form.district.value|default:'Pali' }}">
+    </div>
+    <div>
+        <label>State</label>
+        <input type="text" name="state" id="id_state" value="{{ form.state.value|default:'Rajasthan' }}">
+    </div>
+    <div><label>Pincode</label>{{ form.pincode }}</div>
+</div>
+
+<div class="more-toggle" id="moreBtn" onclick="toggleMore()">
+    <span>📋</span>
+    <span id="moreLbl">More Details</span>
+    <span class="badge-count">4 sections</span>
+    <span class="arr">▼</span>
+</div>
+
+<div class="more-sections" id="moreSections">
+    <div class="section-title" style="margin-top:22px;">Email</div>
+    <div class="form-grid">
+        <div class="span2"><label>Email Address</label>{{ form.email }}</div>
+    </div>
+    <div class="section-title">Blood Group</div>
+    <div class="form-grid g2">
+        <div><label>Blood Group</label>{{ form.blood_group }}</div>
+    </div>
+    <div class="section-title">Medical Details</div>
+    <div style="margin-bottom:12px;">
+        <label>Known Allergies</label>
+        {{ form.allergy_details }}
+    </div>
+    <div>
+        <label>Chronic Illness</label>
+        <div class="ch-grid">
+            <div class="ch-pill" data-val="HTN"      onclick="togglePill(this)">HTN</div>
+            <div class="ch-pill" data-val="DM"       onclick="togglePill(this)">DM</div>
+            <div class="ch-pill" data-val="COPD"     onclick="togglePill(this)">COPD</div>
+            <div class="ch-pill" data-val="Asthma"   onclick="togglePill(this)">Asthma</div>
+            <div class="ch-pill" data-val="IHD"      onclick="togglePill(this)">IHD</div>
+            <div class="ch-pill" data-val="CKD"      onclick="togglePill(this)">CKD</div>
+            <div class="ch-pill" data-val="Thyroid"  onclick="togglePill(this)">Thyroid</div>
+            <div class="ch-pill" data-val="Epilepsy" onclick="togglePill(this)">Epilepsy</div>
+        </div>
+        <input type="text" id="chronicOther" placeholder="Other conditions..." style="margin-top:10px;" oninput="syncChronic()">
+        <textarea name="chronic_illness" id="id_chronic_illness" style="display:none;">{{ form.chronic_illness.value|default:'' }}</textarea>
+        {% if form.chronic_illness.errors %}<div class="field-error">{{ form.chronic_illness.errors|join:", " }}</div>{% endif %}
+    </div>
+    <div class="section-title">ABDM / Digital Health ID</div>
+    <div class="abha-box">
+        <div class="form-grid g2">
+            <div><label>ABHA Number</label>{{ form.abha_number }}</div>
+            <div><label>ABHA Address</label>{{ form.abha_address }}</div>
+        </div>
+        <div style="margin-top:8px; font-weight:700; font-size:13px;">
+            {% if form.instance.abha_verified %}
+                <span style="color:#4ade80;">✔ ABHA Verified</span>
+            {% else %}
+                <span style="color:#f87171;">Not Linked</span>
+            {% endif %}
+        </div>
+        <div class="consent-row">
+            {{ form.abha_consent }}
+            <label for="{{ form.abha_consent.id_for_label }}">Consent for ABHA linkage</label>
+        </div>
+        <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+            {% if form.instance.pk %}
+                <a href="{% url 'hms:abha_aadhaar_otp' form.instance.id %}" class="btn btn-teal">Create ABHA</a>
+                <a href="{% url 'hms:abha_link_existing' form.instance.id %}" class="btn btn-gray">Link ABHA</a>
+            {% else %}
+                <button type="button" class="btn btn-disabled">Save patient first</button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="consent-row" style="margin-top:16px;">
+    {{ form.consent_given }}
+    <label for="{{ form.consent_given.id_for_label }}">I confirm all details are correct</label>
+</div>
+
+<div class="form-actions">
+    <button type="submit" class="btn btn-green">💾 Save Patient</button>
+    <button type="submit" name="save_and_book" value="1" class="btn btn-teal">📅 Save &amp; Book Appointment</button>
+    <a href="/" class="btn btn-gray">← Back</a>
+</div>
+
+</form>
+</div>
+</div>
+</div>
+
+<footer>© 2026 Shradha Hospital HMS</footer>
+
+<script>
+function toggleErr(){
+    var f=document.getElementById('errFields'),h=document.getElementById('errHeader'),open=f.style.display==='block';
+    f.style.display=open?'none':'block'; h.classList.toggle('open',!open);
+}
+window.addEventListener('DOMContentLoaded',function(){ var hdr=document.getElementById('errHeader'); if(hdr) toggleErr(); });
+
+function toggleMore(){
+    var p=document.getElementById('moreSections'),b=document.getElementById('moreBtn'),l=document.getElementById('moreLbl'),open=p.classList.contains('open');
+    p.classList.toggle('open',!open); b.classList.toggle('open',!open); l.textContent=open?'More Details':'Hide Details';
+}
+
+var dobDD=document.getElementById('dobDD'),dobMM=document.getElementById('dobMM'),dobYY=document.getElementById('dobYY');
+var hidDOB=document.getElementById('id_date_of_birth'),hidAge=document.getElementById('id_age');
+var ageText=document.getElementById('ageText'),ageEditHint=document.getElementById('ageEditHint'),ageMode=false;
+
+function onlyN(el){ el.value=el.value.replace(/\D/g,''); }
+function calcAge(v){ var bd=new Date(v),t=new Date(),y=t.getFullYear()-bd.getFullYear(),mo=t.getMonth()-bd.getMonth(); if(mo<0||(mo===0&&t.getDate()<bd.getDate())) y--; return y<0?0:y; }
+function setAgeBadge(txt){ ageText.textContent=txt; }
+
+function updateDOB(){
+    var d=dobDD.value,m=dobMM.value,y=dobYY.value,di=parseInt(d),mi=parseInt(m),yi=parseInt(y);
+    if(d.length===2&&m.length===2&&y.length===4&&di>=1&&di<=31&&mi>=1&&mi<=12&&yi>=1900){
+        var val=yi+'-'+(mi<10?'0'+mi:mi)+'-'+(di<10?'0'+di:di);
+        hidDOB.value=val; hidAge.value=''; setAgeBadge(calcAge(val)+' yrs'); exitAgeInput(); ageEditHint.style.display='none';
+    } else { hidDOB.value=''; if(!ageMode){ setAgeBadge('Age'); ageEditHint.style.display=''; } }
+}
+
+dobDD.addEventListener('input',function(){ onlyN(this); if(this.value.length===2){dobMM.focus();dobMM.select();} updateDOB(); });
+dobMM.addEventListener('input',function(){ onlyN(this); if(this.value.length===2){dobYY.focus();dobYY.select();} updateDOB(); });
+dobYY.addEventListener('input',function(){ onlyN(this); updateDOB(); });
+dobMM.addEventListener('keydown',function(e){ if(e.key==='Backspace'&&this.value==='') dobDD.focus(); });
+dobYY.addEventListener('keydown',function(e){ if(e.key==='Backspace'&&this.value==='') dobMM.focus(); });
+document.getElementById('dobInline').addEventListener('click',function(){ if(!dobDD.value&&!dobMM.value&&!dobYY.value) dobDD.focus(); });
+
+function switchToAgeInput(){
+    if(hidDOB.value) return; ageMode=true;
+    document.getElementById('ageDisplay').style.display='none';
+    document.getElementById('ageInputWrap').style.display='block';
+    var inp=document.getElementById('ageInput'); if(hidAge.value) inp.value=hidAge.value; inp.focus(); inp.select();
+}
+function ageTyped(){
+    var v=parseInt(document.getElementById('ageInput').value)||0; hidAge.value=v>0?v:'';
+    document.getElementById('dobHint').textContent=v>0?'Age set to '+v+' years. You can still fill DOB above.':'Type DD → MM → YYYY and age calculates automatically.';
+}
+function ageBlur(){ var v=parseInt(document.getElementById('ageInput').value)||0; if(!v) exitAgeInput(); }
+function exitAgeInput(){
+    ageMode=false; document.getElementById('ageInputWrap').style.display='none'; document.getElementById('ageDisplay').style.display='flex';
+    var saved=hidAge.value; if(saved){ setAgeBadge(saved+' yrs'); ageEditHint.style.display=''; }
+}
+
+var selDx=[],knownDx=['HTN','DM','COPD','Asthma','IHD','CKD','Thyroid','Epilepsy'];
+function togglePill(p){
+    var v=p.getAttribute('data-val'); p.classList.toggle('active');
+    if(p.classList.contains('active')){ if(selDx.indexOf(v)===-1) selDx.push(v); } else { selDx=selDx.filter(function(x){return x!==v;}); }
+    syncChronic();
+}
+function syncChronic(){
+    var other=document.getElementById('chronicOther').value.trim(),all=selDx.slice(); if(other) all.push(other);
+    document.getElementById('id_chronic_illness').value=all.join(', ');
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+    var existing=hidDOB.value;
+    if(existing&&existing.length===10){ var p=existing.split('-'); dobYY.value=p[0]; dobMM.value=p[1]; dobDD.value=p[2]; setAgeBadge(calcAge(existing)+' yrs'); ageEditHint.style.display='none'; }
+    var savedAge=hidAge.value; if(savedAge&&!existing){ setAgeBadge(savedAge+' yrs'); document.getElementById('ageInput').value=savedAge; }
+    var ta=document.getElementById('id_chronic_illness');
+    if(ta&&ta.value.trim()){
+        var parts=ta.value.split(',').map(function(s){return s.trim();}).filter(Boolean),others=[];
+        parts.forEach(function(v){ if(knownDx.indexOf(v)!==-1){ selDx.push(v); document.querySelectorAll('.ch-pill[data-val="'+v+'"]').forEach(function(el){el.classList.add('active');}); } else { others.push(v); } });
+        if(others.length) document.getElementById('chronicOther').value=others.join(', ');
+        document.getElementById('moreSections').classList.add('open'); document.getElementById('moreBtn').classList.add('open'); document.getElementById('moreLbl').textContent='Hide Details';
+    }
+});
+</script>
+</body>
+</html>

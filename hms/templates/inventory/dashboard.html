@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Inventory Dashboard</h2>
+    <div>
+      <a href="{% url 'hms:stock_in_create' %}" class="btn btn-success">+ Stock In</a>
+      <a href="{% url 'hms:stock_out_create' %}" class="btn btn-warning ms-2">− Stock Out</a>
+      <a href="{% url 'hms:inventory_item_new' %}" class="btn btn-primary ms-2">+ New Item</a>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card text-white bg-primary">
+        <div class="card-body">
+          <h6 class="card-title">Total Items</h6>
+          <h2>{{ total_items }}</h2>
+          <a href="{% url 'hms:inventory_items' %}" class="text-white small">View all →</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-white bg-danger">
+        <div class="card-body">
+          <h6 class="card-title">Low Stock Alerts</h6>
+          <h2>{{ low_stock.count }}</h2>
+          <a href="{% url 'hms:inventory_report' %}" class="text-white small">View report →</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-white bg-success">
+        <div class="card-body">
+          <h6 class="card-title">Suppliers</h6>
+          <a href="{% url 'hms:supplier_list' %}" class="text-white small">Manage suppliers →</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-white bg-info">
+        <div class="card-body">
+          <h6 class="card-title">Reports</h6>
+          <a href="{% url 'hms:inventory_report' %}" class="text-white small">View full report →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Low Stock Alert -->
+  {% if low_stock %}
+  <div class="card border-danger mb-4">
+    <div class="card-header bg-danger text-white">⚠ Low Stock Alerts</div>
+    <div class="card-body p-0">
+      <table class="table table-bordered mb-0">
+        <thead class="table-light">
+          <tr><th>Item</th><th>Category</th><th>Current Stock</th><th>Min Required</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          {% for item in low_stock %}
+          <tr class="table-danger">
+            <td>{{ item.name }}</td>
+            <td>{{ item.category }}</td>
+            <td><strong>{{ item.current_stock }} {{ item.unit }}</strong></td>
+            <td>{{ item.minimum_stock }} {{ item.unit }}</td>
+            <td><a href="{% url 'hms:stock_in_create' %}?item={{ item.id }}" class="btn btn-sm btn-success">Restock</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="row g-3">
+    <!-- Recent Stock In -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header bg-success text-white">Recent Stock In</div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
+            <thead class="table-light">
+              <tr><th>Item</th><th>Qty</th><th>Date</th></tr>
+            </thead>
+            <tbody>
+              {% for s in recent_in %}
+              <tr>
+                <td>{{ s.item.name }}</td>
+                <td>+{{ s.quantity }} {{ s.item.unit }}</td>
+                <td>{{ s.date }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3" class="text-muted text-center">No records</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Stock Out -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header bg-warning">Recent Stock Out</div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
+            <thead class="table-light">
+              <tr><th>Item</th><th>Qty</th><th>Issued To</th><th>Date</th></tr>
+            </thead>
+            <tbody>
+              {% for s in recent_out %}
+              <tr>
+                <td>{{ s.item.name }}</td>
+                <td>-{{ s.quantity }} {{ s.item.unit }}</td>
+                <td>{{ s.issued_to }}</td>
+                <td>{{ s.date }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-muted text-center">No records</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

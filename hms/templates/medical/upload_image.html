@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-4" style="max-width:650px;">
+
+<h4>🖼 Upload Medical Image</h4>
+
+<div class="card mt-3">
+<div class="card-body">
+
+<p>
+<strong>Patient:</strong> {{ patient.full_name }} <br>
+<strong>UHID:</strong> {{ patient.uhid }}
+</p>
+
+<form method="post" enctype="multipart/form-data">
+{% csrf_token %}
+
+<div class="mb-3">
+<label>Image Type</label>
+<select name="image_type" class="form-control">
+<option value="XRAY">X-Ray</option>
+<option value="USG">Ultrasound</option>
+<option value="ENDOSCOPY">Endoscopy</option>
+<option value="OT">OT Photo</option>
+<option value="OTHER">Other</option>
+</select>
+</div>
+
+<div class="mb-3">
+<label>Title</label>
+<input type="text" name="title"
+class="form-control"
+placeholder="Example: Chest X-Ray PA View">
+</div>
+
+<div class="mb-3">
+<label>Select Image</label>
+<input type="file" name="image"
+class="form-control" required>
+</div>
+
+<div class="mb-3">
+<label>Report</label>
+<textarea name="report_text"
+class="form-control"
+rows="4"></textarea>
+</div>
+
+<button class="btn btn-success">
+Upload Image
+</button>
+
+</form>
+
+</div>
+</div>
+
+</div>
+
+{% endblock %}

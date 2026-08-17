@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}Daily Collection Report | Shradha HMS{% endblock %}
+
+{% block content %}
+
+<style>
+.report-wrapper {
+  max-width: 900px;
+  margin: auto;
+  padding: 20px;
+}
+
+.report-header {
+  background: linear-gradient(135deg, #008080, #004d4d);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.summary-card {
+  background: white;
+  padding: 18px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border-top: 4px solid #008080;
+}
+
+.summary-card.expenses { border-top-color: red; }
+.summary-card.net { border-top-color: green; }
+
+.s-amount {
+  font-size: 26px;
+  font-weight: bold;
+}
+
+.s-label {
+  font-size: 13px;
+  color: #777;
+}
+
+.report-table-card {
+  margin-top: 25px;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: #008080;
+  color: white;
+}
+
+th, td {
+  padding: 12px;
+}
+
+td:last-child {
+  text-align: right;
+  font-weight: bold;
+}
+
+tfoot {
+  background: #f0fafa;
+  font-weight: bold;
+}
+</style>
+
+<div class="report-wrapper">
+
+  <!-- HEADER -->
+  <div class="report-header">
+    <div>
+      <h2>📋 Daily Collection Report</h2>
+      <small>Shradha Hospital Management System</small>
+    </div>
+    <div>
+      <strong>{{ selected_date }}</strong><br>
+      <small>Selected Date</small>
+    </div>
+  </div>
+
+  <!-- DATE FILTER -->
+  <form method="GET" style="margin-top:15px;">
+    <input type="date" name="date" value="{{ selected_date }}">
+    <button type="submit">View Report</button>
+  </form>
+
+  <!-- SUMMARY -->
+  <div class="summary-cards">
+
+    <div class="summary-card">
+      <div class="s-amount">₹ {{ opd }}</div>
+      <div class="s-label">OPD</div>
+    </div>
+
+    <div class="summary-card">
+      <div class="s-amount">₹ {{ procedure }}</div>
+      <div class="s-label">Procedure</div>
+    </div>
+
+    <div class="summary-card">
+      <div class="s-amount">₹ {{ discharge }}</div>
+      <div class="s-label">Discharge</div>
+    </div>
+
+    <div class="summary-card">
+      <div class="s-amount">₹ {{ advance }}</div>
+      <div class="s-label">IPD Advance</div>
+    </div>
+
+    <div class="summary-card">
+      <div class="s-amount">₹ {{ lab }}</div>
+      <div class="s-label">Lab Total</div>
+    </div>
+
+    <div class="summary-card expenses">
+      <div class="s-amount">₹ {{ expenses }}</div>
+      <div class="s-label">Expenses</div>
+    </div>
+
+    <div class="summary-card net">
+      <div class="s-amount">₹ {{ net_collection }}</div>
+      <div class="s-label">Net Cash</div>
+    </div>
+
+  </div>
+
+  <!-- LAB BREAKUP -->
+  <div class="report-table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Lab Department</th>
+          <th>Amount (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Radiology</td><td>₹ {{ radiology }}</td></tr>
+        <tr><td>Biochemistry</td><td>₹ {{ biochem }}</td></tr>
+        <tr><td>Hematology</td><td>₹ {{ hematology }}</td></tr>
+        <tr><td>Microbiology</td><td>₹ {{ microbio }}</td></tr>
+        <tr><td>Histopathology</td><td>₹ {{ histo }}</td></tr>
+        <tr><td>ECG</td><td>₹ {{ ecg }}</td></tr>
+        <tr><td>Endoscopy</td><td>₹ {{ endoscopy }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TOTAL TABLE -->
+  <div class="report-table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Department</th>
+          <th>Amount (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>OPD</td><td>₹ {{ opd }}</td></tr>
+        <tr><td>Procedure</td><td>₹ {{ procedure }}</td></tr>
+        <tr><td>Discharge</td><td>₹ {{ discharge }}</td></tr>
+        <tr><td>IPD Advance</td><td>₹ {{ advance }}</td></tr>
+        <tr><td>Lab</td><td>₹ {{ lab }}</td></tr>
+
+        <tr>
+          <td><strong>Total</strong></td>
+          <td><strong>₹ {{ total_collection }}</strong></td>
+        </tr>
+
+        <tr>
+          <td>Expenses</td>
+          <td style="color:red;">₹ {{ expenses }}</td>
+        </tr>
+      </tbody>
+
+      <tfoot>
+        <tr>
+          <td>💰 Net Cash</td>
+          <td style="color:green;">₹ {{ net_collection }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+</div>
+
+{% endblock %}

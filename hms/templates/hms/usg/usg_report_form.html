@@ -1,0 +1,1169 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<style>
+  .form-control,.form-select{font-size:13px;}
+  .card-header{cursor:pointer;user-select:none;}
+
+  .sec-label{
+    font-size:11px;font-weight:700;color:#475569;
+    text-transform:uppercase;letter-spacing:.6px;
+    border-left:3px solid #007676;padding-left:8px;
+    margin:12px 0 6px;
+  }
+
+  .cb-row{
+    display:flex;flex-wrap:wrap;gap:6px 10px;margin-bottom:6px;
+  }
+  .cb-pill{
+    display:flex;align-items:center;gap:5px;
+    background:#f1f5f9;border:1px solid #cbd5e1;
+    border-radius:20px;padding:4px 12px;
+    font-size:12.5px;cursor:pointer;transition:.15s;
+    white-space:nowrap;
+  }
+  .cb-pill:hover{background:#e0f2f1;border-color:#007676;}
+  .cb-pill input[type=checkbox]{
+    width:14px;height:14px;cursor:pointer;accent-color:#007676;margin:0;
+  }
+  .cb-pill.on{background:#e0f2f1;border-color:#007676;font-weight:600;color:#005f5f;}
+
+  .sub-row{
+    display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px 0;
+  }
+  .sub-item{
+    display:flex;align-items:center;gap:4px;
+    background:#fff7ed;border:1px solid #fed7aa;
+    border-radius:12px;padding:3px 10px;font-size:12px;cursor:pointer;
+  }
+  .sub-item:hover{background:#ffedd5;border-color:#fb923c;}
+  .sub-item.on{background:#ffedd5;border-color:#ea580c;font-weight:600;}
+  .sub-item input[type=checkbox]{width:13px;height:13px;accent-color:#ea580c;margin:0;}
+
+  .field-inline{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .field-inline label{font-size:12px;color:#64748b;white-space:nowrap;min-width:80px;}
+  .field-inline input,.field-inline select{font-size:13px;}
+</style>
+
+<div class="container-fluid py-3">
+  <div class="d-flex align-items-center mb-3 gap-2">
+    <a href="{% url 'hms:usg_report_list' %}" class="btn btn-outline-secondary btn-sm">← Back</a>
+    <h4 class="mb-0 fw-bold">{{ title }}</h4>
+    {% if patient %}<span class="badge bg-info text-dark ms-2">{{ patient.full_name }} — {{ patient.uhid }}</span>{% endif %}
+  </div>
+
+  <form method="post" id="usgForm">
+    {% csrf_token %}
+
+    <!-- ════════════ PATIENT & REPORT DETAILS ════════════ -->
+    <div class="card mb-2 shadow-sm">
+      <div class="card-header fw-bold text-white" style="background:linear-gradient(135deg,#007676,#009e9e);">
+        Patient &amp; Report Details
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Patient <span class="text-danger">*</span></label>
+            {{ form.patient }}
+            {% if form.patient.errors %}<div class="text-danger small">{{ form.patient.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6"><label class="form-label fw-semibold">Scan Type</label>{{ form.scan_type }}</div>
+          <div class="col-md-3"><label class="form-label fw-semibold">Date</label>{{ form.report_date }}</div>
+          <div class="col-md-3"><label class="form-label fw-semibold">Time</label>{{ form.report_time }}</div>
+          <div class="col-md-6"><label class="form-label fw-semibold">Referred By</label>{{ form.referred_by }}</div>
+          <div class="col-md-6"><label class="form-label fw-semibold">Reporting Doctor</label>{{ form.reporting_doctor }}</div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Clinical Indication</label>
+            <textarea name="clinical_indication" class="form-control form-control-sm" rows="2"
+              placeholder="Indication for scan">{{ form.clinical_indication.value|default:'' }}</textarea>
+          </div>
+          <div class="col-md-6 d-flex align-items-end">
+            <div class="form-check">
+              <input type="checkbox" name="is_verified" class="form-check-input" id="id_is_verified"
+                {% if form.is_verified.value %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="id_is_verified">✅ Verified</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ LIVER ════════════ -->
+    <div class="card mb-2 shadow-sm">
+      <div class="card-header bg-success bg-opacity-10 fw-semibold d-flex justify-content-between"
+           data-bs-toggle="collapse" data-bs-target="#sec_liver">
+        <span>🫀 Liver</span><i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="collapse show" id="sec_liver">
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-md-3">
+              <label class="form-label">Liver Size (cm)</label>
+              <input type="text" name="liver_size" value="{{ form.liver_size.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. 14.2">
+            </div>
+            <div class="col-md-9">
+              <div class="sec-label">Echotexture</div>
+              <div class="cb-row">
+                {% for v,l in form.fields.impression_status.choices %}{% endfor %}
+                <label class="cb-pill" data-radio="liver_echotexture"><input type="radio" name="liver_echotexture" value="Normal homogeneous echotexture"> Normal</label>
+                <label class="cb-pill" data-radio="liver_echotexture"><input type="radio" name="liver_echotexture" value="Increased echogenicity (bright liver) — fatty infiltration"> Increased / Bright (Fatty)</label>
+                <label class="cb-pill" data-radio="liver_echotexture"><input type="radio" name="liver_echotexture" value="Decreased echogenicity"> Decreased</label>
+                <label class="cb-pill" data-radio="liver_echotexture"><input type="radio" name="liver_echotexture" value="Coarse echotexture — cirrhotic changes"> Coarse / Cirrhotic</label>
+                <label class="cb-pill" data-radio="liver_echotexture"><input type="radio" name="liver_echotexture" value="Heterogeneous echotexture"> Heterogeneous</label>
+              </div>
+              {% comment %}Hidden field to carry echotexture if not in form{% endcomment %}
+              {% if form.liver_echotexture %}<input type="hidden" name="liver_echotexture_h" value="{{ form.liver_echotexture.value|default:'' }}">{% endif %}
+            </div>
+
+            <div class="col-12">
+              <div class="sec-label">Findings</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="liver_focal_lesion" {% if form.liver_focal_lesion.value %}checked{% endif %}> Focal Lesion</label>
+                <label class="cb-pill"><input type="checkbox" name="liver_cyst" {% if form.liver_cyst.value %}checked{% endif %}> Cyst</label>
+                <label class="cb-pill"><input type="checkbox" name="liver_mass" {% if form.liver_mass.value %}checked{% endif %}> Mass / SOL</label>
+                <label class="cb-pill"><input type="checkbox" name="liver_ihbr_dilated" {% if form.liver_ihbr_dilated.value %}checked{% endif %}> IHBR Dilated</label>
+              </div>
+              <textarea name="liver_lesion" class="form-control form-control-sm mt-1" rows="2"
+                placeholder="Focal lesion / lesion detail">{{ form.liver_lesion.value|default:'' }}</textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Additional Notes</label>
+              <textarea name="liver_notes" class="form-control form-control-sm" rows="1">{{ form.liver_notes.value|default:'' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ GALLBLADDER & CBD ════════════ -->
+    <div class="card mb-2 shadow-sm">
+      <div class="card-header bg-warning bg-opacity-10 fw-semibold d-flex justify-content-between"
+           data-bs-toggle="collapse" data-bs-target="#sec_gb">
+        <span>💛 Gallbladder &amp; CBD</span><i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="collapse show" id="sec_gb">
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-md-3">
+              <label class="form-label">GB Size</label>
+              <input type="text" name="gb_size" value="{{ form.gb_size.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. 8 × 3 cm">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Wall Thickness (mm)</label>
+              <input type="text" name="gb_wall_thickness" value="{{ form.gb_wall_thickness.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. 3">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">CBD Diameter (mm)</label>
+              <input type="text" name="cbd_diameter" value="{{ form.cbd_diameter.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. 4">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Calculi Detail</label>
+              <input type="text" name="gb_calculi_detail" value="{{ form.gb_calculi_detail.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. 8 mm calculus">
+            </div>
+
+            <div class="col-12">
+              <div class="sec-label">GB Status</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="gb_calculi_present" {% if form.gb_calculi_present.value %}checked{% endif %}> Calculi Present</label>
+                <label class="cb-pill"><input type="checkbox" name="gb_wall_thick" {% if form.gb_wall_thick.value %}checked{% endif %}> Wall Thickened</label>
+                <label class="cb-pill"><input type="checkbox" name="gb_distended" {% if form.gb_distended.value %}checked{% endif %}> Distended</label>
+                <label class="cb-pill"><input type="checkbox" name="gb_contracted" {% if form.gb_contracted.value %}checked{% endif %}> Contracted</label>
+                <label class="cb-pill"><input type="checkbox" name="gb_sludge" {% if form.gb_sludge.value %}checked{% endif %}> Sludge</label>
+                <label class="cb-pill"><input type="checkbox" name="gb_pericholecystic_fluid" {% if form.gb_pericholecystic_fluid.value %}checked{% endif %}> Pericholecystic Fluid</label>
+                <label class="cb-pill"><input type="checkbox" name="gb_probe_tenderness" {% if form.gb_probe_tenderness.value %}checked{% endif %}> Probe Tenderness</label>
+                <label class="cb-pill"><input type="checkbox" name="cbd_dilated" {% if form.cbd_dilated.value %}checked{% endif %}> CBD Dilated</label>
+              </div>
+              <textarea name="gb_notes" class="form-control form-control-sm mt-1" rows="2"
+                placeholder="GB / CBD notes">{{ form.gb_notes.value|default:'' }}</textarea>
+            </div>
+            <div class="col-12">
+              <textarea name="cbd_notes" class="form-control form-control-sm" rows="1"
+                placeholder="CBD notes">{{ form.cbd_notes.value|default:'' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ SPLEEN & PANCREAS ════════════ -->
+    <div class="card mb-2 shadow-sm">
+      <div class="card-header bg-danger bg-opacity-10 fw-semibold d-flex justify-content-between"
+           data-bs-toggle="collapse" data-bs-target="#sec_spleen">
+        <span>❤️ Spleen &amp; Pancreas</span><i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="collapse show" id="sec_spleen">
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-md-3">
+              <label class="form-label">Spleen Size (cm)</label>
+              <input type="text" name="spleen_size" value="{{ form.spleen_size.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. 10.5">
+            </div>
+            <div class="col-md-9">
+              <div class="sec-label">Spleen Findings</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="splenomegaly" {% if form.splenomegaly.value %}checked{% endif %}> Splenomegaly</label>
+                <label class="cb-pill"><input type="checkbox" name="spleen_cyst" {% if form.spleen_cyst.value %}checked{% endif %}> Cyst</label>
+                <label class="cb-pill"><input type="checkbox" name="spleen_lesion" {% if form.spleen_lesion.value %}checked{% endif %}> Focal Lesion</label>
+              </div>
+              <textarea name="spleen_notes" class="form-control form-control-sm mt-1" rows="1">{{ form.spleen_notes.value|default:'' }}</textarea>
+            </div>
+            <div class="col-12">
+              <div class="sec-label">Pancreas</div>
+              <textarea name="pancreas_notes" class="form-control form-control-sm" rows="2"
+                placeholder="e.g. Normal in size, shape and echotexture. Pancreatic duct not dilated.">{{ form.pancreas_notes.value|default:'' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ RIGHT KIDNEY ════════════ -->
+    <div class="card mb-2 shadow-sm">
+      <div class="card-header bg-info bg-opacity-10 fw-semibold d-flex justify-content-between"
+           data-bs-toggle="collapse" data-bs-target="#sec_rk">
+        <span>🫘 Right Kidney</span><i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="collapse show" id="sec_rk">
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-md-4">
+              <label class="form-label">Size (cm)</label>
+              <input type="text" name="rk_size" value="{{ form.rk_size.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. 10.2 × 4.5">
+            </div>
+
+            <!-- Stone -->
+            <div class="col-12">
+              <div class="sec-label">Calculus / Stone</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="rk_stone_present" id="rk_stone_present"
+                  {% if form.rk_stone_present.value %}checked{% endif %}> Stone Present</label>
+              </div>
+              <div class="sub-row" id="rk_stone_sub">
+                <div class="field-inline">
+                  <label>Size:</label>
+                  <input type="text" name="rk_stone_size" value="{{ form.rk_stone_size.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:100px" placeholder="e.g. 6 mm">
+                </div>
+                <div class="field-inline">
+                  <label>Site:</label>
+                  <input type="text" name="rk_stone_site" value="{{ form.rk_stone_site.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:180px" placeholder="Upper / Mid / Lower pole, PUJ">
+                </div>
+              </div>
+            </div>
+
+            <!-- Hydronephrosis -->
+            <div class="col-12">
+              <div class="sec-label">Hydronephrosis</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="rk_mild_hydronephrosis"
+                  {% if form.rk_mild_hydronephrosis.value %}checked{% endif %}> Mild</label>
+                <label class="cb-pill"><input type="checkbox" name="rk_moderate_hydronephrosis"
+                  {% if form.rk_moderate_hydronephrosis.value %}checked{% endif %}> Moderate</label>
+                <label class="cb-pill"><input type="checkbox" name="rk_severe_hydronephrosis"
+                  {% if form.rk_severe_hydronephrosis.value %}checked{% endif %}> Severe</label>
+                <label class="cb-pill"><input type="checkbox" name="rk_hydroureter"
+                  {% if form.rk_hydroureter.value %}checked{% endif %}> Hydroureter</label>
+                <label class="cb-pill"><input type="checkbox" name="rk_hydroureteronephrosis"
+                  {% if form.rk_hydroureteronephrosis.value %}checked{% endif %}> Hydroureteronephrosis</label>
+              </div>
+            </div>
+
+            <!-- Cyst -->
+            <div class="col-12">
+              <div class="sec-label">Cyst</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="rk_cyst_present" id="rk_cyst_present"
+                  {% if form.rk_cyst_present.value %}checked{% endif %}> Cyst Present</label>
+              </div>
+              <div class="sub-row" id="rk_cyst_sub">
+                <div class="field-inline">
+                  <label>Size:</label>
+                  <input type="text" name="rk_cyst_size" value="{{ form.rk_cyst_size.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:100px" placeholder="e.g. 3 cm">
+                </div>
+                <div class="field-inline">
+                  <label>Location:</label>
+                  <input type="text" name="rk_cyst_location" value="{{ form.rk_cyst_location.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:120px" placeholder="Upper / Mid / Lower">
+                </div>
+                <div class="field-inline">
+                  <label>Type:</label>
+                  <input type="text" name="rk_cyst_type" value="{{ form.rk_cyst_type.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:130px" placeholder="Simple / Complex">
+                </div>
+              </div>
+            </div>
+            <div class="col-12">
+              <textarea name="rt_kidney_notes" class="form-control form-control-sm" rows="2"
+                placeholder="Right kidney additional notes">{{ form.rt_kidney_notes.value|default:'' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ LEFT KIDNEY ════════════ -->
+    <div class="card mb-2 shadow-sm">
+      <div class="card-header bg-info bg-opacity-10 fw-semibold d-flex justify-content-between"
+           data-bs-toggle="collapse" data-bs-target="#sec_lk">
+        <span>🫘 Left Kidney</span><i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="collapse show" id="sec_lk">
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-md-4">
+              <label class="form-label">Size (cm)</label>
+              <input type="text" name="lk_size" value="{{ form.lk_size.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. 10.7 × 4.2">
+            </div>
+
+            <div class="col-12">
+              <div class="sec-label">Calculus / Stone</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="lk_stone_present" id="lk_stone_present"
+                  {% if form.lk_stone_present.value %}checked{% endif %}> Stone Present</label>
+              </div>
+              <div class="sub-row" id="lk_stone_sub">
+                <div class="field-inline">
+                  <label>Size:</label>
+                  <input type="text" name="lk_stone_size" value="{{ form.lk_stone_size.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:100px" placeholder="e.g. 6 mm">
+                </div>
+                <div class="field-inline">
+                  <label>Site:</label>
+                  <input type="text" name="lk_stone_site" value="{{ form.lk_stone_site.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:180px" placeholder="Upper / Mid / Lower pole, PUJ">
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="sec-label">Hydronephrosis</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="lk_mild_hydronephrosis"
+                  {% if form.lk_mild_hydronephrosis.value %}checked{% endif %}> Mild</label>
+                <label class="cb-pill"><input type="checkbox" name="lk_moderate_hydronephrosis"
+                  {% if form.lk_moderate_hydronephrosis.value %}checked{% endif %}> Moderate</label>
+                <label class="cb-pill"><input type="checkbox" name="lk_severe_hydronephrosis"
+                  {% if form.lk_severe_hydronephrosis.value %}checked{% endif %}> Severe</label>
+                <label class="cb-pill"><input type="checkbox" name="lk_hydroureter"
+                  {% if form.lk_hydroureter.value %}checked{% endif %}> Hydroureter</label>
+                <label class="cb-pill"><input type="checkbox" name="lk_hydroureteronephrosis"
+                  {% if form.lk_hydroureteronephrosis.value %}checked{% endif %}> Hydroureteronephrosis</label>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="sec-label">Cyst</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="lk_cyst_present" id="lk_cyst_present"
+                  {% if form.lk_cyst_present.value %}checked{% endif %}> Cyst Present</label>
+              </div>
+              <div class="sub-row" id="lk_cyst_sub">
+                <div class="field-inline">
+                  <label>Size:</label>
+                  <input type="text" name="lk_cyst_size" value="{{ form.lk_cyst_size.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:100px" placeholder="e.g. 3 cm">
+                </div>
+                <div class="field-inline">
+                  <label>Location:</label>
+                  <input type="text" name="lk_cyst_location" value="{{ form.lk_cyst_location.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:120px" placeholder="Upper / Mid / Lower">
+                </div>
+                <div class="field-inline">
+                  <label>Type:</label>
+                  <input type="text" name="lk_cyst_type" value="{{ form.lk_cyst_type.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:130px" placeholder="Simple / Complex">
+                </div>
+              </div>
+            </div>
+            <div class="col-12">
+              <textarea name="lt_kidney_notes" class="form-control form-control-sm" rows="2"
+                placeholder="Left kidney additional notes">{{ form.lt_kidney_notes.value|default:'' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ URETERIC CALCULUS ════════════ -->
+    <div class="card mb-2 shadow-sm">
+      <div class="card-header bg-secondary bg-opacity-10 fw-semibold d-flex justify-content-between"
+           data-bs-toggle="collapse" data-bs-target="#sec_ureter">
+        <span>🪨 Ureteric Calculus</span><i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="collapse" id="sec_ureter">
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-md-3">
+              <label class="form-label">Side</label>
+              <select name="ureteric_side" class="form-select form-select-sm">
+                <option value="">-- Select --</option>
+                <option value="Right" {% if form.ureteric_side.value == 'Right' %}selected{% endif %}>Right</option>
+                <option value="Left" {% if form.ureteric_side.value == 'Left' %}selected{% endif %}>Left</option>
+                <option value="Bilateral" {% if form.ureteric_side.value == 'Bilateral' %}selected{% endif %}>Bilateral</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Stone Size</label>
+              <input type="text" name="ureteric_size" value="{{ form.ureteric_size.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. 5 mm">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Site</label>
+              <input type="text" name="ureteric_site" value="{{ form.ureteric_site.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. VUJ / PUJ / Mid-ureter">
+            </div>
+            <div class="col-12">
+              <div class="sec-label">Associated Findings</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="ureteric_hydroureter"
+                  {% if form.ureteric_hydroureter.value %}checked{% endif %}> Hydroureter</label>
+                <label class="cb-pill"><input type="checkbox" name="ureteric_hydronephrosis"
+                  {% if form.ureteric_hydronephrosis.value %}checked{% endif %}> Hydronephrosis</label>
+                <label class="cb-pill"><input type="checkbox" name="ureteric_hydroureteronephrosis"
+                  {% if form.ureteric_hydroureteronephrosis.value %}checked{% endif %}> Hydroureteronephrosis</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ BLADDER ════════════ -->
+    <div class="card mb-2 shadow-sm">
+      <div class="card-header bg-info bg-opacity-10 fw-semibold d-flex justify-content-between"
+           data-bs-toggle="collapse" data-bs-target="#sec_bladder">
+        <span>💧 Urinary Bladder</span><i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="collapse show" id="sec_bladder">
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-md-4">
+              <div class="sec-label">Bladder State</div>
+              <div class="cb-row">
+                <label class="cb-pill" data-radio="bladder_state"><input type="radio" name="bladder_state" value="Well distended"> Well Distended</label>
+                <label class="cb-pill" data-radio="bladder_state"><input type="radio" name="bladder_state" value="Partially filled"> Partially Filled</label>
+                <label class="cb-pill" data-radio="bladder_state"><input type="radio" name="bladder_state" value="Empty"> Empty</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="sec-label">Findings</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="bladder_wall_thick" {% if form.bladder_wall_thick.value %}checked{% endif %}> Wall Thickened</label>
+                <label class="cb-pill"><input type="checkbox" name="bladder_internal_echoes" {% if form.bladder_internal_echoes.value %}checked{% endif %}> Internal Echoes</label>
+                <label class="cb-pill"><input type="checkbox" name="bladder_calculus" {% if form.bladder_calculus.value %}checked{% endif %}> Calculus</label>
+                <label class="cb-pill"><input type="checkbox" name="bladder_mass" {% if form.bladder_mass.value %}checked{% endif %}> Mass</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Post-Void Residual (ml)</label>
+              <input type="text" name="pvrv" value="{{ form.pvrv.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. 45">
+            </div>
+            <div class="col-12">
+              <textarea name="bladder_notes" class="form-control form-control-sm" rows="2"
+                placeholder="Bladder notes">{{ form.bladder_notes.value|default:'' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ UTERUS & OVARIES (Female) ════════════ -->
+    <div class="card mb-2 shadow-sm" id="card_uterus" style="display:none;">
+      <div class="card-header fw-semibold d-flex justify-content-between"
+           style="background:#fff0f6;"
+           data-bs-toggle="collapse" data-bs-target="#sec_uterus">
+        <span>♀️ Uterus &amp; Ovaries</span><i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="collapse show" id="sec_uterus">
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-md-4">
+              <label class="form-label">Uterus Size (cm)</label>
+              <input type="text" name="uterus_size" value="{{ form.uterus_size.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. 7.5 × 4.2 × 3.8">
+            </div>
+            <div class="col-md-4">
+              <div class="sec-label">Position</div>
+              <div class="cb-row">
+                <label class="cb-pill" data-radio="uterus_position"><input type="radio" name="uterus_position" value="Anteverted"> Anteverted</label>
+                <label class="cb-pill" data-radio="uterus_position"><input type="radio" name="uterus_position" value="Retroverted"> Retroverted</label>
+                <label class="cb-pill" data-radio="uterus_position"><input type="radio" name="uterus_position" value="Axial"> Axial</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Endometrial Thickness (mm)</label>
+              <input type="text" name="endometrial_thickness" value="{{ form.endometrial_thickness.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. 8">
+            </div>
+            <div class="col-md-6">
+              <div class="sec-label">Myometrium</div>
+              <div class="cb-row">
+                <label class="cb-pill" data-radio="uterus_myometrium"><input type="radio" name="uterus_myometrium" value="Homogeneous myometrium"> Homogeneous</label>
+                <label class="cb-pill" data-radio="uterus_myometrium"><input type="radio" name="uterus_myometrium" value="Heterogeneous myometrium"> Heterogeneous</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="sec-label">Uterus Findings</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="pid_changes" {% if form.pid_changes.value %}checked{% endif %}> PID Changes</label>
+                <label class="cb-pill"><input type="checkbox" name="fibroid_present" id="fibroid_present"
+                  {% if form.fibroid_present.value %}checked{% endif %}> Fibroid Present</label>
+              </div>
+              <div class="sub-row" id="fibroid_sub">
+                <div class="field-inline">
+                  <label>Size:</label>
+                  <input type="text" name="fibroid_size" value="{{ form.fibroid_size.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:100px" placeholder="e.g. 3 cm">
+                </div>
+                <div class="field-inline">
+                  <label>Site:</label>
+                  <input type="text" name="fibroid_site" value="{{ form.fibroid_site.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:140px" placeholder="Anterior / Posterior / Fundal">
+                </div>
+                <div class="field-inline">
+                  <label>Type:</label>
+                  <input type="text" name="fibroid_type" value="{{ form.fibroid_type.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:160px" placeholder="Intramural / Subserosal / Submucosal">
+                </div>
+              </div>
+              <textarea name="uterus_notes" class="form-control form-control-sm mt-1" rows="2"
+                placeholder="Uterus notes">{{ form.uterus_notes.value|default:'' }}</textarea>
+            </div>
+
+            <!-- Right Ovary -->
+            <div class="col-md-6">
+              <div class="sec-label">Right Ovary</div>
+              <div class="row g-1">
+                <div class="col-6">
+                  <input type="text" name="ro_size" value="{{ form.ro_size.value|default:'' }}"
+                    class="form-control form-control-sm" placeholder="Size (cm)">
+                </div>
+                <div class="col-6">
+                  <input type="text" name="ro_volume" value="{{ form.ro_volume.value|default:'' }}"
+                    class="form-control form-control-sm" placeholder="Volume (cc)">
+                </div>
+              </div>
+              <div class="cb-row mt-1">
+                <label class="cb-pill"><input type="checkbox" name="ro_bulky" {% if form.ro_bulky.value %}checked{% endif %}> Bulky</label>
+                <label class="cb-pill"><input type="checkbox" name="ro_cyst_present" id="ro_cyst_present"
+                  {% if form.ro_cyst_present.value %}checked{% endif %}> Cyst Present</label>
+              </div>
+              <div class="sub-row" id="ro_cyst_sub">
+                <div class="field-inline">
+                  <label>Cyst Size:</label>
+                  <input type="text" name="ro_cyst_size" value="{{ form.ro_cyst_size.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:100px">
+                </div>
+                <div class="field-inline">
+                  <label>Type:</label>
+                  <input type="text" name="ro_cyst_type" value="{{ form.ro_cyst_type.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:160px"
+                    placeholder="Simple / Hemorrhagic / Dermoid / Endometrioma">
+                </div>
+              </div>
+              <textarea name="rt_ovary_notes" class="form-control form-control-sm mt-1" rows="1"
+                placeholder="Right ovary notes">{{ form.rt_ovary_notes.value|default:'' }}</textarea>
+            </div>
+
+            <!-- Left Ovary -->
+            <div class="col-md-6">
+              <div class="sec-label">Left Ovary</div>
+              <div class="row g-1">
+                <div class="col-6">
+                  <input type="text" name="lo_size" value="{{ form.lo_size.value|default:'' }}"
+                    class="form-control form-control-sm" placeholder="Size (cm)">
+                </div>
+                <div class="col-6">
+                  <input type="text" name="lo_volume" value="{{ form.lo_volume.value|default:'' }}"
+                    class="form-control form-control-sm" placeholder="Volume (cc)">
+                </div>
+              </div>
+              <div class="cb-row mt-1">
+                <label class="cb-pill"><input type="checkbox" name="lo_bulky" {% if form.lo_bulky.value %}checked{% endif %}> Bulky</label>
+                <label class="cb-pill"><input type="checkbox" name="lo_cyst_present" id="lo_cyst_present"
+                  {% if form.lo_cyst_present.value %}checked{% endif %}> Cyst Present</label>
+              </div>
+              <div class="sub-row" id="lo_cyst_sub">
+                <div class="field-inline">
+                  <label>Cyst Size:</label>
+                  <input type="text" name="lo_cyst_size" value="{{ form.lo_cyst_size.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:100px">
+                </div>
+                <div class="field-inline">
+                  <label>Type:</label>
+                  <input type="text" name="lo_cyst_type" value="{{ form.lo_cyst_type.value|default:'' }}"
+                    class="form-control form-control-sm" style="width:160px"
+                    placeholder="Simple / Hemorrhagic / Dermoid / Endometrioma">
+                </div>
+              </div>
+              <textarea name="lt_ovary_notes" class="form-control form-control-sm mt-1" rows="1"
+                placeholder="Left ovary notes">{{ form.lt_ovary_notes.value|default:'' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ OBSTETRIC (Female) ════════════ -->
+    <div class="card mb-2 shadow-sm" id="card_obs" style="display:none;">
+      <div class="card-header fw-semibold d-flex justify-content-between" style="background:#f0fff4;"
+           data-bs-toggle="collapse" data-bs-target="#sec_obs">
+        <span>🤱 Obstetric Scan</span><i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="collapse" id="sec_obs">
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-md-3"><label class="form-label">LMP</label><input type="date" name="lmp" value="{{ form.lmp.value|default:'' }}" class="form-control form-control-sm"></div>
+            <div class="col-md-3"><label class="form-label">GA by LMP</label><input type="text" name="ga_by_lmp" value="{{ form.ga_by_lmp.value|default:'' }}" class="form-control form-control-sm" placeholder="e.g. 28w 3d"></div>
+            <div class="col-md-3"><label class="form-label">GA by Scan</label><input type="text" name="ga_by_scan" value="{{ form.ga_by_scan.value|default:'' }}" class="form-control form-control-sm"></div>
+            <div class="col-md-3"><label class="form-label">EDD by Scan</label><input type="date" name="edd_by_scan" value="{{ form.edd_by_scan.value|default:'' }}" class="form-control form-control-sm"></div>
+            <div class="col-md-3"><label class="form-label">FHR</label><input type="text" name="fetal_heart_rate" value="{{ form.fetal_heart_rate.value|default:'' }}" class="form-control form-control-sm" placeholder="e.g. 148 bpm"></div>
+            <div class="col-md-3">
+              <div class="sec-label">Presentation</div>
+              <div class="cb-row">
+                <label class="cb-pill" data-radio="fetal_presentation"><input type="radio" name="fetal_presentation" value="Cephalic"> Cephalic</label>
+                <label class="cb-pill" data-radio="fetal_presentation"><input type="radio" name="fetal_presentation" value="Breech"> Breech</label>
+                <label class="cb-pill" data-radio="fetal_presentation"><input type="radio" name="fetal_presentation" value="Transverse"> Transverse</label>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="sec-label">Liquor</div>
+              <div class="cb-row">
+                <label class="cb-pill" data-radio="liquor"><input type="radio" name="liquor" value="Adequate"> Adequate</label>
+                <label class="cb-pill" data-radio="liquor"><input type="radio" name="liquor" value="Reduced (oligohydramnios)"> Reduced</label>
+                <label class="cb-pill" data-radio="liquor"><input type="radio" name="liquor" value="Increased (polyhydramnios)"> Increased</label>
+              </div>
+            </div>
+            <div class="col-md-3"><label class="form-label">AFI (cm)</label><input type="text" name="afi" value="{{ form.afi.value|default:'' }}" class="form-control form-control-sm"></div>
+            <div class="col-md-6"><label class="form-label">Placenta</label><input type="text" name="placental_location" value="{{ form.placental_location.value|default:'' }}" class="form-control form-control-sm" placeholder="e.g. Posterior, grade I"></div>
+            <div class="col-12"><div class="sec-label">Biometry</div></div>
+            <div class="col-md-2"><label class="form-label">BPD</label><input type="text" name="biometry_bpd" value="{{ form.biometry_bpd.value|default:'' }}" class="form-control form-control-sm" placeholder="mm"></div>
+            <div class="col-md-2"><label class="form-label">HC</label><input type="text" name="biometry_hc" value="{{ form.biometry_hc.value|default:'' }}" class="form-control form-control-sm" placeholder="mm"></div>
+            <div class="col-md-2"><label class="form-label">AC</label><input type="text" name="biometry_ac" value="{{ form.biometry_ac.value|default:'' }}" class="form-control form-control-sm" placeholder="mm"></div>
+            <div class="col-md-2"><label class="form-label">FL</label><input type="text" name="biometry_fl" value="{{ form.biometry_fl.value|default:'' }}" class="form-control form-control-sm" placeholder="mm"></div>
+            <div class="col-md-4"><label class="form-label">EFW</label><input type="text" name="efw" value="{{ form.efw.value|default:'' }}" class="form-control form-control-sm" placeholder="e.g. 1.2 kg"></div>
+            <div class="col-12"><textarea name="obstetric_notes" class="form-control form-control-sm" rows="2" placeholder="Obstetric notes">{{ form.obstetric_notes.value|default:'' }}</textarea></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ PROSTATE (Male) ════════════ -->
+    <div class="card mb-2 shadow-sm" id="card_prostate" style="display:none;">
+      <div class="card-header bg-primary bg-opacity-10 fw-semibold d-flex justify-content-between"
+           data-bs-toggle="collapse" data-bs-target="#sec_prostate">
+        <span>♂️ Prostate</span><i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="collapse show" id="sec_prostate">
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-md-4">
+              <label class="form-label">Size (cm)</label>
+              <input type="text" name="prostate_size" value="{{ form.prostate_size.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. 3.5 × 3.0 × 3.2">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Volume (cc/ml)</label>
+              <input type="text" name="prostate_volume" value="{{ form.prostate_volume.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. 28">
+            </div>
+            <div class="col-12">
+              <div class="sec-label">Findings</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="prostatomegaly" {% if form.prostatomegaly.value %}checked{% endif %}> Prostatomegaly / BPH</label>
+                <label class="cb-pill"><input type="checkbox" name="prostate_median_lobe" {% if form.prostate_median_lobe.value %}checked{% endif %}> Median Lobe Hypertrophy</label>
+              </div>
+              <div class="sec-label">Echotexture</div>
+              <div class="cb-row">
+                <label class="cb-pill" data-radio="prostate_echotexture"><input type="radio" name="prostate_echotexture" value="Normal homogeneous echotexture"> Normal</label>
+                <label class="cb-pill" data-radio="prostate_echotexture"><input type="radio" name="prostate_echotexture" value="Heterogeneous echotexture"> Heterogeneous</label>
+                <label class="cb-pill" data-radio="prostate_echotexture"><input type="radio" name="prostate_echotexture" value="Calcification noted"> Calcification</label>
+                <label class="cb-pill" data-radio="prostate_echotexture"><input type="radio" name="prostate_echotexture" value="Focal hypoechoic lesion"> Hypoechoic Lesion</label>
+              </div>
+              <textarea name="prostate_notes" class="form-control form-control-sm mt-1" rows="2"
+                placeholder="Prostate notes">{{ form.prostate_notes.value|default:'' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ HERNIA ════════════ -->
+    <div class="card mb-2 shadow-sm">
+      <div class="card-header bg-secondary bg-opacity-10 fw-semibold d-flex justify-content-between"
+           data-bs-toggle="collapse" data-bs-target="#sec_hernia">
+        <span>🩺 Hernia</span><i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="collapse show" id="sec_hernia">
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-md-3">
+              <label class="form-label">Type</label>
+              <select name="hernia_type" class="form-select form-select-sm">
+                <option value="">-- Select --</option>
+                <option value="Inguinal" {% if form.hernia_type.value == 'Inguinal' %}selected{% endif %}>Inguinal</option>
+                <option value="Umbilical" {% if form.hernia_type.value == 'Umbilical' %}selected{% endif %}>Umbilical</option>
+                <option value="Incisional" {% if form.hernia_type.value == 'Incisional' %}selected{% endif %}>Incisional</option>
+                <option value="Femoral" {% if form.hernia_type.value == 'Femoral' %}selected{% endif %}>Femoral</option>
+                <option value="Epigastric" {% if form.hernia_type.value == 'Epigastric' %}selected{% endif %}>Epigastric</option>
+                <option value="Para-umbilical" {% if form.hernia_type.value == 'Para-umbilical' %}selected{% endif %}>Para-umbilical</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Side</label>
+              <select name="hernia_side" class="form-select form-select-sm">
+                <option value="">-- Select --</option>
+                <option value="Right" {% if form.hernia_side.value == 'Right' %}selected{% endif %}>Right</option>
+                <option value="Left" {% if form.hernia_side.value == 'Left' %}selected{% endif %}>Left</option>
+                <option value="Bilateral" {% if form.hernia_side.value == 'Bilateral' %}selected{% endif %}>Bilateral</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Defect Size</label>
+              <input type="text" name="hernia_defect_size" value="{{ form.hernia_defect_size.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. 2 cm">
+            </div>
+            <div class="col-12">
+              <div class="sec-label">Findings</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="hernia_reducible" {% if form.hernia_reducible.value %}checked{% endif %}> Reducible</label>
+                <label class="cb-pill"><input type="checkbox" name="hernia_irreducible" {% if form.hernia_irreducible.value %}checked{% endif %}> Irreducible</label>
+                <label class="cb-pill"><input type="checkbox" name="hernia_bowel_loops" {% if form.hernia_bowel_loops.value %}checked{% endif %}> Bowel Loops</label>
+                <label class="cb-pill"><input type="checkbox" name="hernia_omentum" {% if form.hernia_omentum.value %}checked{% endif %}> Omentum</label>
+                <label class="cb-pill"><input type="checkbox" name="hernia_cough_impulse" {% if form.hernia_cough_impulse.value %}checked{% endif %}> Cough Impulse Positive</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ APPENDIX ════════════ -->
+    <div class="card mb-2 shadow-sm">
+      <div class="card-header bg-danger bg-opacity-10 fw-semibold d-flex justify-content-between"
+           data-bs-toggle="collapse" data-bs-target="#sec_appendix">
+        <span>🔴 Appendix</span><i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="collapse show" id="sec_appendix">
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-md-3">
+              <label class="form-label">Diameter (mm)</label>
+              <input type="text" name="appendix_diameter" value="{{ form.appendix_diameter.value|default:'' }}"
+                class="form-control form-control-sm" placeholder="e.g. 7 mm">
+            </div>
+            <div class="col-12">
+              <div class="sec-label">Findings</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="appendix_visualized" {% if form.appendix_visualized.value %}checked{% endif %}> Appendix Visualized</label>
+                <label class="cb-pill"><input type="checkbox" name="appendix_noncompressible" {% if form.appendix_noncompressible.value %}checked{% endif %}> Non-compressible</label>
+                <label class="cb-pill"><input type="checkbox" name="appendix_probe_tenderness" {% if form.appendix_probe_tenderness.value %}checked{% endif %}> Probe Tenderness</label>
+                <label class="cb-pill"><input type="checkbox" name="appendix_periappendiceal_fluid" {% if form.appendix_periappendiceal_fluid.value %}checked{% endif %}> Periappendiceal Fluid</label>
+                <label class="cb-pill"><input type="checkbox" name="appendicolith" {% if form.appendicolith.value %}checked{% endif %}> Appendicolith</label>
+                <label class="cb-pill"><input type="checkbox" name="inflamed_fat" {% if form.inflamed_fat.value %}checked{% endif %}> Inflamed Periappendiceal Fat</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ BOWEL ════════════ -->
+    <div class="card mb-2 shadow-sm">
+      <div class="card-header bg-warning bg-opacity-10 fw-semibold d-flex justify-content-between"
+           data-bs-toggle="collapse" data-bs-target="#sec_bowel">
+        <span>🌀 Bowel</span><i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="collapse show" id="sec_bowel">
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-12">
+              <div class="sec-label">Colitis</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="colitis_present" {% if form.colitis_present.value %}checked{% endif %}> Colitis Present</label>
+              </div>
+              <input type="text" name="colitis_site" value="{{ form.colitis_site.value|default:'' }}"
+                class="form-control form-control-sm mt-1" placeholder="Site e.g. Sigmoid / Transverse / Pan-colitis">
+            </div>
+            <div class="col-12">
+              <div class="sec-label">Bowel Obstruction / Other</div>
+              <div class="cb-row">
+                <label class="cb-pill"><input type="checkbox" name="sbo_present" {% if form.sbo_present.value %}checked{% endif %}> Small Bowel Obstruction</label>
+                <label class="cb-pill"><input type="checkbox" name="dilated_bowel_loops" {% if form.dilated_bowel_loops.value %}checked{% endif %}> Dilated Bowel Loops</label>
+                <label class="cb-pill"><input type="checkbox" name="to_and_fro_peristalsis" {% if form.to_and_fro_peristalsis.value %}checked{% endif %}> To-and-Fro Peristalsis</label>
+                <label class="cb-pill"><input type="checkbox" name="collapsed_distal_bowel" {% if form.collapsed_distal_bowel.value %}checked{% endif %}> Collapsed Distal Bowel</label>
+                <label class="cb-pill"><input type="checkbox" name="gaseous_bowel_loops" {% if form.gaseous_bowel_loops.value %}checked{% endif %}> Gaseous Bowel Loops</label>
+                <label class="cb-pill"><input type="checkbox" name="ibs_suggestion" {% if form.ibs_suggestion.value %}checked{% endif %}> IBS Suggestion</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+    <!-- ════════════ ADDITIONAL FINDINGS ════════════ -->
+    <div class="card mb-2 shadow-sm">
+      <div class="card-header bg-light fw-semibold">Additional Findings</div>
+      <div class="card-body">
+        <textarea name="additional_findings" class="form-control" rows="3"
+          placeholder="Any other findings...">{{ form.additional_findings.value|default:'' }}</textarea>
+      </div>
+    </div>
+
+    <!-- ════════════ IMPRESSION ════════════ -->
+    <div class="card mb-3 shadow border-primary">
+      <div class="card-header bg-primary text-white fw-bold">Impression &amp; Conclusion</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Overall Status</label>
+            <select name="impression_status" class="form-select form-select-sm">
+              {% for val,label in form.fields.impression_status.choices %}
+                <option value="{{ val }}" {% if form.impression_status.value == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Advice</label>
+            <textarea name="advice" class="form-control form-control-sm" rows="2"
+              placeholder="Follow-up advice...">{{ form.advice.value|default:'' }}</textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">
+              Impression <span class="text-danger">*</span>
+              <small class="text-muted fw-normal ms-2">(auto-filled from findings — edit if needed)</small>
+            </label>
+            <textarea name="impression" id="id_impression"
+              class="form-control" rows="6"
+              placeholder="Will be auto-generated — or type manually here">{{ form.impression.value|default:'' }}</textarea>
+            {% if form.impression.errors %}<div class="text-danger small mt-1">{{ form.impression.errors }}</div>{% endif %}
+            <button type="button" id="btnAutoImpression" class="btn btn-sm mt-1"
+              style="background:#007676;color:#fff;">
+              <i class="bi bi-magic me-1"></i> Re-generate Impression
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if form.errors %}
+    <div class="alert alert-danger">
+      <strong>Fix errors:</strong>
+      {% for field in form %}{% if field.errors %}<div><b>{{ field.label }}:</b> {{ field.errors|striptags }}</div>{% endif %}{% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="d-flex gap-2 mb-5">
+      <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Report</button>
+      {% if report %}
+        <a href="{% url 'hms:usg_report_print' report.pk %}" class="btn btn-outline-success" target="_blank">
+          <i class="bi bi-printer me-1"></i> Print
+        </a>
+      {% endif %}
+      <a href="{% url 'hms:usg_report_list' %}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<!-- Fill Normals -->
+<div style="position:fixed;bottom:24px;right:24px;z-index:999;">
+  <button id="btnFillNormals" class="btn btn-warning shadow-lg rounded-pill px-4">
+    <i class="bi bi-magic me-1"></i> Fill Normals
+  </button>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+  // ── Radio-style pills (mutually exclusive) ──────────────────────
+  document.querySelectorAll('[data-radio]').forEach(function(label) {
+    var rb = label.querySelector('input[type=radio]');
+    if (!rb) return;
+    label.classList.toggle('on', rb.checked);
+    rb.addEventListener('change', function() {
+      var grp = this.name;
+      document.querySelectorAll('[data-radio] input[name="'+grp+'"]').forEach(function(r) {
+        r.closest('[data-radio]').classList.toggle('on', r.checked);
+      });
+    });
+  });
+
+  // ── Checkbox pills styling ──────────────────────────────────────
+  document.querySelectorAll('.cb-pill input[type=checkbox]').forEach(function(cb) {
+    cb.closest('.cb-pill').classList.toggle('on', cb.checked);
+    cb.addEventListener('change', function() {
+      this.closest('.cb-pill').classList.toggle('on', this.checked);
+    });
+  });
+
+  // ── Conditional sub-rows ───────────────────────────────────────
+  function toggleSub(triggerId, subId) {
+    var trigger = document.getElementById(triggerId);
+    var sub     = document.getElementById(subId);
+    if (!trigger || !sub) return;
+    function update() { sub.style.display = trigger.checked ? 'flex' : 'none'; }
+    update();
+    trigger.addEventListener('change', update);
+  }
+  toggleSub('rk_stone_present',  'rk_stone_sub');
+  toggleSub('lk_stone_present',  'lk_stone_sub');
+  toggleSub('rk_cyst_present',   'rk_cyst_sub');
+  toggleSub('lk_cyst_present',   'lk_cyst_sub');
+  toggleSub('fibroid_present',   'fibroid_sub');
+  toggleSub('ro_cyst_present',   'ro_cyst_sub');
+  toggleSub('lo_cyst_present',   'lo_cyst_sub');
+
+  // ── Gender-based visibility ─────────────────────────────────────
+  var patSel  = document.querySelector('[name="patient"]');
+  var cU = document.getElementById('card_uterus');
+  var cO = document.getElementById('card_obs');
+  var cP = document.getElementById('card_prostate');
+
+  function applyGender(g) {
+    g = (g||'').trim().toUpperCase();
+    var f = g==='F'||g==='FEMALE';
+    var m = g==='M'||g==='MALE';
+    if (cU) cU.style.display = f ? '' : 'none';
+    if (cO) cO.style.display = f ? '' : 'none';
+    if (cP) cP.style.display = m ? '' : 'none';
+  }
+  function fetchGender(pid) {
+    if (!pid) return;
+    fetch('/patients/'+pid+'/gender/')
+      .then(function(r){return r.json();})
+      .then(function(d){applyGender(d.gender);})
+      .catch(function(){});
+  }
+  if (patSel) {
+    patSel.addEventListener('change', function(){ fetchGender(this.value); });
+    if (patSel.value) fetchGender(patSel.value);
+  }
+
+  // ── AUTO IMPRESSION ─────────────────────────────────────────────
+  function buildImpression() {
+    var lines = [];
+    function ck(name) {
+      var el = document.querySelector('[name="'+name+'"]');
+      return el && el.checked;
+    }
+    function val(name) {
+      var el = document.querySelector('[name="'+name+'"]');
+      return el ? el.value.trim() : '';
+    }
+    function numVal(name) {
+      var v = val(name); if(!v) return null;
+      var m = v.replace(/[~≈]/g,'').match(/\d+\.?\d*/);
+      return m ? parseFloat(m[0]) : null;
+    }
+
+    // Liver
+    var ln = numVal('liver_size');
+    if (ln!==null && ln>15) lines.push('Hepatomegaly (liver measures '+val('liver_size')+' cm).');
+    if (ck('liver_focal_lesion')) lines.push('Focal hepatic lesion — further evaluation recommended.');
+    if (ck('liver_cyst'))         lines.push('Hepatic cyst noted.');
+    if (ck('liver_mass'))         lines.push('Hepatic mass / SOL noted — further evaluation recommended.');
+    if (ck('liver_ihbr_dilated')) lines.push('IHBR dilated.');
+
+    // GB
+    if (ck('gb_calculi_present')) {
+      var gcl='Cholelithiasis';
+      var gcd=val('gb_calculi_detail'); if(gcd) gcl+=' ('+gcd+')';
+      lines.push(gcl+'.');
+    }
+    if (ck('gb_wall_thick'))            lines.push('Gallbladder wall thickening.');
+    if (ck('gb_sludge'))                lines.push('Biliary sludge noted.');
+    if (ck('gb_pericholecystic_fluid')) lines.push('Pericholecystic fluid — suggestive of cholecystitis.');
+    if (ck("gb_probe_tenderness"))      lines.push("Murphy sign positive.");
+
+    // CBD
+    var cdbn = numVal('cbd_diameter');
+    if (ck('cbd_dilated') || (cdbn!==null && cdbn>6))
+      lines.push('Dilated CBD ('+val('cbd_diameter')+' mm) — biliary obstruction to be considered.');
+
+    // Spleen
+    var sn = numVal('spleen_size');
+    if (ck('splenomegaly') || (sn!==null && sn>13))
+      lines.push('Splenomegaly ('+val('spleen_size')+' cm).');
+    if (ck('spleen_cyst'))   lines.push('Splenic cyst.');
+    if (ck('spleen_lesion')) lines.push('Focal splenic lesion — further evaluation recommended.');
+
+    // Right Kidney
+    if (ck('rk_stone_present')) {
+      var rs='Calculus right kidney';
+      var rsz=val('rk_stone_size'); if(rsz) rs+=' ('+rsz+')';
+      var rst=val('rk_stone_site'); if(rst) rs+=' at '+rst;
+      lines.push(rs+'.');
+    }
+    if (ck('rk_severe_hydronephrosis'))        lines.push('Severe hydronephrosis — right kidney.');
+    else if (ck('rk_moderate_hydronephrosis')) lines.push('Moderate hydronephrosis — right kidney.');
+    else if (ck('rk_mild_hydronephrosis'))     lines.push('Mild hydronephrosis — right kidney.');
+    if (ck('rk_hydroureteronephrosis'))        lines.push('Right hydroureteronephrosis.');
+    else if (ck('rk_hydroureter'))             lines.push('Right hydroureter.');
+    if (ck('rk_cyst_present')) {
+      var rc='Right renal cyst';
+      var rcs=val('rk_cyst_size'); if(rcs) rc+=' ('+rcs+')';
+      var rct=val('rk_cyst_type'); if(rct) rc+=' — '+rct;
+      lines.push(rc+'.');
+    }
+
+    // Left Kidney
+    if (ck('lk_stone_present')) {
+      var ls='Calculus left kidney';
+      var lsz=val('lk_stone_size'); if(lsz) ls+=' ('+lsz+')';
+      var lst=val('lk_stone_site'); if(lst) ls+=' at '+lst;
+      lines.push(ls+'.');
+    }
+    if (ck('lk_severe_hydronephrosis'))        lines.push('Severe hydronephrosis — left kidney.');
+    else if (ck('lk_moderate_hydronephrosis')) lines.push('Moderate hydronephrosis — left kidney.');
+    else if (ck('lk_mild_hydronephrosis'))     lines.push('Mild hydronephrosis — left kidney.');
+    if (ck('lk_hydroureteronephrosis'))        lines.push('Left hydroureteronephrosis.');
+    else if (ck('lk_hydroureter'))             lines.push('Left hydroureter.');
+    if (ck('lk_cyst_present')) {
+      var lc='Left renal cyst';
+      var lcs=val('lk_cyst_size'); if(lcs) lc+=' ('+lcs+')';
+      var lct=val('lk_cyst_type'); if(lct) lc+=' — '+lct;
+      lines.push(lc+'.');
+    }
+
+    // Ureteric
+    var us=val('ureteric_side'), uz=val('ureteric_size'), ut=val('ureteric_site');
+    if (uz || us) {
+      var uc='Ureteric calculus';
+      if(us) uc+=' — '+us+' side';
+      if(uz) uc+=' ('+uz+')';
+      if(ut) uc+=' at '+ut;
+      lines.push(uc+'.');
+    }
+
+    // Bladder
+    if (ck('bladder_wall_thick'))   lines.push('Urinary bladder wall thickening.');
+    if (ck('bladder_calculus'))     lines.push('Vesical calculus.');
+    if (ck('bladder_mass'))         lines.push('Bladder mass — further evaluation recommended.');
+    var pv=numVal('pvrv');
+    if (pv!==null && pv>100) lines.push('Significant post-void residual volume ('+val('pvrv')+' ml).');
+    else if (pv!==null && pv>50) lines.push('Elevated post-void residual volume ('+val('pvrv')+' ml).');
+
+    // Uterus
+    if (ck('pid_changes'))    lines.push('Features of PID.');
+    if (ck('fibroid_present')) {
+      var fi='Uterine fibroid';
+      var fsz=val('fibroid_size'); if(fsz) fi+=' ('+fsz+')';
+      var fst=val('fibroid_site'); if(fst) fi+=', '+fst;
+      var ftp=val('fibroid_type'); if(ftp) fi+=', '+ftp;
+      lines.push(fi+'.');
+    }
+    if (ck('ro_cyst_present')) {
+      var roc='Right ovarian cyst';
+      var rocs=val('ro_cyst_size'); if(rocs) roc+=' ('+rocs+')';
+      var roct=val('ro_cyst_type'); if(roct) roc+=' — '+roct;
+      lines.push(roc+'.');
+    }
+    if (ck('lo_cyst_present')) {
+      var loc2='Left ovarian cyst';
+      var locs=val('lo_cyst_size'); if(locs) loc2+=' ('+locs+')';
+      var loct=val('lo_cyst_type'); if(loct) loc2+=' — '+loct;
+      lines.push(loc2+'.');
+    }
+    if (ck('ro_bulky')) lines.push('Right ovary bulky.');
+    if (ck('lo_bulky')) lines.push('Left ovary bulky.');
+
+    // Prostate
+    if (ck('prostatomegaly')) {
+      var pr='Prostatomegaly / BPH';
+      var pv2=val('prostate_volume'); if(pv2) pr+=' (volume '+pv2+' cc)';
+      lines.push(pr+'.');
+    }
+    if (ck('prostate_median_lobe')) lines.push('Median lobe hypertrophy of prostate.');
+
+    // Hernia
+    var ht=val('hernia_type'), hs=val('hernia_side');
+    if (ht || hs) {
+      var hh=(ht?ht+' ':'')+'hernia'+(hs?' — '+hs+' side':'');
+      if(ck('hernia_irreducible')) hh+=' (irreducible)';
+      lines.push(hh.charAt(0).toUpperCase()+hh.slice(1)+'.');
+    }
+
+    // Appendix
+    if (ck('appendix_noncompressible') || ck('appendix_probe_tenderness')) {
+      var ap='Acute appendicitis';
+      var ad=val('appendix_diameter'); if(ad) ap+=' (diameter '+ad+' mm)';
+      if(ck('appendicolith')) ap+=' with appendicolith';
+      lines.push(ap+'.');
+    } else {
+      var adn=numVal('appendix_diameter');
+      if(adn!==null && adn>=6) lines.push('Thickened appendix ('+val('appendix_diameter')+' mm) — appendicitis to be considered.');
+    }
+
+    // Bowel
+    if (ck('colitis_present')) {
+      var co='Colitis'; var cs=val('colitis_site'); if(cs) co+=' — '+cs;
+      lines.push(co+'.');
+    }
+    if (ck('sbo_present'))            lines.push('Small bowel obstruction.');
+    if (ck('to_and_fro_peristalsis')) lines.push('To-and-fro peristalsis — bowel obstruction to be considered.');
+    if (ck('ibs_suggestion'))         lines.push('Findings suggestive of IBS.');
+
+    if (lines.length===0) return 'Normal Study.';
+    return lines.map(function(l,i){ return (i+1)+'. '+l; }).join('
+');
+  }
+
+  // Auto-fill impression on page load if empty
+  setTimeout(function() {
+    var impField = document.getElementById('id_impression');
+    if (impField && !impField.value.trim()) {
+      impField.value = buildImpression();
+    }
+  }, 300);
+
+  // Re-generate button
+  document.getElementById('btnAutoImpression').addEventListener('click', function() {
+    var imp = document.getElementById('id_impression');
+    if (imp) {
+      imp.value = buildImpression();
+      imp.style.transition = 'border-color 0.3s';
+      imp.style.borderColor = '#007676';
+      imp.focus();
+      setTimeout(function(){ imp.style.borderColor = ''; }, 1500);
+    }
+  });
+
+  // ── Fill Normals ────────────────────────────────────────────────
+  document.getElementById('btnFillNormals').addEventListener('click', function() {
+    var N = {
+      liver_size: '14', rk_size: '10 x 4.5', lk_size: '10 x 4.5',
+      spleen_size: '10',
+      pancreas_notes: 'Normal in size, shape and echotexture. Pancreatic duct not dilated.',
+      bladder_notes: 'Well distended, smooth walls, no calculus or mass lesion.',
+      impression: 'Normal Study.'
+    };
+    Object.keys(N).forEach(function(k){
+      var el = document.querySelector('[name="'+k+'"]');
+      if (el && !el.value.trim()) el.value = N[k];
+    });
+    // Auto-tick normal radio
+    var normalEcho = document.querySelector('[name="liver_echotexture"][value="Normal homogeneous echotexture"]');
+    if (normalEcho && !document.querySelector('[name="liver_echotexture"]:checked')) {
+      normalEcho.checked = true; normalEcho.dispatchEvent(new Event('change'));
+    }
+    var st = document.querySelector('[name="impression_status"]');
+    if (st) st.value = 'NORMAL';
+  });
+});
+</script>
+{% endblock %}

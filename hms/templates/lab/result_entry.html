@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load hms_extras %}
+
+{% block content %}
+
+<div class="container mt-4" style="max-width: 700px;">
+
+<h4>🔬 Enter Lab Results</h4>
+
+<div class="card mb-3">
+<div class="card-body">
+
+<div class="row">
+
+<div class="col-6">
+<strong>Patient:</strong> {{ item.bill.patient.full_name }} <br>
+<strong>UHID:</strong> {{ item.bill.patient.uhid }}
+</div>
+
+<div class="col-6">
+<strong>Investigation:</strong> {{ item.investigation.name }} <br>
+<strong>Bill #:</strong> {{ item.bill.id }}
+<span class="badge bg-success">PAID</span>
+</div>
+
+</div>
+</div>
+</div>
+
+
+{% if parameters %}
+
+<form method="post">
+{% csrf_token %}
+
+<table class="table table-bordered">
+
+<thead class="table-light">
+<tr>
+<th>Parameter</th>
+<th style="width:180px;">Result Value</th>
+<th>Unit</th>
+<th>Normal Range</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for p in parameters %}
+
+<tr>
+
+<td>
+
+<strong>{{ p.name }}</strong>
+
+{% if p.method %}
+<br>
+<span style="font-size:11px;color:#666;">
+Method: {{ p.method }}
+</span>
+{% endif %}
+
+</td>
+
+<td>
+
+<input
+type="text"
+name="param_{{ p.id }}"
+class="form-control form-control-sm"
+value="{{ existing_results|get_item:p.id|default:'' }}"
+placeholder="Enter value"
+>
+
+</td>
+
+<td class="text-muted">
+{{ p.unit|default:"-" }}
+</td>
+
+<td class="text-muted">
+
+{% if p.min_value is not None and p.max_value is not None %}
+{{ p.min_value }} – {{ p.max_value }}
+
+{% elif p.male_range or p.female_range %}
+
+{% if item.bill.patient.gender == "Male" %}
+{{ p.male_range|default:"-" }}
+{% else %}
+{{ p.female_range|default:"-" }}
+{% endif %}
+
+{% else %}
+-
+{% endif %}
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+</table>
+
+
+<div class="d-flex gap-2 mt-3">
+
+<button type="submit" class="btn btn-success">
+💾 Save Results
+</button>
+
+<a href="{% url 'hms:lab_reports' %}" class="btn btn-secondary">
+Cancel
+</a>
+
+</div>
+
+</form>
+
+{% else %}
+
+<div class="alert alert-warning">
+
+⚠️ No parameters defined for
+<strong>{{ item.investigation.name }}</strong>
+
+<br><br>
+
+<a href="/admin/hms/investigationparameter/add/" class="btn btn-sm btn-primary">
+Add parameters in Admin
+</a>
+
+</div>
+
+<a href="{% url 'hms:lab_reports' %}" class="btn btn-secondary">
+← Back
+</a>
+
+{% endif %}
+
+</div>
+
+{% endblock %}

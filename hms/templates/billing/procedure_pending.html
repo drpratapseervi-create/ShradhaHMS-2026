@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+.main-content {
+    padding: 20px;
+}
+
+.card-box {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 2px 10px rgba(0,0,0,0.05);
+}
+
+.table-modern {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-modern th {
+    background: #1e6bd6;
+    color: white;
+    padding: 12px;
+    text-align: left;
+    font-size: 14px;
+}
+
+.table-modern td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.table-modern tr:hover {
+    background: #f8fbff;
+}
+
+.badge-proc {
+    display: inline-block;
+    background: #6c757d;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin: 2px;
+}
+
+.btn-print {
+    background: #198754;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 13px;
+    display: inline-block;
+}
+
+.btn-print:hover {
+    background: #157347;
+}
+
+.amount {
+    color: #198754;
+    font-weight: bold;
+    font-size: 15px;
+}
+</style>
+
+<div class="main-content">
+
+<div class="card-box">
+
+<h3 style="margin-bottom:15px;">📄 Procedure Bills</h3>
+
+<table class="table-modern">
+<thead>
+<tr>
+    <th>#</th>
+    <th>Patient</th>
+    <th>UHID</th>
+    <th>Date</th>
+    <th>Doctor</th>
+    <th>Department</th>
+    <th>Procedures</th>
+    <th>Amount</th>
+    <th>Action</th>
+</tr>
+</thead>
+
+<tbody>
+{% for bill in bills %}
+<tr>
+    <td><b>#{{ bill.id }}</b></td>
+
+    <td>
+        <b>{{ bill.patient.full_name }}</b><br>
+        <small style="color:gray;">
+            {{ bill.patient.mobile_no }}
+        </small>
+    </td>
+
+    <td>{{ bill.patient.uhid }}</td>
+
+    <td>{{ bill.created_at|date:"d M Y, h:i A" }}</td>
+
+    <!-- ✅ Doctor -->
+    <td>
+        {{ bill.consultant.full_name|default:"-" }}
+    </td>
+
+    <!-- ✅ Department -->
+    <td>
+        {{ bill.department.name|default:"-" }}
+    </td>
+
+    <!-- ✅ Procedures (CORRECT RELATION) -->
+    <td>
+        {% for item in bill.items.all %}
+            <span class="badge-proc">
+                {{ item.procedure.name }}
+            </span>
+        {% empty %}
+            <small>No procedures</small>
+        {% endfor %}
+    </td>
+
+    <!-- ✅ Amount -->
+    <td class="amount">₹{{ bill.net_amount }}</td>
+
+    <!-- ✅ Action -->
+    <td>
+        <a href="{% url 'hms:procedure_print' bill.id %}" 
+           class="btn-print" target="_blank">
+           🖨 Print
+        </a>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="9" style="text-align:center; padding:20px;">
+        No procedure bills found
+    </td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+</div>
+
+</div>
+
+{% endblock %}

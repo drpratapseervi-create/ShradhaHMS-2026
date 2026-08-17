@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Inventory Report</h2>
+    <button onclick="window.print()" class="btn btn-outline-dark">🖨 Print</button>
+  </div>
+
+  <!-- Low Stock Summary -->
+  {% if low_stock %}
+  <div class="alert alert-danger">
+    <strong>⚠ {{ low_stock.count }} item(s) are below minimum stock level!</strong>
+  </div>
+  {% endif %}
+
+  <!-- Full Stock Table -->
+  <table class="table table-bordered table-striped">
+    <thead class="table-dark">
+      <tr>
+        <th>#</th>
+        <th>Item Name</th>
+        <th>Category</th>
+        <th>Unit</th>
+        <th>Current Stock</th>
+        <th>Min Stock</th>
+        <th>Supplier</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr {% if item.is_low_stock %}class="table-danger"{% endif %}>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ item.name }}</td>
+        <td>{{ item.category }}</td>
+        <td>{{ item.unit }}</td>
+        <td><strong>{{ item.current_stock }}</strong></td>
+        <td>{{ item.minimum_stock }}</td>
+        <td>{{ item.supplier.name|default:"—" }}</td>
+        <td>
+          {% if item.is_low_stock %}
+            <span class="badge bg-danger">Low Stock</span>
+          {% else %}
+            <span class="badge bg-success">OK</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="text-center text-muted">No items in inventory.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<style>
+@media print {
+  .btn, nav, aside { display: none !important; }
+}
+</style>
+{% endblock %}

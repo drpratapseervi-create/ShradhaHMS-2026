@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h4>⏳ Pending Lab Orders <small class="text-muted">(Payment Pending)</small></h4>
+
+  {% if pending_bills %}
+  <table class="table table-bordered table-hover mt-3">
+    <thead class="table-warning">
+      <tr>
+        <th>Bill #</th>
+        <th>Patient</th>
+        <th>UHID</th>
+        <th>Date</th>
+        <th>Investigations</th>
+        <th>Amount</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for bill in pending_bills %}
+      <tr>
+        <td>#{{ bill.id }}</td>
+        <td>{{ bill.patient.full_name }}</td>
+        <td>{{ bill.patient.uhid }}</td>
+        <td>{{ bill.created_at|date:"d-m-Y H:i" }}</td>
+        <td>
+          {% for item in bill.items.all %}
+            <span class="badge bg-secondary">{{ item.investigation.name }}</span>
+          {% endfor %}
+        </td>
+        <td>₹{{ bill.total_amount }}</td>
+        <td>
+          <a href="{% url 'hms:lab_bill_print' bill.id %}"
+             class="btn btn-sm btn-outline-primary" target="_blank">
+            🖨️ Bill
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="alert alert-success mt-3">✅ No pending lab orders.</div>
+  {% endif %}
+</div>
+{% endblock %}

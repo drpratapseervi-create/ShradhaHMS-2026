@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab Report – {{ item.investigation.name }} – {{ item.bill.patient.full_name }}</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      background: #e8e8e8;
+      color: #111;
+      font-size: 13px;
+    }
+
+    /* ── Print toolbar (hidden on print) ── */
+    .toolbar {
+      background: #1a3a5c;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      print-color-adjust: exact;
+    }
+    .toolbar a {
+      color: #fff;
+      text-decoration: none;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      opacity: 0.85;
+    }
+    .toolbar a:hover { opacity: 1; }
+    .btn-print {
+      background: #fff;
+      color: #1a3a5c;
+      border: none;
+      padding: 8px 22px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-print:hover { background: #ddeeff; }
+
+    /* ── Page wrapper ── */
+    .page-wrap {
+      max-width: 760px;
+      margin: 24px auto 40px;
+      background: #fff;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+    }
+
+    /* ── Header ── */
+    .report-header {
+      padding: 22px 30px 14px;
+      border-bottom: 3px double #1a3a5c;
+      text-align: center;
+    }
+    .hospital-name {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 22px;
+      font-weight: 900;
+      color: #1a3a5c;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .hospital-address {
+      font-size: 12px;
+      color: #444;
+      margin-top: 3px;
+    }
+    .report-title {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #1a3a5c;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #c0cfe0;
+    }
+
+    /* ── Patient Info Table ── */
+    .info-section {
+      padding: 0 30px;
+      margin-top: 14px;
+    }
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #aaa;
+    }
+    .info-table td {
+      padding: 5px 10px;
+      border: 1px solid #aaa;
+      vertical-align: top;
+    }
+    .info-table .label {
+      font-weight: bold;
+      width: 110px;
+      color: #222;
+      background: #f5f8fc;
+      white-space: nowrap;
+    }
+    .info-table .value {
+      color: #111;
+    }
+
+    /* ── Results Section ── */
+    .results-section {
+      padding: 16px 30px 20px;
+    }
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+    }
+    .results-table thead tr {
+      background: #1a3a5c;
+      color: #fff;
+    }
+    .results-table thead th {
+      padding: 7px 10px;
+      text-align: left;
+      font-family: Arial, sans-serif;
+      font-size: 11.5px;
+      letter-spacing: 0.5px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .results-table tbody tr {
+      border-bottom: 1px solid #dde4ee;
+    }
+    .results-table tbody tr:nth-child(even) {
+      background: #f7f9fc;
+    }
+    .results-table tbody td {
+      padding: 6px 10px;
+      vertical-align: middle;
+    }
+    .param-name {
+      font-weight: bold;
+      color: #1a1a1a;
+    }
+    .param-method {
+      font-size: 11px;
+      color: #666;
+      font-style: italic;
+      display: block;
+      margin-top: 1px;
+    }
+    .result-value {
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .flag-cell {
+      font-weight: bold;
+      font-size: 12px;
+      text-align: center;
+    }
+    .flag-HIGH  { color: #c0392b; }
+    .flag-LOW   { color: #2471a3; }
+    .flag-CR    { color: #c0392b; background: #fdecea; padding: 2px 6px; border-radius: 3px; }
+    .flag-NORMAL { color: #27ae60; }
+
+    /* value colour based on flag */
+    .val-HIGH  { color: #c0392b; }
+    .val-LOW   { color: #2471a3; }
+    .val-CR    { color: #c0392b; }
+
+    /* Group header row */
+    .group-header td {
+      background: #dce6f1;
+      font-family: Arial, sans-serif;
+      font-size: 11.5px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #1a3a5c;
+      padding: 4px 10px;
+      border-bottom: 1px solid #b0c4de;
+    }
+
+    /* No results row */
+    .no-results td {
+      text-align: center;
+      padding: 18px;
+      color: #888;
+      font-style: italic;
+    }
+
+    /* ── Footer ── */
+    .report-footer {
+      margin: 0 30px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-top: 1px solid #ccc;
+      padding-top: 12px;
+      font-size: 11px;
+      color: #666;
+    }
+    .footer-note { max-width: 55%; }
+    .signature-block { text-align: center; }
+    .signature-line {
+      border-top: 1px solid #444;
+      width: 180px;
+      margin: 0 auto 4px;
+    }
+    .signature-label {
+      font-size: 11px;
+      color: #333;
+    }
+
+    /* ── Print styles ── */
+    @media print {
+      body { background: #fff; font-size: 12px; }
+      .toolbar { display: none !important; }
+      .page-wrap {
+        max-width: 100%;
+        margin: 0;
+        border: none;
+        box-shadow: none;
+      }
+      .results-table thead tr {
+        background: #1a3a5c !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .group-header td {
+        background: #dce6f1 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .info-table .label {
+        background: #f5f8fc !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .results-table tbody tr:nth-child(even) {
+        background: #f7f9fc !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     PRINT TOOLBAR (screen only)
+═══════════════════════════════════ -->
+<div class="toolbar">
+  <button class="btn-print" onclick="window.print()">🖨 Print Report</button>
+  <a href="javascript:history.back()">← Back</a>
+</div>
+
+<!-- ══════════════════════════════════
+     REPORT PAGE
+═══════════════════════════════════ -->
+<div class="page-wrap">
+
+  <!-- HEADER -->
+  <div class="report-header">
+    <div class="hospital-name">Shradha Hospital &amp; Multispeciality Centre</div>
+    <div class="hospital-address">
+      Pani Ki Do Tanki, Surajpole, Pali (Rajasthan) – 306401 &nbsp;|&nbsp; ☎ 9414122542
+    </div>
+    <div class="report-title">Laboratory Investigation Report</div>
+  </div>
+
+  <!-- PATIENT INFO -->
+  <div class="info-section">
+    <table class="info-table">
+      <tr>
+        <td class="label">Patient Name</td>
+        <td class="value">{{ item.bill.patient.full_name|title }}</td>
+        <td class="label">UHID</td>
+        <td class="value">{{ item.bill.patient.uhid }}</td>
+      </tr>
+      <tr>
+        <td class="label">Age / Sex</td>
+        <td class="value">
+          {% if item.bill.patient.age %}{{ item.bill.patient.age }}{% else %}—{% endif %}
+          / {{ item.bill.patient.gender }}
+        </td>
+        <td class="label">Date</td>
+        <td class="value">{{ item.bill.created_at|date:"d-m-Y" }}</td>
+      </tr>
+      <tr>
+        <td class="label">Investigation</td>
+        <td class="value" colspan="3"><strong>{{ item.investigation.name }}</strong></td>
+      </tr>
+      <tr>
+        <td class="label">Bill No</td>
+        <td class="value">#{{ item.bill.id }}</td>
+        <td class="label">Referred By</td>
+        <td class="value">
+          {% if item.bill.consultation.appointment.doctor %}
+            Dr. {{ item.bill.consultation.appointment.doctor.full_name }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- RESULTS TABLE -->
+  <div class="results-section">
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th style="width:34%">Parameter</th>
+          <th style="width:16%">Result</th>
+          <th style="width:14%">Unit</th>
+          <th style="width:24%">Normal Range</th>
+          <th style="width:12%; text-align:center">Flag</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if results %}
+          {% regroup results by parameter.group as grouped_results %}
+          {% for group in grouped_results %}
+            {% if group.grouper %}
+            <tr class="group-header">
+              <td colspan="5">{{ group.grouper }}</td>
+            </tr>
+            {% endif %}
+            {% for r in group.list %}
+            <tr>
+              <!-- Parameter Name + Method -->
+              <td>
+                <span class="param-name">{{ r.parameter.name }}</span>
+                {% if r.parameter.method %}
+                  <span class="param-method">Method: {{ r.parameter.method }}</span>
+                {% endif %}
+              </td>
+
+              <!-- Result Value (coloured if abnormal) -->
+              <td>
+                <span class="result-value
+                  {% if r.flag == 'HIGH' or r.flag == 'CR' %}val-HIGH
+                  {% elif r.flag == 'LOW' %}val-LOW
+                  {% endif %}">
+                  {{ r.value }}
+                </span>
+              </td>
+
+              <!-- Unit -->
+              <td>{{ r.parameter.unit }}</td>
+
+              <!-- Normal Range — gender-aware -->
+              <td>
+                {% if item.bill.patient.gender == "Female" and r.parameter.female_range %}
+                  {{ r.parameter.female_range }}
+                {% elif item.bill.patient.gender == "Male" and r.parameter.male_range %}
+                  {{ r.parameter.male_range }}
+                {% elif r.parameter.min_value and r.parameter.max_value %}
+                  {{ r.parameter.min_value }} – {{ r.parameter.max_value }}
+                {% elif r.parameter.min_value %}
+                  > {{ r.parameter.min_value }}
+                {% elif r.parameter.max_value %}
+                  < {{ r.parameter.max_value }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+
+              <!-- Flag -->
+              <td class="flag-cell">
+                {% if r.flag == "HIGH" %}
+                  <span class="flag-HIGH">↑ HIGH</span>
+                {% elif r.flag == "LOW" %}
+                  <span class="flag-LOW">↓ LOW</span>
+                {% elif r.flag == "CR" %}
+                  <span class="flag-CR">⚠ CRIT</span>
+                {% else %}
+                  <span class="flag-NORMAL">Normal</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          {% endfor %}
+        {% else %}
+          <tr class="no-results">
+            <td colspan="5">No results entered.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="report-footer">
+    <div class="footer-note">
+      Computer-generated report. No signature required.<br>
+      <em>Results are for clinical reference only. Consult your physician for interpretation.</em>
+    </div>
+    <div class="signature-block">
+      <div class="signature-line"></div>
+      <div class="signature-label">Authorized Signatory</div>
+    </div>
+  </div>
+
+</div><!-- /.page-wrap -->
+
+<!-- Bottom print button (screen only) -->
+<div style="text-align:center; margin-bottom:32px; font-family:Arial,sans-serif;">
+  <button class="btn-print" onclick="window.print()"
+    style="background:#1a3a5c;color:#fff;border:none;padding:10px 28px;
+           border-radius:5px;font-size:14px;font-weight:bold;cursor:pointer;">
+    🖨 Print Report
+  </button>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,29 @@
+<table width="100%" border="1" cellspacing="0" cellpadding="6"
+       style="border-collapse:collapse; font-size:14px;">
+    <tr>
+        <th width="15%">Patient Name</th>
+        <td width="35%">{{ appointment.patient.full_name }}</td>
+        <th width="15%">Age / Sex</th>
+        <td width="35%">
+            {{ appointment.patient.age }} / {{ appointment.patient.gender }}
+        </td>
+    </tr>
+    <tr>
+        <th>UHID</th>
+        <td>{{ appointment.patient.uhid }}</td>
+        <th>Mobile No</th>
+        <td>{{ appointment.patient.mobile_no }}</td>
+    </tr>
+    <tr>
+        <th>Address</th>
+        <td>{{ appointment.patient.address }}</td>
+        <th>Consultant</th>
+        <td>{{ appointment.doctor.full_name }}</td>
+    </tr>
+    <tr>
+        <th>Date</th>
+        <td>{{ appointment.date|date:"d-m-Y" }}</td>
+        <th>Time</th>
+        <td>{{ appointment.date|time:"h:i a" }}</td>
+    </tr>
+</table>

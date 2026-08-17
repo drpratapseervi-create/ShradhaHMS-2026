@@ -1,0 +1,833 @@
+{% extends "base.html" %}
+
+{% block title %}IPD Patient File{% endblock %}
+
+{% block content %}
+
+<style>
+
+.ipd-container{
+max-width:1100px;
+margin:auto;
+padding:20px;
+font-family:'Segoe UI',sans-serif;
+}
+
+.ipd-container h2{
+color:#e2e8f0;
+}
+
+.ipd-container h3, .ipd-container h4{
+color:#00b8a9;
+}
+
+.ipd-header{
+background:#111111;
+border:1px solid #2a2a2a;
+padding:20px;
+border-radius:10px;
+margin-bottom:20px;
+box-shadow:0 2px 8px rgba(0,0,0,0.3);
+}
+
+.ipd-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:12px;
+font-size:14px;
+color:#e2e8f0;
+}
+
+.ipd-grid b{
+color:#8892a4;
+font-weight:600;
+margin-right:6px;
+}
+
+.tabs{
+display:flex;
+gap:8px;
+margin-bottom:15px;
+flex-wrap:wrap;
+}
+
+.tab-btn{
+padding:8px 16px;
+border:1px solid #2a2a2a;
+background:#1a1a1a;
+color:#8892a4;
+cursor:pointer;
+border-radius:7px;
+font-weight:600;
+font-size:13px;
+transition:.15s;
+}
+.tab-btn:hover{
+background:#1e1e1e;
+color:#e2e8f0;
+}
+
+.tab-btn.active{
+background:#00b8a9;
+color:#000;
+border-color:#00b8a9;
+}
+
+.tab-content{
+display:none;
+background:#111111;
+border:1px solid #2a2a2a;
+padding:20px;
+border-radius:10px;
+box-shadow:0 2px 8px rgba(0,0,0,0.3);
+}
+
+.tab-content.active{
+display:block;
+}
+
+.form-control{
+width:100%;
+padding:9px 12px;
+margin-bottom:10px;
+border:1px solid #2a2a2a;
+border-radius:7px;
+background:#1a1a1a;
+color:#e2e8f0 !important; /* Forces typed text to stay bright light gray */
+font-size:14px;
+outline:none;
+transition:border-color .15s;
+box-sizing:border-box;
+}
+.form-control:focus{
+border-color:#00b8a9;
+box-shadow:0 0 0 2px rgba(0,184,169,.15);
+}
+/* Style all browser placeholders to be highly visible light text */
+.form-control::-webkit-input-placeholder {
+    color: #e2e8f0 !important;
+    opacity: 0.95 !important;
+}
+.form-control::-moz-placeholder {
+    color: #e2e8f0 !important;
+    opacity: 0.95 !important;
+}
+.form-control:-ms-input-placeholder {
+    color: #e2e8f0 !important;
+    opacity: 0.95 !important;
+}
+.form-control::-ms-input-placeholder {
+    color: #e2e8f0 !important;
+    opacity: 0.95 !important;
+}
+.form-control::placeholder {
+    color: #e2e8f0 !important;
+    opacity: 0.95 !important;
+}
+
+
+label{
+color:#8892a4;
+font-size:13px;
+font-weight:600;
+display:block;
+margin-bottom:5px;
+}
+
+.save-btn{
+padding:9px 22px;
+background:#00b8a9;
+color:#000;
+border:none;
+border-radius:7px;
+cursor:pointer;
+font-weight:700;
+transition:background .15s;
+}
+.save-btn:hover{
+background:#00d4c0;
+}
+
+.print-btn{
+padding:9px 22px;
+background:#1e3a3a;
+color:#00d4c0;
+border:1px solid #00b8a9;
+border-radius:7px;
+text-decoration:none;
+margin-left:10px;
+font-weight:700;
+display:inline-block;
+}
+.print-btn:hover{
+background:#155555;
+}
+
+.btn-danger{
+padding:9px 22px;
+background:#3a1418;
+color:#fca5a5;
+border:1px solid #7a2530;
+border-radius:7px;
+text-decoration:none;
+font-weight:700;
+display:inline-block;
+}
+.btn-danger:hover{
+background:#4a1a20;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:12px;
+font-size:13px;
+}
+
+th,td{
+border:1px solid #2a2a2a;
+padding:9px 10px;
+text-align:left;
+color:#cbd5e1;
+}
+
+th{
+background:#1a1a1a;
+color:#00b8a9;
+font-weight:700;
+font-size:11px;
+text-transform:uppercase;
+letter-spacing:.4px;
+}
+
+tbody tr:hover{
+background:#161616;
+}
+
+hr{
+border:none;
+border-top:1px solid #2a2a2a;
+margin:20px 0;
+}
+
+/* ── 4-COLUMN SYMPTOMS GRID LAYOUT ── */
+.cb-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 8px !important;
+    margin-bottom: 15px;
+}
+
+/* ── INDIVIDUAL SYMPTOM CARDS ── */
+.cb-item {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 7px;
+    padding: 8px 12px !important;
+    border: 1px solid #2a2a2a !important;
+    border-radius: 7px !important;
+    background: #161616 !important;
+    cursor: pointer;
+    font-size: 13px;
+    color: #cbd5e1 !important;
+    transition: all 0.15s;
+    user-select: none;
+}
+
+.cb-item:hover { 
+    background: #1e1e1e !important; 
+    border-color: #3e3e3e !important; 
+}
+
+.cb-item input[type=checkbox] { 
+    accent-color: #00b8a9 !important; 
+    width: 14px; 
+    height: 14px; 
+    cursor: pointer; 
+    flex-shrink: 0; 
+}
+
+/* ── VITALS PILLED ROW ── */
+.vital-alerts-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+.va-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.va-yellow { background: #3a2505; color: #fcd34d; border: 1px solid #b45309; }
+.va-green  { background: #0c2d1c; color: #4ade80; border: 1px solid #15803d; }
+
+/* ── HEADER DECORATION ── */
+.sec-head {
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    letter-spacing: 0.3px;
+    border-top-left-radius: 9px;
+    border-top-right-radius: 9px;
+}
+.sh-amber { 
+    background: linear-gradient(135deg,#d97706,#b45309); 
+    color:#fff; 
+}
+
+.sh-amber { 
+    background: linear-gradient(135deg,#d97706,#b45309); 
+    color:#fff; 
+}
+
+@media print {
+    /* Hide everything by default when printing */
+    body * {
+        visibility: hidden;
+    }
+    /* Show only the symptoms tab content and its children */
+    #symptoms, #symptoms * {
+        visibility: visible;
+    }
+    #symptoms {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+    /* Hide interactive elements that don't make sense on paper */
+    #symptoms .print-btn,
+    #symptoms .save-btn,
+    #symptoms button,
+    #symptoms input,
+    #symptoms .cb-item span:last-child {
+        display: none !important;
+    }
+    /* Show checked symptoms as plain text, not checkboxes */
+    #symptoms .cb-item {
+        border: none !important;
+        background: none !important;
+        color: #000 !important;
+        display: inline-block !important;
+        padding: 2px 8px !important;
+    }
+}
+
+</style>
+</style>
+
+
+
+<div class="ipd-container">
+
+<h2>IPD Patient File</h2>
+
+<div class="ipd-header">
+
+<div class="ipd-grid">
+
+<div><b>Patient Name:</b> {{ admission.patient.full_name }}</div>
+<div><b>IPD No:</b> {{ admission.ipd_no }}</div>
+
+<div><b>UHID:</b> {{ admission.patient.uhid }}</div>
+<div><b>Doctor:</b> Dr. {{ admission.doctor.full_name }}</div>
+
+<div><b>Ward:</b> {{ admission.ward.name }}</div>
+<div><b>Bed:</b> {{ admission.bed.bed_number }}</div>
+
+<div><b>Admission Date:</b> {{ admission.admission_date }}</div>
+<div><b>Status:</b> {{ admission.status }}</div>
+
+</div>
+
+</div>
+
+
+<div class="tabs">
+
+<button class="tab-btn active" onclick="openTab(event,'vitals')">Vitals</button>
+<button class="tab-btn" onclick="openTab(event,'symptoms')">Symptoms</button>
+<button class="tab-btn" onclick="openTab(event,'diagnosis')">Diagnosis</button>
+<button class="tab-btn" onclick="openTab(event,'treatment')">Treatment</button>
+<button class="tab-btn" onclick="openTab(event,'medication')">Medication</button>
+<button class="tab-btn" onclick="openTab(event,'investigations')">Investigations</button>
+<button class="tab-btn" onclick="openTab(event,'progress')">Progress Notes</button>
+<button class="tab-btn" onclick="openTab(event,'discharge')">Discharge</button>
+<a href="{% url 'hms:discharge_bill' admission.patient.id %}"
+class="btn-danger" 
+style="margin-left:10px;">
+Discharge Bill
+</a>
+</div>
+
+
+<!-- VITALS -->
+
+<div id="vitals" class="tab-content active">
+
+<h4>Enter Vital Signs</h4>
+
+<form method="POST">
+{% csrf_token %}
+<input type="hidden" name="form_type" value="vitals">
+
+<input type="number" name="pulse" placeholder="Pulse" class="form-control">
+<input type="text" name="bp" placeholder="BP 120/80" class="form-control">
+<input type="text" name="temperature" placeholder="Temperature" class="form-control">
+<input type="number" name="spo2" placeholder="SpO2" class="form-control">
+<input type="number" name="rr" placeholder="Respiratory Rate" class="form-control">
+
+<button class="save-btn">Save Vitals</button>
+
+</form>
+
+
+<h4>Vitals History</h4>
+
+<table>
+
+<tr>
+<th>Time</th>
+<th>Pulse</th>
+<th>BP</th>
+<th>Temp</th>
+<th>SpO2</th>
+<th>RR</th>
+</tr>
+
+{% for v in vitals %}
+
+<tr>
+<td>{{ v.recorded_at|date:"M d, Y H:i" }}</td>
+<td>{{ v.pulse }}</td>
+<td>{{ v.bp }}</td>
+<td>{{ v.temperature }}</td>
+<td>{{ v.spo2 }}</td>
+<td>{{ v.rr }}</td>
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="6">No vitals recorded</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+
+<!-- REPLACE YOUR OLD SYMPTOMS TAB CONTENT BLOCKS WITH THIS EXACT CODE -->
+
+<!-- SYMPTOMS -->
+<div id="symptoms" class="tab-content">
+    
+    <!-- Real-time metrics visualization row -->
+    <div class="vital-alerts-row">
+        <span class="va-pill va-yellow">
+            <span style="display:inline-block; width:8px; height:8px; background:#d97706; border-radius:50%;"></span>
+            Stage 1 Hypertension (BP 110/90)
+        </span>
+        <span class="va-pill va-green">
+            <span style="display:inline-block; width:8px; height:8px; background:#16a34a; border-radius:50%;"></span>
+            Pulse Normal (98 bpm)
+        </span>
+        <span class="va-pill va-green">
+            <span style="display:inline-block; width:8px; height:8px; background:#16a34a; border-radius:50%;"></span>
+            SpO2 Normal (98%)
+        </span>
+    </div>
+
+    <div style="background:#111111; border-radius:10px; border:1px solid #2a2a2a; overflow:hidden;">
+        <div class="sec-head sh-amber">
+            <span>✏️</span>
+            <span style="font-weight: 700;">Chief Complaints</span>
+        </div>
+        
+        <div style="padding:20px;">
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="symptoms">
+
+                <div class="cb-grid">
+                    <label class="cb-item">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="symptoms_list" value="Fever" {% if "Fever" in saved_symptoms_list %}checked{% endif %}>
+                            <span>Fever</span>
+                        </div>
+                        <span style="color: #64748b; font-size: 11px;">✕</span>
+                    </label>
+                    <label class="cb-item">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="symptoms_list" value="Cough" {% if "Cough" in saved_symptoms_list %}checked{% endif %}>
+                            <span>Cough</span>
+                        </div>
+                        <span style="color: #64748b; font-size: 11px;">✕</span>
+                    </label>
+                    <label class="cb-item">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="symptoms_list" value="Body Ache" {% if "Body Ache" in saved_symptoms_list or "Body ache" in saved_symptoms_list %}checked{% endif %}>
+                            <span>Body ache</span>
+                        </div>
+                        <span style="color: #64748b; font-size: 11px;">✕</span>
+                    </label>
+                    <label class="cb-item">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="symptoms_list" value="Throat Pain" {% if "Throat Pain" in saved_symptoms_list or "Throat pain" in saved_symptoms_list %}checked{% endif %}>
+                            <span>Throat pain</span>
+                        </div>
+                        <span style="color: #64748b; font-size: 11px;">✕</span>
+                    </label>
+                    <label class="cb-item">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="symptoms_list" value="Loss of Appetite" {% if "Loss of Appetite" in saved_symptoms_list or "Loss of appetite" in saved_symptoms_list %}checked{% endif %}>
+                            <span>Loss of appetite</span>
+                        </div>
+                        <span style="color: #64748b; font-size: 11px;">✕</span>
+                    </label>
+                    <label class="cb-item">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="symptoms_list" value="Fatigue" {% if "Fatigue" in saved_symptoms_list or "Fatigue/lethargy" in saved_symptoms_list %}checked{% endif %}>
+                            <span>Fatigue/lethargy</span>
+                        </div>
+                        <span style="color: #64748b; font-size: 11px;">✕</span>
+                    </label>
+                    <label class="cb-item">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="symptoms_list" value="Abdominal Pain" {% if "Abdominal Pain" in saved_symptoms_list or "Abdominal pain" in saved_symptoms_list %}checked{% endif %}>
+                            <span>Abdominal pain</span>
+                        </div>
+                        <span style="color: #64748b; font-size: 11px;">✕</span>
+                    </label>
+                    <label class="cb-item">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="symptoms_list" value="Nausea/Vomiting" {% if "Nausea/Vomiting" in saved_symptoms_list or "Nausea, vomiting" in saved_symptoms_list %}checked{% endif %}>
+                            <span>Nausea, vomiting</span>
+                        </div>
+                        <span style="color: #64748b; font-size: 11px;">✕</span>
+                    </label>
+                </div>
+
+                <!-- Custom dynamically injected symptoms render loop -->
+                <div class="cb-grid extra-symptoms-box">
+                    {% for extra in saved_symptoms_list %}
+                        {% if extra and extra != "Fever" and extra != "Cough" and extra != "Body Ache" and extra != "Body ache" and extra != "Throat Pain" and extra != "Throat pain" and extra != "Loss of Appetite" and extra != "Loss of appetite" and extra != "Fatigue" and extra != "Fatigue/lethargy" and extra != "Abdominal Pain" and extra != "Abdominal pain" and extra != "Nausea/Vomiting" and extra != "Nausea, vomiting" %}
+                        <label class="cb-item">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="symptoms_list" value="{{ extra }}" checked>
+                                <span>{{ extra }}</span>
+                            </div>
+                            <span style="color: #64748b; font-size: 11px;" onclick="this.parentElement.remove()">✕</span>
+                        </label>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- Field to add new complaints -->
+                <div style="margin-top: 20px; display: flex; gap: 10px; align-items: center; border-top: 1px dashed #2a2a2a; padding-top: 15px;">
+                    <input type="text" id="new-ipd-symptom" placeholder="+ Add new symptom..." class="form-control" style="margin-bottom: 0; flex-grow: 1;">
+                    <button type="button" onclick="addIpdSymptom()" class="save-btn" style="flex: none; width: auto; background: #4338ca; color: white;">Add</button>
+                </div>
+
+                <!-- Action Bar with Save and Print Configurations -->
+                <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+                    <button type="submit" class="save-btn">Save Symptoms</button>
+                </div>
+            </form>
+
+            <h4 style="margin-top:24px;">Symptoms History</h4>
+            <table>
+                <tr>
+                    <th>Time</th>
+                    <th>Symptoms</th>
+                </tr>
+                {% for s in symptom_history %}
+                <tr>
+                    <td>{{ s.recorded_at|date:"M d, Y H:i" }}</td>
+                    <td>{{ s.symptoms }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2">No symptom history recorded</td>
+                </tr>
+                {% endfor %}
+            </table>
+
+            <div style="margin-top:16px;">
+                <button type="button" onclick="window.print()" class="print-btn" style="margin-left:0;">🖨️ Print Symptoms</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+<!-- DIAGNOSIS -->
+
+<div id="diagnosis" class="tab-content">
+
+<h4>Diagnosis</h4>
+
+<textarea class="form-control" style="height:150px" readonly>{{ admission.diagnosis }}</textarea>
+
+</div>
+
+
+<!-- TREATMENT -->
+
+<div id="treatment" class="tab-content">
+
+<h4>Treatment Plan</h4>
+
+<form method="POST">
+{% csrf_token %}
+<input type="hidden" name="form_type" value="treatment">
+
+<textarea name="treatment_plan" class="form-control" style="height:150px">{{ admission.treatment_plan }}</textarea>
+
+<button class="save-btn">Save Treatment</button>
+
+</form>
+
+</div>
+
+
+<!-- MEDICATION -->
+
+<div id="medication" class="tab-content">
+
+<h4>Add Medicine</h4>
+
+<form method="POST">
+{% csrf_token %}
+<input type="hidden" name="form_type" value="medication">
+
+<input type="text" name="medicine_name" placeholder="Medicine Name" class="form-control">
+<input type="text" name="dose" placeholder="Dose" class="form-control">
+<input type="text" name="route" placeholder="Route (IV/IM/PO)" class="form-control">
+<input type="text" name="frequency" placeholder="Frequency (OD/BD/TDS)" class="form-control">
+
+<button class="save-btn">Add Medicine</button>
+
+</form>
+
+
+<h4>Medication Chart</h4>
+
+<table>
+
+<tr>
+<th>Medicine</th>
+<th>Dose</th>
+<th>Route</th>
+<th>Frequency</th>
+</tr>
+
+{% for m in medications %}
+
+<tr>
+<td>{{ m.medicine_name }}</td>
+<td>{{ m.dose }}</td>
+<td>{{ m.route }}</td>
+<td>{{ m.frequency }}</td>
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="4">No medicines added</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+
+<!-- PROGRESS NOTES -->
+
+<div id="progress" class="tab-content">
+
+<h3>Daily Progress Notes (SOAP)</h3>
+
+<div style="margin-bottom:10px; color:#e2e8f0;">
+<b style="color:#8892a4;">Consultant:</b> Dr. {{ admission.doctor.full_name }}
+</div>
+
+<form method="POST">
+
+{% csrf_token %}
+<input type="hidden" name="form_type" value="progress">
+
+<label>Subjective</label>
+<textarea name="subjective" class="form-control"></textarea>
+
+<label>Objective</label>
+<textarea name="objective" class="form-control"></textarea>
+
+<label>Assessment</label>
+<textarea name="assessment" class="form-control"></textarea>
+
+<label>Plan</label>
+<textarea name="plan" class="form-control"></textarea>
+
+<button class="save-btn">Save Note</button>
+
+</form>
+
+
+<hr>
+
+<h4>Previous Notes</h4>
+
+<table>
+
+<tr>
+<th>Date / Time</th>
+<th>Doctor</th>
+<th>Subjective</th>
+<th>Objective</th>
+<th>Assessment</th>
+<th>Plan</th>
+</tr>
+
+{% for note in admission.progress_notes.all %}
+
+<tr>
+<td>{{ note.created_at|date:"M d, Y H:i" }}</td>
+<td>{{ note.doctor }}</td>
+<td>{{ note.subjective }}</td>
+<td>{{ note.objective }}</td>
+<td>{{ note.assessment }}</td>
+<td>{{ note.plan }}</td>
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="6">No progress notes recorded</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+
+<!-- DISCHARGE -->
+
+<div id="discharge" class="tab-content">
+
+<h3>Discharge Summary</h3>
+
+<form method="POST">
+
+{% csrf_token %}
+<input type="hidden" name="form_type" value="discharge">
+
+<label>Procedure Performed</label>
+<textarea name="procedure_done" class="form-control">{{ admission.procedure_done }}</textarea>
+
+<label>Course in Hospital</label>
+<textarea name="course_in_hospital" class="form-control">{{ admission.course_in_hospital }}</textarea>
+
+<label>Condition at Discharge</label>
+<textarea name="condition_at_discharge" class="form-control">{{ admission.condition_at_discharge }}</textarea>
+
+<label>Discharge Advice</label>
+<textarea name="discharge_advice" class="form-control">{{ admission.discharge_advice }}</textarea>
+
+<label>Follow Up Date</label>
+
+<input type="date" name="follow_up_date" class="form-control"
+value="{{ admission.follow_up_date|date:'Y-m-d' }}">
+
+<br>
+
+<button type="submit" class="save-btn">
+Save Discharge
+</button>
+
+<a href="{% url 'hms:discharge_pdf' admission.id %}" class="print-btn">
+Print Discharge
+</a>
+
+</form>
+
+</div>
+
+
+</div>
+
+
+<script>
+
+function openTab(evt, tabName){
+
+var tabs=document.querySelectorAll(".tab-content");
+
+tabs.forEach(function(tab){
+tab.classList.remove("active");
+});
+
+var btns=document.querySelectorAll(".tab-btn");
+
+btns.forEach(function(btn){
+btn.classList.remove("active");
+});
+
+document.getElementById(tabName).classList.add("active");
+evt.currentTarget.classList.add("active");
+
+}
+
+// On page load, check URL for ?tab=xxx and switch to that tab automatically
+window.addEventListener("DOMContentLoaded", function() {
+    var params = new URLSearchParams(window.location.search);
+    var tab = params.get("tab");
+    if (tab) {
+        var targetContent = document.getElementById(tab);
+        var targetBtn = document.querySelector('.tab-btn[onclick*="' + tab + '"]');
+        if (targetContent && targetBtn) {
+            document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+            targetContent.classList.add("active");
+            targetBtn.classList.add("active");
+        }
+    }
+});
+
+function addIpdSymptom() {
+    var input = document.getElementById("new-ipd-symptom");
+    var name = input.value.trim();
+    if (!name) return;
+
+    var container = document.querySelector(".extra-symptoms-box");
+    var label = document.createElement("label");
+    label.className = "cb-item";
+    label.innerHTML =
+        '<div style="display: flex; align-items: center; gap: 8px;">' +
+        '<input type="checkbox" name="symptoms_list" value="' + name + '" checked>' +
+        '<span>' + name + '</span></div>' +
+        '<span style="color: #64748b; font-size: 11px;" onclick="this.parentElement.remove()">✕</span>';
+    container.appendChild(label);
+    input.value = "";
+}
+
+</script>
+
+{% endblock %}

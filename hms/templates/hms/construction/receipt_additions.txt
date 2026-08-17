@@ -1,0 +1,11 @@
+### ── ADD THIS FUNCTION to hms/views.py (after construction_expense_delete) ──
+
+@login_required
+def construction_expense_receipt(request, pk):
+    expense = get_object_or_404(ConstructionExpense, pk=pk)
+    return render(request, "hms/construction/expense_receipt.html", {"expense": expense})
+
+
+### ── ADD THIS LINE to hms/urls.py (inside urlpatterns) ──
+
+    path("construction/<int:pk>/receipt/", views.construction_expense_receipt, name="construction_expense_receipt"),

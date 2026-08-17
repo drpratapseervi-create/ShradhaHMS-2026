@@ -1,26 +1,452 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Shradha HMS Dashboard</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 24px; }
-    .cards { display: flex; gap: 16px; margin-bottom: 24px; }
-    .card { border: 1px solid #ddd; padding: 16px; border-radius: 8px; width: 220px; }
-    a.btn { display: inline-block; padding: 10px 14px; background:#0b79d0; color:#fff; text-decoration:none; border-radius:6px; }
-  </style>
-</head>
-<body>
-  <h2>Shradha HMS Dashboard</h2>
-  <div class="cards">
-    <div class="card"><b>Patients:</b> {{ patient_count }}</div>
-    <div class="card"><b>Doctors:</b> {{ doctor_count }}</div>
-    <div class="card"><b>Appointments:</b> {{ appt_count }}</div>
-  </div>
-  <p>
-    <a class="btn" href="/admin/">Admin</a>
-    <a class="btn" href="/patients/new/">New Patient</a>
-    <a class="btn" href="/appointments/new/">New Appointment</a>
-  </p>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Dashboard | Shradha HMS{% endblock %}
+
+{% block content %}
+<style>
+* { box-sizing: border-box; }
+
+/* ══════════════════════════
+   STAT CARDS
+══════════════════════════ */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 16px;
+}
+.stat-card {
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #111111;
+    border: 1px solid #2a2a2a;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    transition: box-shadow 0.15s, transform 0.15s;
+}
+.stat-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.7); transform: translateY(-1px); }
+.sc-blue   { border-left: 3px solid #00b8a9; }
+.sc-cyan   { border-left: 3px solid #00b8a9; }
+.sc-violet { border-left: 3px solid #00b8a9; }
+.stat-card::before { display:none; }
+.stat-card::after  { display:none; }
+.stat-icon {
+    width: 36px; height: 36px;
+    background: #1e1e1e;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; flex-shrink: 0;
+}
+.sc-cyan   .stat-icon { background: #1e1e1e; }
+.sc-violet .stat-icon { background: #1e1e1e; }
+.stat-info .num {
+    font-size: 22px; font-weight: 800;
+    color: #e2e8f0; line-height: 1; margin: 0;
+}
+.sc-cyan   .stat-info .num { color: #e2e8f0; }
+.sc-violet .stat-info .num { color: #e2e8f0; }
+.stat-info .lbl {
+    font-size: 11px; color: #8892a4;
+    font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; margin-top: 3px;
+}
+.stat-info .sub { display:none; }
+
+/* ══════════════════════════
+   QUICK ACTION ROW
+══════════════════════════ */
+.action-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.btn-consult {
+    background: #0d2a1a;
+    color: #4ade80; border: 1px solid #166534; border-radius: 8px;
+    padding: 11px 20px; font-size: 14px; font-weight: 700;
+    cursor: pointer; text-align: center; text-decoration: none;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    transition: 0.2s;
+}
+.btn-consult:hover { background: #14532d; color: #86efac; }
+.btn-consult.disabled { background: #1a1a1a; color: #555; border-color: #333; cursor: not-allowed; }
+.qa-btn {
+    border: 1px solid #2a2a2a; border-radius: 8px;
+    padding: 11px 18px; font-size: 13px; font-weight: 600;
+    cursor: pointer; text-decoration: none;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    white-space: nowrap; transition: 0.15s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.qa-green  { background: #0d2a1a; color: #4ade80; border-color: #166534; }
+.qa-green:hover  { background: #14532d; color: #86efac; }
+.qa-amber  { background: #2a1a00; color: #fbbf24; border-color: #78350f; }
+.qa-amber:hover  { background: #3a2500; color: #fcd34d; }
+.qa-report { background: #0d1a2a; color: #60a5fa; border-color: #1e3a5f; }
+.qa-report:hover { background: #1e3a5f; color: #93c5fd; }
+
+/* ══════════════════════════
+   OPD TABLE CARD
+══════════════════════════ */
+.opd-card {
+    background: #111111; border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.6);
+    border: 1px solid #2a2a2a; overflow: hidden;
+}
+.opd-head {
+    background: #161616; padding: 12px 18px;
+    display: flex; align-items: center;
+    justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    border-bottom: 1px solid #2a2a2a;
+}
+.opd-head h5 {
+    margin: 0; font-size: 14px; font-weight: 700; color: #e2e8f0;
+    display: flex; align-items: center; gap: 7px;
+}
+.badge-today {
+    background: #1e1e1e; color: #8892a4;
+    padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    border: 1px solid #2a2a2a;
+}
+.search-box { position: relative; }
+.search-box input {
+    height: 32px; padding: 0 10px 0 30px;
+    border: 1px solid #2a2a2a; border-radius: 7px;
+    font-size: 13px; background: #1a1a1a !important;
+    color: #e2e8f0 !important; width: 240px; outline: none; transition: 0.2s;
+}
+.search-box input::placeholder { color: #555 !important; }
+.search-box input:focus { border-color: #00b8a9 !important; box-shadow: 0 0 0 2px rgba(0,184,169,0.15); }
+.search-box .si {
+    position: absolute; left: 9px; top: 50%;
+    transform: translateY(-50%);
+    color: #555; font-size: 13px; pointer-events: none;
+}
+.count-lbl { font-size: 12px; color: #8892a4; white-space: nowrap; }
+
+/* TABLE */
+.opd-table { width: 100%; border-collapse: collapse; }
+.opd-table thead tr { background: #161616; }
+.opd-table th {
+    padding: 11px 16px; text-align: left;
+    font-size: 11px; font-weight: 700; color: #8892a4;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    border-bottom: 2px solid #2a2a2a;
+}
+.opd-table td {
+    padding: 13px 16px; font-size: 13px; color: #cbd5e1;
+    border-bottom: 1px solid #1e1e1e; vertical-align: middle;
+}
+.opd-table tbody tr:last-child td { border-bottom: none; }
+.opd-table tbody tr:hover td { background: #1a1a1a !important; }
+.opd-table tbody tr:nth-child(even) td { background: #111111; }
+.opd-table tbody tr:nth-child(even):hover td { background: #1a1a1a !important; }
+
+.pt-name { font-weight: 700; color: #e2e8f0; font-size: 13px; }
+.pt-sub  { font-size: 11px; color: #8892a4; margin-top: 2px; }
+.time-badge {
+    background: #1e1e1e; color: #cbd5e1;
+    border-radius: 6px; padding: 3px 10px;
+    font-size: 12px; font-weight: 600; display: inline-block;
+    border: 1px solid #2a2a2a;
+}
+.serial { color: #444; font-size: 12px; font-weight: 700; }
+.empty-row { text-align: center; padding: 48px; color: #555; font-size: 14px; }
+.empty-row .ei { font-size: 36px; display: block; margin-bottom: 10px; }
+
+/* ══════════════════════════
+   ACTION BUTTONS
+══════════════════════════ */
+.appt-action-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.btn-start-left {
+    background: #0d1a2a !important;
+    color: #60a5fa !important;
+    border: 1px solid #1e3a5f !important;
+    border-radius: 8px 0 0 8px !important;
+    padding: 7px 15px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    transition: 0.15s;
+}
+.btn-start-left:hover { background: #1e3a5f !important; color: #93c5fd !important; }
+
+.btn-chevron {
+    background: #1a2a3a;
+    color: #60a5fa; border: none;
+    border-left: 1px solid #1e3a5f;
+    border-radius: 0 8px 8px 0;
+    padding: 7px 10px; font-size: 13px;
+    cursor: pointer;
+    display: inline-flex; align-items: center;
+    margin: 0 !important; transition: 0.15s;
+}
+.btn-chevron:hover { background: #1e3a5f; }
+
+.btn-more-dots {
+    background: none; color: #555;
+    border: none; border-radius: 6px;
+    padding: 4px 8px; font-size: 18px;
+    cursor: pointer; line-height: 1;
+    display: inline-flex; align-items: center;
+    margin: 0 !important; transition: 0.15s;
+}
+.btn-more-dots:hover { background: #1e1e1e; color: #e2e8f0; }
+
+/* ══════════════════════════
+   DROPDOWN
+══════════════════════════ */
+#sharedDropdown {
+    display: none;
+    position: fixed;
+    background: #111111;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.7);
+    min-width: 215px;
+    z-index: 99999;
+    overflow: hidden;
+}
+#sharedDropdown.open { display: block; }
+
+.dd-section {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.8px; text-transform: uppercase;
+    color: #555; padding: 10px 16px 3px;
+}
+.dd-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 16px; font-size: 13px;
+    color: #cbd5e1; text-decoration: none;
+    transition: background 0.1s;
+}
+.dd-item:hover { background: #1a1a1a; color: #e2e8f0; text-decoration: none; }
+.dd-item .di  { font-size: 14px; width: 18px; text-align: center; }
+.dd-divider   { height: 1px; background: #2a2a2a; margin: 4px 0; }
+.stat-icon i { font-size: 16px; color: #00b8a9; }
+.sc-blue  .stat-icon i { color: #00b8a9; }
+.sc-cyan  .stat-icon i { color: #00b8a9; }
+.sc-violet .stat-icon i { color: #00b8a9; }
+.dd-danger    { color: #f87171 !important; }
+.dd-danger:hover { background: #2a0a0a !important; color: #fca5a5 !important; }
+</style>
+
+<!-- ══ STAT CARDS ══ -->
+<div class="stats-row">
+    <div class="stat-card sc-blue">
+        <div class="stat-icon">👤</div>
+        <div class="stat-info">
+            <p class="num">{{ patient_count }}</p>
+            <p class="lbl">Total Patients</p>
+        </div>
+    </div>
+    <div class="stat-card sc-cyan">
+        <div class="stat-icon">👨‍⚕️</div>
+        <div class="stat-info">
+            <p class="num">{{ doctor_count }}</p>
+            <p class="lbl">Active Doctors</p>
+        </div>
+    </div>
+    <div class="stat-card sc-violet">
+        <div class="stat-icon">📅</div>
+        <div class="stat-info">
+            <p class="num">{{ appt_count }}</p>
+            <p class="lbl">Today's Appointments</p>
+        </div>
+    </div>
+</div>
+
+<!-- ══ QUICK ACTIONS ══ -->
+<div class="action-row">
+    <a href="{% url 'hms:patient_create' %}"     class="qa-btn qa-green">➕ New Patient</a>
+    <a href="{% url 'hms:appointment_create' %}" class="qa-btn qa-amber">📅 Book Appointment</a>
+</div>
+
+<!-- ══ OPD TABLE ══ -->
+<div class="opd-card">
+    <div class="opd-head">
+        <h5>
+            📋 OPD Register
+            <span class="badge-today">Today</span>
+        </h5>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div class="search-box">
+                <span class="si">🔍</span>
+                <input type="text" id="opdSearch"
+                       placeholder="Search patient, UHID, doctor..."
+                       oninput="filterOPD()">
+            </div>
+            <span class="count-lbl" id="opdCount"></span>
+        </div>
+    </div>
+
+    <div style="overflow-x:auto;">
+    <table class="opd-table">
+        <thead>
+            <tr>
+                <th width="40">#</th>
+                <th>Patient</th>
+                <th>Age / Sex</th>
+                <th>Doctor</th>
+                <th>Time</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for appt in appointments %}
+        <tr class="opd-row"
+            data-search="{{ appt.patient.full_name|lower }} {{ appt.patient.uhid|lower }} {{ appt.doctor.full_name|lower }}">
+            <td class="serial">{{ forloop.counter }}</td>
+            <td>
+                <div class="pt-name">{{ appt.patient.full_name }}</div>
+                <div class="pt-sub">{{ appt.patient.uhid }}</div>
+            </td>
+            <td>{{ appt.patient.age }} / {{ appt.patient.gender }}</td>
+            <td>
+                <div style="font-weight:600;color:#e2e8f0;">{{ appt.doctor.full_name }}</div>
+                {% if appt.doctor.department %}
+                <div style="font-size:11px;color:#9ca3af;">{{ appt.doctor.department.name }}</div>
+                {% endif %}
+            </td>
+            <td><span class="time-badge">{{ appt.time }}</span></td>
+            <td style="white-space:nowrap;">
+                <div class="appt-action-group">
+                    <a href="{% url 'hms:start_consultation' appt.id %}"
+                       class="btn-start-left">Start</a>
+                    <button class="btn-chevron"
+                            data-appt-id="{{ appt.id }}"
+                            data-patient-details="{% url 'hms:patient_update' appt.patient.id %}"
+                            data-opd-receipt="{% url 'hms:print_opd' appt.id %}"
+                            data-inv-bill="{% url 'hms:lab_billing_direct' %}"
+                            data-proc-bill="{% url 'hms:procedure_billing' %}"
+                            data-advance="{% url 'hms:advance_payment_receipt' appt.patient.id %}"
+                            data-consult="{% url 'hms:start_consultation' appt.id %}"
+                            data-admit="{% url 'hms:admit_patient' %}"
+                            data-upload="{% url 'hms:upload_medical_image' appt.patient.id %}"
+                            onclick="openDropdown(this)">&#8964;</button>
+                    <button class="btn-more-dots"
+                            data-appt-id="{{ appt.id }}"
+                            data-patient-details="{% url 'hms:patient_update' appt.patient.id %}"
+                            data-opd-receipt="{% url 'hms:print_opd' appt.id %}"
+                            data-inv-bill="{% url 'hms:lab_billing_direct' %}"
+                            data-proc-bill="{% url 'hms:procedure_billing' %}"
+                            data-advance="{% url 'hms:advance_payment_receipt' appt.patient.id %}"
+                            data-consult="{% url 'hms:start_consultation' appt.id %}"
+                            data-admit="{% url 'hms:admit_patient' %}"
+                            data-upload="{% url 'hms:upload_medical_image' appt.patient.id %}"
+                            onclick="openDropdown(this)">&#8943;</button>
+                </div>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6">
+                <div class="empty-row">
+                    <span class="ei">📭</span>
+                    No OPD patients scheduled today
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<!-- DROPDOWN -->
+<div id="sharedDropdown">
+    <div class="dd-section">Patient</div>
+    <a class="dd-item" id="dd-patient-details" href="#"><span class="di">👤</span> Patient Details</a>
+    <a class="dd-item" id="dd-opd-receipt" href="#" target="_blank"><span class="di">🧾</span> OPD Receipt</a>
+    <div class="dd-divider"></div>
+    <div class="dd-section">Billing</div>
+    <a class="dd-item" id="dd-inv-bill" href="#"><span class="di">🔬</span> Investigation Bill</a>
+    <a class="dd-item" id="dd-proc-bill" href="#"><span class="di">💉</span> Procedure Bill</a>
+    <a class="dd-item" id="dd-advance" href="#"><span class="di">💰</span> Advance Deposit</a>
+    <div class="dd-divider"></div>
+    <div class="dd-section">Clinical</div>
+    <a class="dd-item" id="dd-consult" href="#"><span class="di">🩺</span> Consultation</a>
+    <a class="dd-item" id="dd-admit" href="#"><span class="di">🏥</span> Admission</a>
+    <a class="dd-item" id="dd-upload" href="#"><span class="di">📁</span> Upload Medical Records</a>
+    <div class="dd-divider"></div>
+    <a class="dd-item dd-danger" id="dd-cancel" href="#"
+       onclick="return confirm('Cancel this appointment?')">
+        <span class="di">✖</span> Cancel Appointment
+    </a>
+</div>
+
+<script>
+// ── DROPDOWN (proven working logic from original) ──
+var activeBtn = null;
+
+function openDropdown(btn) {
+    var dd = document.getElementById('sharedDropdown');
+    if (activeBtn === btn && dd.classList.contains('open')) {
+        dd.classList.remove('open'); activeBtn = null; return;
+    }
+    document.getElementById('dd-patient-details').href = btn.dataset.patientDetails;
+    document.getElementById('dd-opd-receipt').href     = btn.dataset.opdReceipt;
+    document.getElementById('dd-inv-bill').href        = btn.dataset.invBill;
+    document.getElementById('dd-proc-bill').href       = btn.dataset.procBill;
+    document.getElementById('dd-advance').href         = btn.dataset.advance;
+    document.getElementById('dd-consult').href         = btn.dataset.consult;
+    document.getElementById('dd-admit').href           = btn.dataset.admit;
+    document.getElementById('dd-upload').href          = btn.dataset.upload;
+
+    var rect = btn.getBoundingClientRect();
+    var ddW = 220, ddH = 330;
+    var left = rect.right - ddW;
+    if (left < 6) left = 6;
+    var top = (window.innerHeight - rect.bottom < ddH) ? rect.top - ddH - 4 : rect.bottom + 4;
+    dd.style.left = left + 'px';
+    dd.style.top  = top  + 'px';
+    dd.classList.add('open');
+    activeBtn = btn;
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.appt-action-group') && !e.target.closest('#sharedDropdown')) {
+        document.getElementById('sharedDropdown').classList.remove('open');
+        activeBtn = null;
+    }
+});
+
+window.addEventListener('scroll', function() {
+    document.getElementById('sharedDropdown').classList.remove('open');
+    activeBtn = null;
+}, true);
+
+// ── SEARCH FILTER ──
+function filterOPD() {
+    var q = document.getElementById('opdSearch').value.toLowerCase().trim();
+    var rows = document.querySelectorAll('.opd-row');
+    var visible = 0;
+    rows.forEach(function(row) {
+        var match = !q || (row.getAttribute('data-search') || '').includes(q);
+        row.style.display = match ? '' : 'none';
+        if (match) visible++;
+    });
+    var total = rows.length;
+    var el = document.getElementById('opdCount');
+    if (el) el.textContent = q
+        ? 'Showing ' + visible + ' of ' + total + ' patients'
+        : 'Total: ' + total + ' patient' + (total !== 1 ? 's' : '');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.appendChild(document.getElementById('sharedDropdown'));
+    filterOPD();
+});
+</script>
+
+{% endblock %}

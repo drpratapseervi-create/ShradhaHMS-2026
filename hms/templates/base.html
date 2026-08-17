@@ -1,0 +1,640 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<title>{% block title %}Shradha HMS{% endblock %}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+
+:root {
+  --bg: #0f1117;
+  --bg2: #1a1d27;
+  --bg3: #22263a;
+  --sidebar-bg: #151821;
+  --header-bg: linear-gradient(135deg, #005555, #007676);
+  --text: #e2e8f0;
+  --text-muted: #8892a4;
+  --border: #2d3148;
+  --accent: #00b8a9;
+  --accent2: #00e0c6;
+  --menu-bg: #1e2235;
+  --menu-hover: #252a40;
+  --content-bg: #1a1d27;
+  --shadow: rgba(0,0,0,0.4);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* HEADER */
+header {
+  background: var(--header-bg);
+  color: white;
+  padding: 14px 30px;
+  border-bottom: 1px solid #005555;
+}
+
+.header-flex {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.header-flex img {
+  height: 48px;
+  background: white;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.header-flex h1 {
+  font-size: 22px;
+  margin: 0;
+  color: #fff;
+}
+
+.header-flex p {
+  margin: 0;
+  font-size: 13px;
+  color: #b2dfdb;
+}
+
+/* LAYOUT */
+.main-layout {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  width: 100%;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 240px;
+  min-width: 240px;
+  flex-shrink: 0;
+  background: var(--sidebar-bg);
+  padding: 14px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px var(--shadow);
+  font-size: 13px;
+  border: 1px solid var(--border);
+}
+
+/* SECTION TITLE */
+.sidebar-title {
+  text-align: left;
+  margin: 12px 8px 6px;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 1px;
+  border-left: 3px solid var(--accent);
+  padding-left: 6px;
+  text-transform: uppercase;
+}
+
+/* MENU BUTTON */
+.menu-btn {
+  display: block;
+  padding: 9px 12px;
+  margin-bottom: 4px;
+  background: var(--menu-bg);
+  color: var(--text);
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 13px;
+  transition: 0.2s;
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.menu-btn i {
+  margin-right: 8px;
+  width: 18px;
+  text-align: center;
+  color: var(--accent);
+}
+
+/* HOVER */
+.menu-btn:hover {
+  background: var(--menu-hover);
+  color: var(--accent2);
+  transform: translateX(4px);
+  border-color: var(--border);
+}
+
+.menu-btn:hover i { color: var(--accent2); }
+
+/* ACTIVE */
+.menu-btn.active {
+  background: linear-gradient(135deg, #005f5f, #007676);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,118,118,0.4);
+  font-weight: 600;
+  border-color: var(--accent);
+}
+
+.menu-btn.active i { color: var(--accent2); }
+
+/* LEFT INDICATOR */
+.menu-btn.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  background: var(--accent2);
+  border-radius: 0 4px 4px 0;
+}
+
+/* CONTENT */
+.content {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  overflow-x: auto;
+  background: var(--content-bg);
+  padding: 14px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px var(--shadow);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+/* Force whatever page is loaded into the content block to fill the
+   full width of .content instead of shrinking to its own content width */
+.content > * {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+/* HR */
+hr {
+  margin: 10px 0;
+  border-color: var(--border);
+  opacity: 0.5;
+}
+
+/* FOOTER */
+footer {
+  margin-top: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding-bottom: 16px;
+}
+
+/* Global dark overrides */
+input, select, textarea {
+  background: #1e2235 !important;
+  color: #e2e8f0 !important;
+  border-color: #2d3148 !important;
+}
+input::placeholder, textarea::placeholder { color: #4a5270 !important; }
+input:focus, select:focus, textarea:focus {
+  border-color: #00b8a9 !important;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0,184,169,0.15) !important;
+}
+
+table { color: var(--text); }
+th { background: #1e2235 !important; color: #8892a4 !important; border-color: #2d3148 !important; }
+td { border-color: #2d3148 !important; color: var(--text) !important; }
+tr:hover td { background: #1e2235 !important; }
+
+.card, .sec, .opd-card {
+  background: #1e2235 !important;
+  border-color: #2d3148 !important;
+  color: var(--text) !important;
+}
+
+.card-header, .sec-head { border-color: #2d3148 !important; }
+
+.badge.bg-light { background: #2d3148 !important; color: #e2e8f0 !important; }
+
+.btn-outline-secondary {
+  color: #8892a4 !important;
+  border-color: #2d3148 !important;
+}
+.btn-outline-secondary:hover {
+  background: #2d3148 !important;
+  color: #e2e8f0 !important;
+}
+
+.alert { background: #1e2235 !important; border-color: #2d3148 !important; color: var(--text) !important; }
+
+.list-group-item {
+  background: #1e2235 !important;
+  border-color: #2d3148 !important;
+  color: var(--text) !important;
+}
+.list-group-item:hover { background: #252a40 !important; }
+
+.modal-content {
+  background: #1a1d27 !important;
+  border-color: #2d3148 !important;
+  color: var(--text) !important;
+}
+
+.dropdown-menu {
+  background: #1a1d27 !important;
+  border-color: #2d3148 !important;
+}
+.dropdown-item { color: var(--text) !important; }
+.dropdown-item:hover { background: #252a40 !important; }
+
+/* Select2 dark */
+.select2-container--default .select2-selection--single {
+  background: #1e2235 !important;
+  border-color: #2d3148 !important;
+  color: #e2e8f0 !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+  color: #e2e8f0 !important;
+}
+.select2-dropdown {
+  background: #1a1d27 !important;
+  border-color: #2d3148 !important;
+}
+.select2-results__option { color: #e2e8f0 !important; }
+.select2-results__option--highlighted {
+  background: #007676 !important;
+}
+/* ── FIXED: Select2 search field — visible text ── */
+.select2-search--dropdown {
+  padding: 8px !important;
+  background: #1a1d27 !important;
+}
+.select2-search--dropdown .select2-search__field {
+  background: #252a40 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #00b8a9 !important;
+  border-radius: 6px !important;
+  padding: 7px 12px !important;
+  font-size: 13px !important;
+  width: 100% !important;
+  outline: none !important;
+  caret-color: #00e0c6 !important;
+}
+.select2-search--dropdown .select2-search__field::placeholder {
+  color: #4a5270 !important;
+}
+.select2-search__field {
+  background: #252a40 !important;
+  color: #e2e8f0 !important;
+  border-color: #00b8a9 !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #1a1d27; }
+::-webkit-scrollbar-thumb { background: #2d3148; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #007676; }
+
+
+/* ═══ GLOBAL DARK FORCE ═══ */
+body, .content, .opd-wrap, .container, .container-fluid,
+div, section, main, article, aside, form {
+  color: var(--text);
+}
+
+/* Force all white/light backgrounds dark */
+[style*="background:#fff"],
+[style*="background: #fff"],
+[style*="background:white"],
+[style*="background: white"],
+[style*="background:#f"] {
+  background: #1e2235 !important;
+}
+
+/* All cards */
+.card { background: #1e2235 !important; border-color: #2d3148 !important; }
+.card-body { background: #1e2235 !important; color: #e2e8f0 !important; }
+.card-header { background: #252a40 !important; border-color: #2d3148 !important; color: #e2e8f0 !important; }
+.card-footer { background: #1e2235 !important; border-color: #2d3148 !important; }
+
+/* All inputs */
+input[type=text], input[type=number], input[type=date],
+input[type=email], input[type=tel], input[type=password],
+input[type=search], select, textarea {
+  background: #1e2235 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #2d3148 !important;
+}
+
+/* Labels */
+label { color: #cbd5e1 !important; }
+
+/* Headings */
+h1,h2,h3,h4,h5,h6 { color: #e2e8f0 !important; }
+p { color: #cbd5e1 !important; }
+small { color: #8892a4 !important; }
+
+/* Tables */
+.table { color: #e2e8f0 !important; }
+.table thead th {
+  background: #252a40 !important;
+  color: #8892a4 !important;
+  border-color: #2d3148 !important;
+}
+.table td, .table th { border-color: #2d3148 !important; }
+.table tbody tr:hover td { background: #252a40 !important; }
+.table-striped tbody tr:nth-of-type(odd) { background: #1a1d27 !important; }
+
+/* Bootstrap form controls */
+.form-control, .form-select {
+  background: #1e2235 !important;
+  color: #e2e8f0 !important;
+  border-color: #2d3148 !important;
+}
+.form-control:focus, .form-select:focus {
+  background: #252a40 !important;
+  border-color: #00b8a9 !important;
+  box-shadow: 0 0 0 2px rgba(0,184,169,0.2) !important;
+  color: #e2e8f0 !important;
+}
+.form-label { color: #cbd5e1 !important; }
+.form-text { color: #8892a4 !important; }
+
+/* Input groups */
+.input-group-text {
+  background: #252a40 !important;
+  border-color: #2d3148 !important;
+  color: #8892a4 !important;
+}
+
+/* Buttons */
+.btn-outline-secondary {
+  color: #8892a4 !important;
+  border-color: #2d3148 !important;
+}
+.btn-outline-secondary:hover {
+  background: #252a40 !important;
+  color: #e2e8f0 !important;
+}
+.btn-light {
+  background: #252a40 !important;
+  border-color: #2d3148 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Alerts */
+.alert-success { background: #1a2e1a !important; border-color: #2d5a2d !important; color: #86efac !important; }
+.alert-danger  { background: #2e1a1a !important; border-color: #5a2d2d !important; color: #fca5a5 !important; }
+.alert-warning { background: #2e2518 !important; border-color: #5a4820 !important; color: #fcd34d !important; }
+.alert-info    { background: #1a2535 !important; border-color: #2d4a6a !important; color: #7dd3fc !important; }
+
+/* Badges */
+.badge.bg-light { background: #2d3148 !important; color: #e2e8f0 !important; }
+
+/* Horizontal rule */
+hr { border-color: #2d3148 !important; }
+
+/* Section separators */
+.border, .border-top, .border-bottom { border-color: #2d3148 !important; }
+
+/* Text utilities */
+.text-muted { color: #8892a4 !important; }
+.text-dark   { color: #e2e8f0 !important; }
+
+/* Opd table override */
+.opd-table td { background: #1e2235 !important; border-color: #2d3148 !important; color: #e2e8f0 !important; }
+.opd-label { background: #252a40 !important; color: #8892a4 !important; }
+
+/* Vital boxes */
+.vital-box { background: #1e2235 !important; border-color: #2d3148 !important; }
+.vital-input { color: #e2e8f0 !important; }
+
+/* Checkbox items */
+.cb-item { background: #1e2235 !important; border-color: #2d3148 !important; color: #e2e8f0 !important; }
+.cb-item:hover { background: #252a40 !important; }
+.cb-item:has(input:checked) { background: #1e3a3a !important; border-color: #007676 !important; }
+
+/* Section body */
+.sec-body { background: #1e2235 !important; }
+
+/* OPD wrap */
+.opd-wrap { background: #0f1117 !important; }
+
+/* Page backgrounds */
+.bg-white, .bg-light { background: #1e2235 !important; }
+.bg-light { background: #252a40 !important; }
+
+/* Pagination */
+.page-link { background: #1e2235 !important; border-color: #2d3148 !important; color: #00b8a9 !important; }
+.page-item.active .page-link { background: #007676 !important; border-color: #007676 !important; }
+
+/* Modal */
+.modal-content { background: #1a1d27 !important; border-color: #2d3148 !important; }
+.modal-header { border-color: #2d3148 !important; }
+.modal-footer { border-color: #2d3148 !important; }
+
+/* Dropdown */
+.dropdown-menu { background: #1a1d27 !important; border-color: #2d3148 !important; }
+.dropdown-item { color: #e2e8f0 !important; }
+.dropdown-item:hover { background: #252a40 !important; }
+.dropdown-divider { border-color: #2d3148 !important; }
+
+/* Nav tabs */
+.nav-tabs { border-color: #2d3148 !important; }
+.nav-tabs .nav-link { color: #8892a4 !important; }
+.nav-tabs .nav-link.active {
+  background: #1e2235 !important;
+  border-color: #2d3148 #2d3148 #1e2235 !important;
+  color: #00b8a9 !important;
+}
+
+/* Progress bars */
+.progress { background: #252a40 !important; }
+
+/* List groups */
+.list-group-item {
+  background: #1e2235 !important;
+  border-color: #2d3148 !important;
+  color: #e2e8f0 !important;
+}
+.list-group-item:hover { background: #252a40 !important; }
+.list-group-item.active { background: #007676 !important; border-color: #007676 !important; }
+
+</style>
+{% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header>
+<div class="header-flex">
+<img src="{% static 'hms/img/hospital_logo.jpg' %}">
+<div>
+<h1>Shradha Hospital Management System</h1>
+<p>Pani Ki Do Tanki, Surajpole, Pali (Raj) | 📞 9414122542</p>
+</div>
+</div>
+</header>
+
+<div class="main-layout">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+
+<h3 class="sidebar-title">HMS Modules</h3>
+
+<a href="{% url 'hms:dashboard' %}"
+class="menu-btn {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+<i class="fa-solid fa-house"></i> Dashboard
+</a>
+
+<a href="/patients/new/" class="menu-btn">
+<i class="fa-solid fa-user-plus"></i> New Patient
+</a>
+
+<a href="/appointments/new/" class="menu-btn">
+<i class="fa-solid fa-calendar-check"></i> Appointment
+</a>
+
+<hr>
+
+<a href="/opd-register/"
+class="menu-btn {% if request.resolver_match.url_name == 'opd_register' %}active{% endif %}">
+<i class="fa-solid fa-stethoscope"></i> OPD Register
+</a>
+
+<a href="{% url 'hms:procedure_billing' %}"
+class="menu-btn {% if request.resolver_match.url_name == 'procedure_billing' %}active{% endif %}">
+<i class="fa-solid fa-syringe"></i> Procedure Charges
+</a>
+
+<hr>
+
+<div class="sidebar-title">Laboratory</div>
+
+<a href="{% url 'hms:lab_billing_direct' %}" class="menu-btn">
+<i class="fa-solid fa-flask"></i> Walk-in Lab Billing
+</a>
+
+<a href="{% url 'hms:pending_lab_orders' %}"
+class="menu-btn {% if request.resolver_match.url_name == 'pending_lab_orders' %}active{% endif %}">
+<i class="fa-solid fa-vial"></i> Pending Lab Orders
+</a>
+
+<a href="{% url 'hms:lab_reports' %}"
+class="menu-btn {% if request.resolver_match.url_name == 'lab_reports' %}active{% endif %}">
+<i class="fa-solid fa-file-medical"></i> Lab Reports
+
+{% if pending_lab_count %}
+<span style="
+float:right;
+background:#dc3545;
+color:#fff;
+padding:2px 7px;
+border-radius:12px;
+font-size:10px;
+font-weight:600;">
+{{ pending_lab_count }}
+</span>
+{% endif %}
+</a>
+
+<a href="{% url 'hms:radiology_upload' %}"
+class="menu-btn {% if request.resolver_match.url_name == 'radiology_upload' %}active{% endif %}">
+<i class="fa-solid fa-x-ray"></i> Radiology Upload
+</a>
+
+<a href="{% url 'hms:usg_report_list' %}"
+class="menu-btn {% if request.resolver_match.url_name == 'usg_report_list' %}active{% endif %}">
+<i class="fa-solid fa-baby"></i> USG Reports
+</a>
+
+<hr>
+
+<a href="/ipd/"
+class="menu-btn {% if request.resolver_match.url_name == 'ipd' %}active{% endif %}">
+<i class="fa-solid fa-bed"></i> IPD
+</a>
+
+<a href="/ot/"
+class="menu-btn {% if request.resolver_match.url_name == 'ot' %}active{% endif %}">
+<i class="fa-solid fa-user-doctor"></i> OT Management
+</a>
+
+<hr>
+
+<a href="/inventory/"
+class="menu-btn {% if request.resolver_match.url_name == 'inventory' %}active{% endif %}">
+<i class="fa-solid fa-box"></i> Inventory
+</a>
+
+<a href="{% url 'hms:document_dashboard' %}"
+class="menu-btn {% if 'document' in request.resolver_match.url_name %}active{% endif %}">
+<i class="fa-solid fa-folder-open"></i> Documents
+{% comment %}Expiry alert badge — shown when expired docs exist{% endcomment %}
+</a>
+
+<a href="{% url 'hms:construction_expense_list' %}"
+class="menu-btn {% if 'construction' in request.resolver_match.url_name %}active{% endif %}">
+<i class="fa-solid fa-hard-hat"></i> Construction
+</a>
+
+<a href="/admin/" class="menu-btn">
+<i class="fa-solid fa-gear"></i> Admin Panel
+</a>
+
+<hr>
+
+<!-- REPORTS -->
+<div class="sidebar-title">Reports</div>
+
+<a href="{% url 'hms:daily_report' %}"
+class="menu-btn {% if request.resolver_match.url_name == 'daily_report' %}active{% endif %}">
+<i class="fa-solid fa-chart-line"></i> Daily Report
+</a>
+
+<a href="{% url 'hms:all_reports' %}"
+class="menu-btn {% if request.resolver_match.url_name == 'all_reports' %}active{% endif %}">
+<i class="fa-solid fa-layer-group"></i> All Reports
+</a>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="content">
+{% block content %}
+{% endblock %}
+</div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+© 2026 Shradha Hospital • HMS
+</footer>
+
+<!-- Bootstrap JS (Required for modal, dropdown, etc.) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Offline fallback -->
+<script>
+  if (typeof bootstrap === 'undefined') {
+    document.write('<script src="{% static "js/bootstrap.bundle.min.js" %}"><\/script>');
+  }
+</script>
+</body>
+</html>

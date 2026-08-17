@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Discharge Bill{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+<h2>Discharge Bill</h2>
+
+{% if error %}
+<div style="background:#ffeaea;border:1px solid #ffb5b5;padding:12px;border-radius:6px;color:#c40000;margin-bottom:20px;">
+    {{ error }}
+</div>
+{% else %}
+
+<h3>Patient Details</h3>
+
+<table border="1" width="100%" cellpadding="6">
+
+<tr>
+<td><b>Patient Name</b></td>
+<td>{{ admission.patient.full_name }}</td>
+<td><b>Father Name</b></td>
+<td>{{ admission.patient.father_or_husband_name }}</td>
+</tr>
+
+<tr>
+<td><b>UHID</b></td>
+<td>{{ admission.patient.uhid }}</td>
+<td><b>IPD No</b></td>
+<td>{{ admission.ipd_no }}</td>
+</tr>
+
+<tr>
+<td><b>Ward</b></td>
+<td>{{ admission.ward.name }}</td>
+<td><b>Bed No</b></td>
+<td>{{ admission.bed.bed_number }}</td>
+</tr>
+
+<tr>
+<td><b>Doctor</b></td>
+<td>{{ admission.doctor.full_name }}</td>
+<td><b>Department</b></td>
+<td>{{ admission.department.name }}</td>
+</tr>
+
+<tr>
+<td><b>Admission Date</b></td>
+<td>{{ admission.admission_date|date:"d M Y H:i" }}</td>
+<td><b>Discharge Date</b></td>
+<td>{{ admission.discharge_date|date:"d M Y H:i" }}</td>
+</tr>
+
+<tr>
+<td><b>Diagnosis</b></td>
+<td colspan="3">{{ admission.diagnosis }}</td>
+</tr>
+
+<tr>
+<td><b>Address</b></td>
+<td colspan="3">{{ admission.patient.address }}</td>
+</tr>
+
+</table>
+
+<br>
+
+<h3>Add Bill Item</h3>
+
+<form method="post">
+{% csrf_token %}
+<input type="hidden" name="action" value="add_item">
+
+<select name="item">
+{% for item in items %}
+<option value="{{ item.id }}">
+{{ item.name }} - ₹{{ item.price }}
+</option>
+{% endfor %}
+</select>
+
+<input type="number" name="quantity" value="1" min="1">
+
+<button type="submit">Add Item</button>
+
+</form>
+
+<h3>Bill Items</h3>
+
+<table border="1" width="100%">
+
+<tr>
+<th>Item</th>
+<th>Qty</th>
+<th>Price</th>
+<th>Total</th>
+<th>Action</th>
+</tr>
+
+{% for b in bill_items %}
+<tr>
+<td>{{ b.item.name }}</td>
+<td>{{ b.quantity }}</td>
+<td>{{ b.price }}</td>
+<td>{{ b.total }}</td>
+<td>
+<a href="{% url 'hms:delete_bill_item' b.id %}" style="color:red;">Delete</a>
+</td>
+</tr>
+{% endfor %}
+
+</table>
+
+<br>
+
+<h3>Add Advance Payment</h3>
+
+<form method="post" style="display:flex;gap:15px;flex-wrap:wrap;align-items:end;">
+{% csrf_token %}
+<input type="hidden" name="action" value="add_advance">
+
+<div>
+<label>Amount</label><br>
+<input type="number" name="advance_amount" step="0.01" required style="padding:6px;">
+</div>
+
+<div>
+<label>Payment Mode</label><br>
+<select name="advance_payment_mode" style="padding:6px;">
+<option value="CASH">Cash</option>
+<option value="UPI">UPI</option>
+<option value="CARD">Card</option>
+<option value="CHEQUE">Cheque</option>
+</select>
+</div>
+
+<div>
+<label>Note</label><br>
+<input type="text" name="advance_note" style="padding:6px;">
+</div>
+
+<button type="submit"
+style="background:#2563eb;color:white;padding:8px 18px;border:none;border-radius:5px;">
+Save Advance
+</button>
+
+</form>
+
+<br>
+
+<!-- Payment Summary -->
+
+<table border="1" width="50%" cellpadding="8">
+
+<tr>
+<td><b>Gross Total</b></td>
+<td>₹ {{ total_amount }}</td>
+</tr>
+
+<tr>
+<td><b>Discount</b></td>
+<td>
+<form method="post">
+{% csrf_token %}
+<input type="hidden" name="action" value="update_payment">
+<input type="number" name="discount" value="{{ bill.discount }}" step="0.01">
+<button type="submit">Update</button>
+</form>
+</td>
+</tr>
+
+<tr>
+<td><b>Total Advance</b></td>
+<td>₹ {{ total_advance }}</td>
+</tr>
+
+{% if refund_amount %}
+<tr style="background:#d1fae5;">
+<td><b>Refund</b></td>
+<td><b>₹ {{ refund_amount }}</b></td>
+</tr>
+{% else %}
+<tr style="background:#e6ffe6;">
+<td><b>Net Payable</b></td>
+<td><b>₹ {{ net_amount }}</b></td>
+</tr>
+{% endif %}
+
+</table>
+
+<br>
+
+<a href="{% url 'hms:discharge_bill_pdf' admission.id %}"
+style="background:#28a745;color:white;padding:8px 15px;text-decoration:none;border-radius:5px;">
+🖨️ Print Discharge Bill
+</a>
+
+&nbsp;
+
+<a href="{% url 'hms:advance_payment_receipt' patient.id %}"
+style="background:#1a6fad;color:white;padding:8px 15px;text-decoration:none;border-radius:5px;">
+🧾 Print Advance Receipts
+</a>
+
+<br><br>
+
+{% if bill.is_paid %}
+
+<div style="background:#d4edda;border:1px solid #28a745;padding:12px;border-radius:6px;margin-bottom:12px;">
+✅ Payment Received — {{ bill.get_payment_mode_display }} on {{ bill.paid_at|date:"d-m-Y H:i" }}
+
+<a href="{% url 'hms:final_payment_receipt' patient.id %}"
+style="background:#0d3b66;color:white;padding:6px 14px;text-decoration:none;border-radius:5px;font-size:13px;">
+Print Final Receipt
+</a>
+
+</div>
+
+{% else %}
+
+<h3>Collect Final Payment</h3>
+
+<form method="post">
+
+{% csrf_token %}
+<input type="hidden" name="action" value="mark_paid">
+
+<label>Payment Mode</label>
+
+<select name="final_payment_mode">
+<option value="CASH">Cash</option>
+<option value="UPI">UPI</option>
+<option value="CARD">Card</option>
+<option value="CHEQUE">Cheque</option>
+</select>
+
+<br><br>
+
+Balance Amount: ₹ {{ net_amount }}
+
+<br><br>
+
+<button type="submit"
+style="background:#16a34a;color:white;padding:8px 18px;border:none;border-radius:5px;">
+Mark Paid & Print Receipt
+</button>
+
+</form>
+
+{% endif %}
+
+</div>
+
+{% endif %}
+
+{% endblock %}

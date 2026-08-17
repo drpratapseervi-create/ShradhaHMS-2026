@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}Admit Patient — {{ bed.ward.name }} Bed {{ bed.bed_number }}{% endblock %}
+
+{% block content %}
+
+<style>
+
+.admit-wrap{
+max-width:900px;
+margin:30px auto;
+font-family:'Segoe UI',sans-serif;
+}
+
+.admit-wrap h2{
+color:#e2e8f0;
+}
+
+.form-card{
+background:#111111;
+border-radius:10px;
+border:1px solid #2a2a2a;
+margin-bottom:20px;
+padding:20px;
+box-shadow:0 2px 8px rgba(0,0,0,0.3);
+}
+
+.form-title{
+font-weight:700;
+color:#00b8a9;
+margin-bottom:15px;
+font-size:15px;
+}
+
+.form-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:15px;
+}
+
+.form-group{
+display:flex;
+flex-direction:column;
+}
+
+.form-group.full{
+grid-column:1 / -1;
+}
+
+label{
+font-size:13px;
+font-weight:600;
+margin-bottom:6px;
+color:#8892a4;
+letter-spacing:.2px;
+}
+
+.form-control{
+padding:9px 12px;
+border-radius:7px;
+border:1px solid #2a2a2a;
+font-size:14px;
+background:#1a1a1a;
+color:#e2e8f0;
+outline:none;
+transition:border-color .15s;
+}
+
+.form-control:focus{
+border-color:#00b8a9;
+box-shadow:0 0 0 2px rgba(0,184,169,.15);
+}
+
+.form-control option{
+background:#1a1a1a;
+color:#e2e8f0;
+}
+
+textarea.form-control{
+min-height:70px;
+resize:vertical;
+}
+
+.btn-row{
+display:flex;
+gap:10px;
+margin-top:20px;
+}
+
+.btn-admit{
+flex:1;
+background:#00b8a9;
+color:#000;
+border:none;
+padding:12px;
+border-radius:7px;
+font-weight:700;
+cursor:pointer;
+transition:background .15s;
+}
+.btn-admit:hover{
+background:#00d4c0;
+}
+
+.btn-cancel{
+padding:12px 20px;
+background:#1e1e1e;
+color:#8892a4;
+border:1px solid #2a2a2a;
+border-radius:7px;
+text-decoration:none;
+font-weight:600;
+}
+.btn-cancel:hover{
+background:#2a2a2a;
+color:#e2e8f0;
+}
+
+.error-box{
+background:#2a0a0a;
+border:1px solid #5a2d2d;
+padding:10px 14px;
+border-radius:7px;
+margin-bottom:15px;
+color:#fca5a5;
+font-weight:600;
+}
+
+.icd-wrapper{
+position:relative;
+}
+
+.icd-dropdown{
+position:absolute;
+z-index:9999;
+background:#111111;
+border:1px solid #00b8a9;
+border-radius:7px;
+max-height:200px;
+overflow-y:auto;
+width:100%;
+display:none;
+box-shadow:0 8px 24px rgba(0,0,0,0.5);
+}
+
+.icd-item{
+padding:8px 12px;
+cursor:pointer;
+border-bottom:1px solid #1e1e1e;
+font-size:13px;
+color:#e2e8f0;
+}
+
+.icd-item:hover{
+background:#155555;
+}
+
+</style>
+
+<div class="admit-wrap">
+
+<h2>Admit Patient</h2>
+
+{% if error %}
+<div class="error-box">{{ error }}</div>
+{% endif %}
+
+<form method="POST">
+{% csrf_token %}
+
+<div class="form-card">
+<div class="form-title">Patient Identification</div>
+<div class="form-grid">
+
+<div class="form-group">
+<label>Patient</label>
+<select name="patient" id="patient-select" class="form-control" required>
+<option value="">Select Patient</option>
+{% for p in patients %}
+<option value="{{ p.id }}"
+  data-age="{{ p.age }}"
+  data-gender="{{ p.gender }}"
+  data-mobile="{{ p.mobile_no }}"
+  data-address="{{ p.address }}"
+  data-guardian="{{ p.father_or_husband_name }}">
+  {{ p.full_name }} | {{ p.uhid }}
+</option>
+{% endfor %}
+</select>
+</div>
+
+<div class="form-group">
+<label>Father / Husband Name</label>
+<input type="text" id="guardian_name" class="form-control">
+</div>
+
+<div class="form-group">
+<label>Age</label>
+<input type="number" id="age" class="form-control">
+</div>
+
+<div class="form-group">
+<label>Gender</label>
+<select id="gender" class="form-control">
+<option value="">Select</option>
+<option value="M">Male</option>
+<option value="F">Female</option>
+<option value="O">Other</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>Mobile</label>
+<input type="text" id="mobile" class="form-control">
+</div>
+
+<div class="form-group full">
+<label>Address</label>
+<textarea id="address" class="form-control"></textarea>
+</div>
+
+</div>
+</div>
+
+<div class="form-card">
+<div class="form-title">Admission Details</div>
+<div class="form-grid">
+
+<div class="form-group">
+<label>Consultant Doctor</label>
+<select name="doctor" id="doctor-select" class="form-control">
+<option value="">Select Doctor</option>
+{% for d in doctors %}
+<option value="{{ d.id }}" data-dept="{{ d.department.name }}">
+  Dr. {{ d.full_name }}
+</option>
+{% endfor %}
+</select>
+</div>
+
+<div class="form-group">
+<label>Department</label>
+<input type="text" id="doctor-department" class="form-control" readonly>
+</div>
+
+<div class="form-group full">
+<label>Diagnosis (ICD Search)</label>
+<div class="icd-wrapper">
+<input type="text" id="icd-search" class="form-control" placeholder="Search diagnosis or ICD code">
+<input type="hidden" name="icd_code" id="icd-hidden">
+<input type="hidden" name="diagnosis" id="diagnosis-hidden">
+<div class="icd-dropdown" id="icd-results"></div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="form-card">
+<div class="form-title">Attendant Details</div>
+<div class="form-grid">
+
+<div class="form-group">
+<label>Attendant Name</label>
+<input type="text" name="attendant_name" class="form-control">
+</div>
+
+<div class="form-group">
+<label>Relation</label>
+<input type="text" name="attendant_relation" class="form-control">
+</div>
+
+<div class="form-group">
+<label>Mobile</label>
+<input type="text" name="attendant_mobile" class="form-control">
+</div>
+
+</div>
+</div>
+
+<div class="btn-row">
+<button type="submit" class="btn-admit">Admit Patient</button>
+<a href="{% url 'hms:ipd_dashboard' %}" class="btn-cancel">Cancel</a>
+</div>
+
+</form>
+</div>
+
+<script>
+
+/* PATIENT AUTO FILL */
+const patientSelect = document.getElementById("patient-select")
+
+patientSelect.addEventListener("change", function(){
+    const sel = this.options[this.selectedIndex]
+    document.getElementById("age").value          = sel.dataset.age      || ""
+    document.getElementById("gender").value       = sel.dataset.gender   || ""
+    document.getElementById("mobile").value       = sel.dataset.mobile   || ""
+    document.getElementById("address").value      = sel.dataset.address  || ""
+    document.getElementById("guardian_name").value = sel.dataset.guardian || ""
+})
+
+/* DOCTOR → DEPARTMENT AUTO */
+const doctorSelect = document.getElementById("doctor-select")
+
+doctorSelect.addEventListener("change", function(){
+    const sel = this.options[this.selectedIndex]
+    document.getElementById("doctor-department").value = sel.dataset.dept || ""
+})
+
+/* ICD SEARCH */
+const ICD_SEARCH_URL = "{% url 'hms:icd_search' %}"
+const icdInput       = document.getElementById("icd-search")
+const icdHidden      = document.getElementById("icd-hidden")
+const diagnosisHidden = document.getElementById("diagnosis-hidden")
+const icdBox         = document.getElementById("icd-results")
+let timer
+
+icdInput.addEventListener("input", function(){
+    clearTimeout(timer)
+    const q = this.value.trim()
+    if(q.length < 2){ icdBox.style.display = "none"; return }
+
+    timer = setTimeout(() => {
+        fetch(`${ICD_SEARCH_URL}?q=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(data => {
+            const results = data.results
+            if(!results || results.length === 0){ icdBox.style.display = "none"; return }
+            icdBox.innerHTML = results.map(item => {
+                const parts = item.text.split(" - ")
+                const code = parts[0]
+                const diag = parts.slice(1).join(" - ")
+                return `<div class="icd-item" onclick="selectICD('${code}','${diag.replace(/'/g,"\\'")}')">
+                    ${item.text}
+                </div>`
+            }).join("")
+            icdBox.style.display = "block"
+        })
+    }, 300)
+})
+
+function selectICD(code, diagnosis){
+    icdHidden.value      = code
+    diagnosisHidden.value = diagnosis
+    icdInput.value       = code + " - " + diagnosis
+    icdBox.style.display = "none"
+}
+
+</script>
+
+{% endblock %}

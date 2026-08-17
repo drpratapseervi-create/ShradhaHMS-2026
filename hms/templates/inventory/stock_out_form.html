@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Stock Out — Issue Items</h2>
+    <a href="{% url 'hms:inventory_dashboard' %}" class="btn btn-secondary">← Back</a>
+  </div>
+  <div class="card p-4">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Item</label>
+          <select name="item" class="form-select" required>
+            <option value="">-- Select Item --</option>
+            {% for item in items %}
+            <option value="{{ item.id }}" {% if request.GET.item == item.id|stringformat:"s" %}selected{% endif %}>
+              {{ item.name }} ({{ item.unit }}) — Stock: {{ item.current_stock }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Quantity</label>
+          <input type="number" name="quantity" class="form-control" required min="1" placeholder="0">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Date</label>
+          <input type="date" name="date" class="form-control" required
+                 value="{% now 'Y-m-d' %}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Issued To</label>
+          <select name="issued_to" class="form-select" required>
+            <option value="Ward">Ward</option>
+            <option value="OT">Operation Theatre</option>
+            <option value="Pharmacy">Pharmacy</option>
+            <option value="Patient">Patient</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Detail (Ward name / Patient name)</label>
+          <input type="text" name="issued_to_detail" class="form-control" placeholder="e.g. Ward 2 / Pratap Senecha">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Notes</label>
+          <input type="text" name="notes" class="form-control" placeholder="Optional notes">
+        </div>
+      </div>
+      <div class="mt-4">
+        <button type="submit" class="btn btn-warning px-4">Save Stock Out</button>
+        <a href="{% url 'hms:inventory_dashboard' %}" class="btn btn-outline-secondary ms-2">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

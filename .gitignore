@@ -25,3 +25,11 @@ media/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Stray/leftover venv and build artifacts
+.venv_new/
+*.bak
+*.whl
+
+# Historical cruft (see CLAUDE.md) - not part of the active app
+Shradha_ICD10_FULL_2026.xlsx

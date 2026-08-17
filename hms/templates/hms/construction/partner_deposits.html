@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+{% block title %}Partner Deposits{% endblock %}
+
+{% block extra_css %}
+<style>
+  .dep-wrap { background:#1a2634; border:1px solid #2d3f4f; border-radius:8px; overflow:hidden; }
+  .dep-table { width:100%; border-collapse:collapse; color:#d0dce8; }
+  .dep-table thead tr { background:#152230; }
+  .dep-table thead th { color:#8aaec8 !important; border-color:#2d3f4f !important; font-size:12px; padding:8px 12px; }
+  .dep-table tbody tr { background:#1e2a35 !important; border-color:#2d3f4f !important; }
+  .dep-table tbody tr:hover td { background:#243342 !important; }
+  .dep-table tbody td { background:transparent !important; border-color:#2d3f4f !important; font-size:13px; padding:7px 12px; color:#d0dce8; }
+  .partner-tab-btn { padding:10px 22px; border:1px solid #2d3f4f; border-radius:6px; background:#1a2634; cursor:pointer; font-size:13px; color:#8aaec8; transition:all .2s; }
+  .partner-tab-btn.active { background:#0d6efd; color:#fff; border-color:#0d6efd; font-weight:600; }
+  .partner-section { display:none; }
+  .partner-section.active { display:block; }
+  .bal-card { border-radius:8px; padding:16px 20px; text-align:center; }
+  .form-control, .form-select { background:#1e2a35 !important; border-color:#2d3f4f !important; color:#d0dce8 !important; font-size:13px; }
+  .form-control::placeholder { color:#5a7a8a !important; }
+  .form-control:focus, .form-select:focus { border-color:#4da6e8 !important; box-shadow:0 0 0 2px rgba(77,166,232,0.15) !important; }
+  .section-label { font-size:11px; font-weight:600; letter-spacing:.08em; color:#5a7a8a; text-transform:uppercase; margin-bottom:10px; }
+  .empty-row td { color:#5a7a8a !important; text-align:center; padding:20px !important; }
+  .icon-btn { border:none; border-radius:4px; padding:2px 7px; font-size:11px; cursor:pointer; line-height:1.6; }
+  #editModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:9999; align-items:center; justify-content:center; }
+  #editModal.show { display:flex; }
+  .modal-box { background:#1a2634; border:1px solid #2d3f4f; border-radius:10px; padding:24px; width:400px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="d-flex align-items-center gap-2">
+      <div class="rounded p-2" style="background:#1e3a5f">
+        <i class="fas fa-wallet" style="color:#4da6e8;font-size:18px"></i>
+      </div>
+      <div>
+        <h5 class="mb-0 fw-semibold" style="color:#d0dce8">Partner Deposits</h5>
+        <small style="color:#5a7a8a">Construction fund — per-partner balance tracker</small>
+      </div>
+    </div>
+    <a href="{% url 'hms:construction_expense_list' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="fas fa-arrow-left me-1"></i> Back to Expenses
+    </a>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+    {{ msg }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <!-- Summary Cards -->
+  <div class="row g-3 mb-4">
+    {% for p in summary %}
+    <div class="col-md-4">
+      <div class="bal-card" style="background:#1a2634;border:1px solid #2d3f4f">
+        <div style="font-size:13px;color:#8aaec8;margin-bottom:4px">{{ p.label }}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
+          <div>
+            <div style="font-size:11px;color:#5a7a8a">Deposited</div>
+            <div style="font-size:16px;font-weight:600;color:#4caf80">₹{{ p.deposited|floatformat:0 }}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#5a7a8a">Spent</div>
+            <div style="font-size:16px;font-weight:600;color:#e07070">₹{{ p.spent|floatformat:0 }}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#5a7a8a">Balance</div>
+            <div style="font-size:16px;font-weight:600;color:{% if p.balance >= 0 %}#4da6e8{% else %}#e07070{% endif %}">
+              ₹{{ p.balance|floatformat:0 }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Tabs -->
+  <div class="d-flex gap-2 mb-3">
+    {% for p in summary %}
+    <button class="partner-tab-btn {% if forloop.first %}active{% endif %}"
+            onclick="showPartner('{{ p.key }}', this)">
+      {{ p.label }}
+      {% if p.balance < 0 %}
+        <span style="font-size:10px;background:#3d1a1a;color:#e07070;padding:1px 5px;border-radius:4px;margin-left:4px">Low</span>
+      {% endif %}
+    </button>
+    {% endfor %}
+  </div>
+
+  {% for p in summary %}
+  <div class="partner-section {% if forloop.first %}active{% endif %}" id="section-{{ p.key }}">
+    <div class="row g-3">
+
+      <!-- Add Deposit Form -->
+      <div class="col-md-4">
+        <div style="background:#1a2634;border:1px solid #2d3f4f;border-radius:8px;padding:18px">
+          <div class="section-label"><i class="fas fa-plus-circle me-1"></i> Add Deposit — {{ p.label }}</div>
+          <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="partner" value="{{ p.key }}">
+            <div class="mb-2">
+              <label style="font-size:12px;color:#8aaec8">Date *</label>
+              <input type="date" name="date" class="form-control form-control-sm" required>
+            </div>
+            <div class="mb-2">
+              <label style="font-size:12px;color:#8aaec8">Amount (₹) *</label>
+              <input type="number" name="amount" class="form-control form-control-sm" placeholder="e.g. 25000" min="1" step="1" required>
+            </div>
+            <div class="mb-3">
+              <label style="font-size:12px;color:#8aaec8">Note (optional)</label>
+              <input type="text" name="note" class="form-control form-control-sm" placeholder="e.g. Cash via hand, UPI...">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm w-100">
+              <i class="fas fa-plus me-1"></i> Add Deposit
+            </button>
+          </form>
+
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid #2d3f4f">
+            <div class="d-flex justify-content-between mb-1">
+              <span style="font-size:12px;color:#8aaec8">Total Deposited</span>
+              <span style="font-size:13px;color:#4caf80;font-weight:600">₹{{ p.deposited|floatformat:0 }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+              <span style="font-size:12px;color:#8aaec8">Total Spent (expenses)</span>
+              <span style="font-size:13px;color:#e07070;font-weight:600">− ₹{{ p.spent|floatformat:0 }}</span>
+            </div>
+            <div style="border-top:1px solid #2d3f4f;margin:8px 0"></div>
+            <div class="d-flex justify-content-between">
+              <span style="font-size:13px;color:#d0dce8;font-weight:600">Balance</span>
+              <span style="font-size:15px;font-weight:700;color:{% if p.balance >= 0 %}#4da6e8{% else %}#e07070{% endif %}">
+                ₹{{ p.balance|floatformat:0 }}
+              </span>
+            </div>
+            {% if p.balance < 0 %}
+            <div style="margin-top:8px;background:#3d1a1a;border:1px solid #5c2a2a;border-radius:6px;padding:7px 10px;font-size:12px;color:#e07070">
+              <i class="fas fa-exclamation-triangle me-1"></i> {{ p.label }} has spent more than deposited.
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- History Tables -->
+      <div class="col-md-8">
+
+        <div class="section-label"><i class="fas fa-arrow-down me-1" style="color:#4caf80"></i> Deposit History</div>
+        <div class="dep-wrap mb-3">
+          <table class="dep-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th class="text-end">Amount</th>
+                <th>Note</th>
+                <th style="width:72px;text-align:center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in p.deposits %}
+              <tr>
+                <td>{{ d.date }}</td>
+                <td class="text-end">
+                  <div style="color:#4caf80;font-weight:600">+ ₹{{ d.amount|floatformat:0 }}</div>
+                  <div class="amt-words" style="font-size:10px;color:#5a7a8a" data-amount="{{ d.amount|floatformat:0 }}"></div>
+                </td>
+                <td style="color:#8aaec8">{{ d.note|default:"—" }}</td>
+                <td style="text-align:center;white-space:nowrap">
+                  <button class="icon-btn" style="background:#1e3a5f;color:#4da6e8;margin-right:3px"
+                          data-edit-url="{% url 'hms:partner_deposit_edit' d.pk %}"
+                          data-date="{{ d.date|date:'Y-m-d' }}"
+                          data-amount="{{ d.amount }}"
+                          data-note="{{ d.note|escapejs }}"
+                          onclick="openEditModal(this)">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <form method="POST" action="{% url 'hms:partner_deposit_delete' d.pk %}"
+                        style="display:inline"
+                        onsubmit="return confirm('Delete deposit of ₹{{ d.amount|floatformat:0 }}?')">
+                    {% csrf_token %}
+                    <button type="submit" class="icon-btn" style="background:#3d1a1a;color:#e07070">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr class="empty-row"><td colspan="4">No deposits yet for {{ p.label }}.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section-label"><i class="fas fa-arrow-up me-1" style="color:#e07070"></i> Expenses Paid by {{ p.label }}</div>
+        <div class="dep-wrap">
+          <table class="dep-table">
+            <thead>
+              <tr>
+                <th>Exp. ID</th>
+                <th>Date</th>
+                <th>Description</th>
+                <th class="text-end">Amount Paid</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for exp in p.expenses %}
+              <tr>
+                <td><span style="font-size:11px;font-family:monospace;background:#2d3f4f;color:#a0c4e0;padding:2px 6px;border-radius:4px">{{ exp.expense_id }}</span></td>
+                <td>{{ exp.date }}</td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8aaec8" title="{{ exp.description }}">{{ exp.description }}</td>
+                <td class="text-end" style="color:#e07070;font-weight:600">− ₹{{ exp.total_amount|floatformat:0 }}</td>
+              </tr>
+              {% empty %}
+              <tr class="empty-row"><td colspan="4">No expenses paid by {{ p.label }} yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal">
+  <div class="modal-box">
+    <h6 style="color:#d0dce8;margin-bottom:16px">
+      <i class="fas fa-edit me-2" style="color:#4da6e8"></i>Edit Deposit
+    </h6>
+    <form method="POST" id="editForm">
+      {% csrf_token %}
+      <div class="mb-2">
+        <label style="font-size:12px;color:#8aaec8">Date *</label>
+        <input type="date" name="date" id="edit_date" class="form-control form-control-sm" required>
+      </div>
+      <div class="mb-2">
+        <label style="font-size:12px;color:#8aaec8">Amount (₹) *</label>
+        <input type="number" name="amount" id="edit_amount" class="form-control form-control-sm" min="1" required>
+      </div>
+      <div class="mb-3">
+        <label style="font-size:12px;color:#8aaec8">Note</label>
+        <input type="text" name="note" id="edit_note" class="form-control form-control-sm">
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm flex-fill">
+          <i class="fas fa-save me-1"></i> Save Changes
+        </button>
+        <button type="button" onclick="closeEditModal()" class="btn btn-sm flex-fill"
+                style="background:#1e2a35;color:#8aaec8;border:1px solid #2d3f4f">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function showPartner(key, btn) {
+  document.querySelectorAll('.partner-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.partner-tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('section-' + key).classList.add('active');
+  btn.classList.add('active');
+}
+
+function openEditModal(btn) {
+  document.getElementById('edit_date').value = btn.dataset.date;
+  document.getElementById('edit_amount').value = btn.dataset.amount;
+  document.getElementById('edit_note').value = btn.dataset.note;
+  document.getElementById('editForm').action = btn.dataset.editUrl;
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('show');
+}
+
+document.getElementById('editModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditModal();
+});
+
+// Amount in words
+function amountToWords(n) {
+  n = Math.round(n);
+  if (n === 0) return 'Zero Rupees Only';
+  const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine',
+    'Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  function convert(n) {
+    if (n < 20) return ones[n];
+    if (n < 100) return tens[Math.floor(n/10)] + (n%10 ? ' '+ones[n%10] : '');
+    if (n < 1000) return ones[Math.floor(n/100)] + ' Hundred' + (n%100 ? ' '+convert(n%100) : '');
+    if (n < 100000) return convert(Math.floor(n/1000)) + ' Thousand' + (n%1000 ? ' '+convert(n%1000) : '');
+    if (n < 10000000) return convert(Math.floor(n/100000)) + ' Lakh' + (n%100000 ? ' '+convert(n%100000) : '');
+    return convert(Math.floor(n/10000000)) + ' Crore' + (n%10000000 ? ' '+convert(n%10000000) : '');
+  }
+  return convert(n) + ' Rupees Only';
+}
+
+document.querySelectorAll('.amt-words').forEach(el => {
+  const amt = parseInt(el.dataset.amount.replace(/,/g,''));
+  if (!isNaN(amt)) el.textContent = amountToWords(amt);
+});
+</script>
+{% endblock %}

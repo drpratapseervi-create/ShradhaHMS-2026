@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Stock In — Receive Items</h2>
+    <a href="{% url 'hms:inventory_dashboard' %}" class="btn btn-secondary">← Back</a>
+  </div>
+  <div class="card p-4">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Item</label>
+          <select name="item" id="item_select" class="form-select" required>
+            <option value="">-- Select Item --</option>
+            {% for item in items %}
+            <option value="{{ item.id }}" {% if request.GET.item == item.id|stringformat:"s" %}selected{% endif %}>
+              {{ item.name }} ({{ item.unit }}) — Stock: {{ item.current_stock }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Quantity</label>
+          <input type="number" name="quantity" class="form-control" required min="1" placeholder="0">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Date</label>
+          <input type="date" name="date" class="form-control" required
+                 value="{% now 'Y-m-d' %}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Supplier</label>
+          <select name="supplier" class="form-select">
+            <option value="">-- None --</option>
+            {% for s in suppliers %}
+            <option value="{{ s.id }}">{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Batch No.</label>
+          <input type="text" name="batch_no" class="form-control" placeholder="e.g. BT2024001">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Expiry Date</label>
+          <input type="date" name="expiry_date" class="form-control">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Purchase Price (per unit ₹)</label>
+          <input type="number" name="purchase_price" class="form-control" step="0.01" value="0">
+        </div>
+        <div class="col-md-8">
+          <label class="form-label">Notes</label>
+          <input type="text" name="notes" class="form-control" placeholder="Optional notes">
+        </div>
+      </div>
+      <div class="mt-4">
+        <button type="submit" class="btn btn-success px-4">Save Stock In</button>
+        <a href="{% url 'hms:inventory_dashboard' %}" class="btn btn-outline-secondary ms-2">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

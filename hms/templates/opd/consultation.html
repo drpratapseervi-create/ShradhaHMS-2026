@@ -1,0 +1,2353 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+
+<style>
+/* ═══════════════════════════════════════════════
+   BEAUTIFUL OPD CONSULTATION — COMPLETE REDESIGN
+═══════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ── Legacy patient table styles ── */
+.opd-card {
+    background:#fff;
+    border-radius:8px;
+    padding:8px 10px;
+    margin-bottom:8px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.06);
+}
+.opd-card-title {
+    background:#f7f7f7;
+    color:#1a1a1a;
+    padding:3px 8px;
+    border-radius:6px;
+    font-weight:600;
+    font-size:12px;
+    line-height:1.1;
+    margin:-6px -6px 6px -6px;
+}
+.opd-table {
+    width:100%;
+    border-collapse:collapse;
+    border:1px solid #cfd8dc;
+}
+.opd-table td {
+    padding:4px 8px;
+    border:1px solid #cfd8dc;
+    font-size:12px;
+    vertical-align:middle;
+}
+.opd-label {
+    font-weight:600;
+    color:#555;
+    width:18%;
+    background:#f5f5f5;
+}
+
+.opd-wrap {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: #1a1a1a;
+}
+
+/* ── Page Header ── */
+.opd-header {
+    background: #e8f0fe;
+    border-radius: 10px;
+    padding: 14px 20px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1.5px solid #b6cef7;
+    box-shadow: none;
+}
+.opd-header-icon {
+    font-size: 28px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 10px;
+    width: 48px; height: 48px;
+    display: flex; align-items: center; justify-content: center;
+}
+.opd-header h1 {
+    margin: 0; font-size: 18px; font-weight: 700; color: #1a1a1a;
+    letter-spacing: -0.3px;
+}
+.opd-header p { margin: 2px 0 0; font-size: 12px; color: #1a1a1a; }
+
+/* ── Section Card ── */
+.sec {
+    background: #fff;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border: 1px solid rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+.sec-head {
+    padding: 8px 14px;
+    font-weight: 600;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    letter-spacing: 0.3px;
+}
+.sec-body { padding: 12px 14px; }
+
+/* Section header colors — VIBRANT */
+.sh-blue   { background: linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; border-bottom:none; }
+.sh-teal   { background: linear-gradient(135deg,#0f766e,#0d9488); color:#fff; border-bottom:none; }
+.sh-purple { background: linear-gradient(135deg,#7c3aed,#6d28d9); color:#fff; border-bottom:none; }
+.sh-amber  { background: linear-gradient(135deg,#d97706,#b45309); color:#fff; border-bottom:none; }
+.sh-rose   { background: linear-gradient(135deg,#e11d48,#be123c); color:#fff; border-bottom:none; }
+.sh-green  { background: linear-gradient(135deg,#16a34a,#15803d); color:#fff; border-bottom:none; }
+.sh-indigo { background: linear-gradient(135deg,#4338ca,#3730a3); color:#fff; border-bottom:none; }
+.sh-cyan   { background: linear-gradient(135deg,#0891b2,#0e7490); color:#fff; border-bottom:none; }
+
+/* ── Patient Info Grid ── */
+.pt-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+.pt-field {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+.pt-field-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+}
+.pt-field-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+/* ── Vitals ── */
+.vitals-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.vital-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    transition: border-color 0.2s;
+}
+.vital-box:focus-within { border-color: #ddd; box-shadow: 0 0 0 3px rgba(125,211,252,0.2); }
+.vital-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+.vital-input-row { display: flex; align-items: center; gap: 5px; }
+.vital-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a1a;
+    width: 100%;
+    outline: none;
+    padding: 0;
+    height: auto;
+    border-radius: 0;
+}
+.vital-unit {
+    font-size: 11px;
+    color: #888;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Vital alert pills */
+.vital-alerts-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+.va-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.va-red    { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+.va-yellow { background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; }
+.va-green  { background: #fff; color: #1a1a1a; border: 1px solid #ececec; }
+
+/* ── Checkbox Grids ── */
+.cb-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+}
+.cb-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+.cb-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 9px;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    background: #fafafa;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.15s;
+    user-select: none;
+}
+.cb-item:hover { background: #fff; border-color: #ececec; }
+.icd-pill-static, .icd-pill-extra {
+    background: #fafafa !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #334155 !important;
+    border-radius: 7px !important;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+}
+.icd-pill-static:hover, .icd-pill-extra:hover {
+    background: #fff !important;
+    border-color: #16a34a !important;
+}
+.cb-item input[type=checkbox] { accent-color: #1a1a1a; width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+.cb-item:has(input:checked) { background: #f7f7f7; border-color: #ddd; color: #1a1a1a; font-weight: 500; }
+
+/* ── Manual input ── */
+.manual-input {
+    width: 100%;
+    margin-top: 8px;
+    padding: 7px 11px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 7px;
+    font-size: 12px;
+    background: #fafafa;
+    color: #334155;
+    outline: none;
+    transition: border-color 0.2s;
+    height: auto;
+}
+.manual-input:focus { border-color: #1a1a1a; border-style: solid; background: #fff; }
+
+/* ── Diagnosis & ICD ── */
+.diagnosis-input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1a1a1a;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.2s;
+    height: auto;
+}
+.diagnosis-input:focus { border-color: #ddd; box-shadow: 0 0 0 3px rgba(125,211,252,0.2); }
+
+/* ── Prescription table ── */
+.rx-table { width: 100%; border-collapse: collapse; }
+.rx-table th {
+    background: #f1f5f9;
+    padding: 7px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    border-bottom: 2px solid #e2e8f0;
+    text-align: left;
+}
+.rx-table td { padding: 5px 6px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.rx-table tr:last-child td { border-bottom: none; }
+.rx-table input[type=text] {
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12px;
+    background: #fafafa;
+    outline: none;
+    height: auto;
+    transition: border-color 0.15s;
+}
+.rx-table input:focus { border-color: #1a1a1a; background: #fff; }
+
+.btn-add-rx {
+    margin-top: 8px;
+    padding: 6px 14px;
+    background: #fff;
+    border: 1px solid #ececec;
+    border-radius: 7px;
+    color: #1a1a1a;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.btn-add-rx:hover { background: #f7f7f7; border-color: #ddd; }
+
+/* ── Advice / Diet chips ── */
+.ch-grid { display:flex; flex-wrap:wrap; gap:7px; }
+.ch-pill { background:#f5f7fa; border:1px solid #dde; border-radius:20px; padding:5px 13px; cursor:pointer; font-size:12px; font-weight:600; color:#555; user-select:none; transition:.15s; }
+.ch-pill:hover { background:#e6f4f4; border-color:#007676; color:#007676; }
+
+/* ── Action Bar ── */
+.action-bar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 10px 0 2px;
+}
+.btn-save {
+    background: linear-gradient(135deg, #374151, #1f2937);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    padding: 9px 22px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(147,197,253,0.4);
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+}
+.btn-save:hover { box-shadow: 0 5px 16px rgba(55,65,81,0.3); }
+.btn-print {
+    background: #fff;
+    border: 1.5px solid #ddd;
+    color: #1a1a1a;
+    border-radius: 9px;
+    padding: 9px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+}
+.btn-print:hover { background: #fff; }
+
+/* ── AI Section ── */
+.ai-btn {
+    background: linear-gradient(135deg, #555, #555);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 22px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(124,58,237,0.35);
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 7px;
+}
+.ai-btn:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(124,58,237,0.45); }
+.ai-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+.ai-inv-input {
+    width: 100%;
+    margin-top: 10px;
+    padding: 9px 12px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 12px;
+    background: #f9f9f9;
+    resize: vertical;
+    outline: none;
+    font-family: 'Inter', sans-serif;
+    color: #000;
+}
+.ai-inv-input:focus { border-color: #555; background: #fff; }
+
+.ai-loading {
+    display: none;
+    margin-top: 10px;
+    padding: 8px 14px;
+    background: #f5f3ff;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #333;
+    font-weight: 500;
+    animation: pulse-bg 1.5s ease-in-out infinite;
+}
+@keyframes pulse-bg { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+.ai-error {
+    display: none;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #991b1b;
+}
+
+.ai-warning {
+    display: none;
+    margin-top: 10px;
+    padding: 8px 14px;
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #92400e;
+    font-weight: 500;
+}
+
+/* AI Result Cards */
+.ai-panel { display: none; margin-top: 12px; }
+.ai-card {
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    line-height: 1.7;
+    border-left: 4px solid transparent;
+}
+.ai-card-title {
+    font-weight: 700;
+    font-size: 12px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.ai-card { color:#1a1a1a !important; }
+.ai-card ul { margin: 0; padding-left: 16px; color:#1a1a1a !important; }
+.ai-card ul li { margin-bottom: 3px; color:#1a1a1a !important; }
+.ai-card-title { color:#1a1a1a !important; }
+.ai-card > div { color:#1a1a1a !important; }
+.ai-card-probable  { background:#fffbeb !important; border-left-color:#f59e0b; }
+.ai-card-required  { background:#fff !important; border-left-color:#ccc; }
+.ai-card-final     { background:#fff !important; border-left-color:#ccc; }
+.ai-card-treatment { background:#fff !important; border-left-color:#ddd; }
+.ai-card-rx        { background:#ecfeff !important; border-left-color:#06b6d4; }
+.ai-card-advice    { background:#fff !important; border-left-color:#0ea5e9; }
+.ai-card-redflag   { background:#fff1f2 !important; border-left-color:#f43f5e; }}
+
+/* ── Radiology ── */
+.radio-img-wrap {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+}
+.radio-img-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #f8fafc;
+}
+.radio-img-card img { width: 100%; display: block; }
+.radio-img-card .radio-img-info { padding: 6px 10px; font-size: 11px; color: #555; }
+.radio-img-card strong { font-size: 12px; color: #1a1a1a; }
+
+/* ── Select2 override ── */
+.select2-container--default .select2-selection--single {
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    height: 38px !important;
+    line-height: 38px !important;
+    background: #fff !important;
+    font-size: 13px !important;
+    color: #1a1a1a !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 38px !important;
+    padding-left: 12px !important;
+    color: #1a1a1a !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 38px !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: #94a3b8 !important;
+}
+/* Dropdown results */
+.select2-dropdown {
+    background: #fff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
+    z-index: 99999 !important;
+}
+.select2-results__option {
+    color: #1a1a1a !important;
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+}
+.select2-results__option--highlighted {
+    background: #0891b2 !important;
+    color: #fff !important;
+}
+.select2-search--dropdown .select2-search__field {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #1a1a1a !important;
+    border-radius: 6px !important;
+    padding: 6px 10px !important;
+    font-size: 13px !important;
+}
+/* ICD search box specific */
+        #icd_search_box + .select2-container .select2-selection--single {
+            background: #fff !important;
+            color: #1a1a1a !important;
+        }
+
+        /* ← ADD HERE — Fix Select2 dropdown always opens below */
+        .select2-dropdown--above {
+            border-radius: 8px !important;
+            border-bottom: 1.5px solid #cbd5e1 !important;
+            margin-top: 4px !important;
+        }
+        .select2-container--open .select2-dropdown {
+            z-index: 999999 !important;
+        }
+
+        @media print {    ← this line already exists, add ABOVE it
+}
+</style>
+<style>
+   /* all your existing CSS */
+
+   /* 🔥 ADD HERE */
+   .opd-header {
+       background: #111827 !important;
+       color: #ffffff !important;
+       border: 1px solid #374151 !important;
+   }
+
+   .opd-header h1 {
+       color: #ffffff !important;
+   }
+
+   .opd-header p {
+       color: #9ca3af !important;
+   }
+</style>
+
+
+<div class="opd-wrap">
+
+<!-- ── Header ── -->
+<div class="opd-header">
+    <div>
+        <h1>OPD Consultation</h1>
+        <p>{{ appointment.patient.full_name }} &nbsp;·&nbsp; {{ appointment.date }} &nbsp;·&nbsp; Dr. {{ appointment.doctor.full_name }}</p>
+    </div>
+</div>
+<form method="post">
+{% csrf_token %}
+
+<!-- ═══ PATIENT DETAILS ═══ -->
+<div class="opd-card">
+<div class="opd-card-title">Patient Details</div>
+<table class="opd-table">
+<tr>
+<td class="opd-label">Patient Name</td><td>{{ appointment.patient.full_name }}</td>
+<td class="opd-label">Age / Sex</td><td>{{ appointment.patient.age }} / {{ appointment.patient.gender }}</td>
+</tr>
+<tr>
+<td class="opd-label">UHID</td><td>{{ appointment.patient.uhid }}</td>
+<td class="opd-label">Mobile</td><td>{{ appointment.patient.mobile_no }}</td>
+</tr>
+<tr>
+<td class="opd-label">Address</td><td>{{ appointment.patient.address }}</td>
+<td class="opd-label">Consultant</td><td>{{ appointment.doctor.full_name }}</td>
+</tr>
+<tr>
+<td class="opd-label">Date</td><td>{{ appointment.date }}</td>
+<td class="opd-label">Time</td><td>{{ appointment.time }}</td>
+</tr>
+</table>
+</div>
+
+<!-- ═══ VITAL SIGNS ═══ -->
+<div class="sec">
+    <div class="sec-head sh-teal">❤️ Vital Signs</div>
+    <div class="sec-body">
+        <div class="vitals-grid">
+            <div class="vital-box">
+                <div class="vital-label">Pulse Rate</div>
+                <div class="vital-input-row">
+                    <input class="vital-input" type="text" name="pulse" id="v-pulse"
+                           value="{{ consultation.pulse|default_if_none:'' }}"
+                           placeholder="72" oninput="checkVitals()">
+                    <span class="vital-unit">bpm</span>
+                </div>
+            </div>
+            <div class="vital-box">
+                <div class="vital-label">Blood Pressure</div>
+                <div class="vital-input-row">
+                    <input class="vital-input" type="text" name="bp" id="v-bp"
+                           value="{{ consultation.bp|default_if_none:'' }}"
+                           placeholder="120/80" oninput="checkVitals()">
+                    <span class="vital-unit">mmHg</span>
+                </div>
+            </div>
+            <div class="vital-box">
+                <div class="vital-label">SpO₂</div>
+                <div class="vital-input-row">
+                    <input class="vital-input" type="text" name="spo2" id="v-spo2"
+                           value="{{ consultation.spo2|default_if_none:'' }}"
+                           placeholder="99" oninput="checkVitals()">
+                    <span class="vital-unit">%</span>
+                </div>
+            </div>
+            <div class="vital-box">
+                <div class="vital-label">Weight</div>
+                <div class="vital-input-row">
+                    <input class="vital-input" type="text" name="weight" id="v-weight"
+                           value="{{ consultation.weight|default_if_none:'' }}"
+                           placeholder="70">
+                    <span class="vital-unit">kg</span>
+                </div>
+            </div>
+        </div>
+        <div class="vital-alerts-row" id="vital-alerts"></div>
+    </div>
+</div>
+
+<!-- ═══ CHIEF COMPLAINTS ═══ -->
+<div class="sec">
+    <div class="sec-head sh-amber" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>🤒 Chief Complaints</span>
+        <button type="button" onclick="openManage('symptom')" style="background:#fff3e0;border:1px solid #f0a500;color:#835a00;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;">⚙️ Manage</button>
+    </div>
+    <div class="sec-body">
+        <div class="cb-grid" id="symptom-grid">
+            {% for s in symptoms %}
+            <label class="cb-item" data-id="{{ s.id }}">
+                <input type="checkbox" name="symptoms" value="{{ s.id }}"
+                       {% if s in consultation.symptoms.all %}checked{% endif %}>
+                {{ s.name }}
+                <span onclick="deleteItem('symptom',{{ s.id }},this)" title="Delete" style="margin-left:auto;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color='#dc3545'" onmouseout="this.style.color='#ccc'">✕</span>
+            </label>
+            {% empty %}
+            <p style="color:#888; font-style:italic;">No symptoms configured.</p>
+            {% endfor %}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+            <input type="text" id="new-symptom-input" placeholder="➕ Add new symptom…"
+                style="flex:1;padding:6px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();addSymptom();}">
+            <button type="button" onclick="addSymptom()" style="background:#f0a500;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">Add</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ EXAMINATION ═══ -->
+<div class="sec">
+    <div class="sec-head sh-purple" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>🔬 Examination Findings</span>
+        <button type="button" onclick="openManage('sign')" style="background:#f3f0ff;border:1px solid #7c3aed;color:#7c3aed;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;">⚙️ Manage</button>
+    </div>
+    <div class="sec-body">
+        <div class="cb-grid cb-grid-3" id="sign-grid">
+            {% for s in signs %}
+            <label class="cb-item" data-id="{{ s.id }}">
+                <input type="checkbox" name="signs" value="{{ s.id }}"
+                       {% if s in consultation.signs.all %}checked{% endif %}>
+                {{ s.name }}
+                <span onclick="deleteItem('sign',{{ s.id }},this)" title="Delete" style="margin-left:auto;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color='#dc3545'" onmouseout="this.style.color='#ccc'">✕</span>
+            </label>
+            {% empty %}
+            <p style="color:#888; font-style:italic;">No signs configured.</p>
+            {% endfor %}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+            <input type="text" id="new-sign-input" placeholder="➕ Add new examination finding…"
+                style="flex:1;padding:6px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();addSign();}">
+            <button type="button" onclick="addSign()" style="background:#7c3aed;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">Add</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ CLINICAL DIAGNOSIS ═══ -->
+<div class="sec">
+    <div class="sec-head sh-indigo">📋 Clinical Diagnosis</div>
+    <div class="sec-body">
+        <input class="diagnosis-input" type="text" name="diagnosis_text"
+               value="{{ consultation.diagnosis_text|default:'' }}"
+               placeholder="Enter clinical diagnosis…">
+    </div>
+</div>
+
+<!-- ═══ ICD-10 ═══ -->
+<div class="sec">
+    <div class="sec-head sh-green" style="display:flex;align-items:center;justify-content:space-between;">
+    <span>🏷️ ICD-10 Code</span>
+        <span style="font-size:10px;font-weight:400;opacity:0.85;">⟺ Drag pills to reorder</span>
+    </div>
+    <div class="sec-body">
+        <div style="margin-bottom:10px;">
+            <div style="font-size:11px;font-weight:700;color:#0891b2;margin-bottom:6px;letter-spacing:0.3px;">⚡ Quick Select — Common Diagnoses</div>
+            <div id="icd-pill-container" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;min-height:32px;padding:4px;border:1px dashed #e0f2fe;border-radius:8px;">
+                <button type="button" class="icd-pill-static" data-code="J069" data-desc="Upper respiratory tract infection, unspecified">URTI</button>
+                <button type="button" class="icd-pill-static" data-code="J22" data-desc="Unspecified acute lower respiratory tract infection">LRTI</button>
+                <button type="button" class="icd-pill-static" data-code="N390" data-desc="Urinary tract infection, site not specified">UTI</button>
+                <button type="button" class="icd-pill-static" data-code="N200" data-desc="Calculus of kidney">Nephrolithiasis</button>
+                <button type="button" class="icd-pill-static" data-code="N201" data-desc="Calculus of ureter">Ureterolithiasis</button>
+                <button type="button" class="icd-pill-static" data-code="N210" data-desc="Calculus in bladder">Bladder Stone</button>
+                <button type="button" class="icd-pill-static" data-code="N401" data-desc="Benign prostatic hyperplasia with lower urinary tract symptoms">BPH-II</button>
+                <button type="button" class="icd-pill-static" data-code="K2970" data-desc="Gastritis, unspecified, without bleeding">Gastritis</button>
+                <button type="button" class="icd-pill-static" data-code="K529" data-desc="Noninfective gastroenteritis and colitis, unspecified">Colitis</button>
+                <button type="button" class="icd-pill-static" data-code="K589" data-desc="Irritable bowel syndrome without diarrhea">IBS</button>
+                <button type="button" class="icd-pill-static" data-code="K5900" data-desc="Constipation, unspecified">Constipation</button>
+                <button type="button" class="icd-pill-static" data-code="K602" data-desc="Anal fissure, unspecified">Fissure</button>
+                <button type="button" class="icd-pill-static" data-code="K641" data-desc="Second degree hemorrhoids">Piles-II</button>
+                <button type="button" class="icd-pill-static" data-code="K4090" data-desc="Unilateral inguinal hernia, without obstruction or gangrene">Ing. Hernia</button>
+                <button type="button" class="icd-pill-static" data-code="K429" data-desc="Umbilical hernia without obstruction or gangrene">Umb. Hernia</button>
+                <button type="button" class="icd-pill-static" data-code="K3580" data-desc="Other and unspecified acute appendicitis">Appendicitis</button>
+                <button type="button" class="icd-pill-static" data-code="K8020" data-desc="Calculus of gallbladder without cholecystitis">Cholelithiasis</button>
+                <button type="button" class="icd-pill-static" data-code="N739" data-desc="Female pelvic inflammatory disease, unspecified">PID</button>
+                <button type="button" class="icd-pill-static" data-code="G43909" data-desc="Migraine, unspecified, not intractable">Migraine</button>
+                <button type="button" class="icd-pill-static" data-code="F419" data-desc="Anxiety disorder, unspecified">Anxiety</button>
+                <button type="button" class="icd-pill-static" data-code="Z8709" data-desc="Personal history of appendectomy and cholecystectomy">Post-App/Chole</button>
+                <button type="button" class="icd-pill-static" data-code="Z8739" data-desc="Personal history of hernia repair URSL PCNL">Post-URSL/PCNL</button>
+                <button type="button" class="icd-pill-static" data-code="K760" data-desc="Fatty (change of) liver, not elsewhere classified">Fatty Liver</button>
+                <button type="button" class="icd-pill-static" data-code="K439" data-desc="Epigastric hernia without obstruction or gangrene">Epigastric Hernia</button>
+            </div>
+            <div id="icd-selected-display" style="display:none;margin-bottom:8px;padding:6px 12px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:7px;font-size:12px;font-weight:600;color:#065f46;">
+    ✅ Selected: <span id="icd-selected-text"></span>
+    <span onclick="addCurrentICDToPills()" style="margin-left:10px;cursor:pointer;color:#0891b2;font-weight:700;">➕ Add to Quick Pills</span>
+    <span onclick="clearICD()" style="margin-left:10px;cursor:pointer;color:#dc2626;font-weight:700;">✕ Clear</span>
+</div>
+        </div>
+        <!-- Hidden inputs for selected ICD codes -->
+<div id="icd-selected-list"></div>
+<div style="display:flex;gap:8px;align-items:center;">
+    <div style="flex:1;">
+        <select name="diagnosis_icd" id="icd_search_box" style="width:100%">
+            {% if consultation.diagnosis_icd %}
+            <option value="{{ consultation.diagnosis_icd.id }}" selected>
+                {{ consultation.diagnosis_icd.code }} — {{ consultation.diagnosis_icd.description }}
+            </option>
+            {% endif %}
+        </select>
+    </div>
+    <button type="button" id="icd-add-pill-btn" onclick="addICDToSelection()"
+        style="background:#0891b2;color:#fff;border:none;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
+        ➕ Add
+    </button>
+</div>
+
+<!-- Selected ICD codes display -->
+<div id="icd-tags-container" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;min-height:20px;">
+    {% for icd in consultation.icd_codes.all %}
+    <span class="icd-selected-tag" style="display:inline-flex;align-items:center;gap:5px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;color:#065f46;">
+        {{ icd.code }} — {{ icd.description }}
+        <input type="hidden" name="icd_codes[]" value="{{ icd.id }}">
+        <span onclick="removeICDTag(this)" style="cursor:pointer;color:#dc2626;font-weight:900;">✕</span>
+    </span>
+    {% endfor %}
+</div>
+<div style="font-size:10px;color:#aaa;margin-top:4px;">💡 Search ICD code and click ➕ Add — multiple codes supported</div>
+    </div>
+</div>
+
+<!-- ═══ INVESTIGATIONS ═══ -->
+<div class="sec">
+    <div class="sec-head sh-green">🧪 Investigations / Laboratory Tests</div>
+    <div class="sec-body">
+        <div class="cb-grid">
+            {% for inv in investigations %}
+            <label class="cb-item">
+                <input type="checkbox" name="investigations" value="{{ inv.id }}"
+                       {% if inv in consultation.investigations.all %}checked{% endif %}>
+                {{ inv.name }}
+            </label>
+            {% empty %}
+            <p style="color:#888; font-style:italic;">No investigations configured.</p>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top:10px;">
+            <label style="font-size:12px; font-weight:700; color:#166534; display:block; margin-bottom:4px;">
+                ➕ Other Investigation (not listed above)
+            </label>
+            <textarea name="custom_investigations" rows="2" placeholder="Type any additional test not in the checklist…"
+                style="width:100%; border:1px solid #86efac; border-radius:6px; padding:6px 10px; font-size:12px; resize:vertical;">{{ consultation.custom_investigations|default:"" }}</textarea>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ QUICK MEDICINE SELECT ═══ -->
+<div style="margin-bottom:10px;">
+  <div style="font-size:12px;font-weight:700;color:#007676;margin-bottom:6px;">⚡ Quick Select — Medicines (from Drug Master)</div>
+
+  {% if drug_masters %}
+  <!-- First 12 -->
+  <div id="quick-meds-top" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px;">
+    {% for drug in drug_masters|slice:":12" %}
+    <label style="display:flex;align-items:center;gap:4px;background:#f0f9f9;border:1px solid #b2dfdb;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px;">
+      <input type="checkbox" class="quick-med-cb"
+        data-name="{{ drug.name }}{% if drug.strength %} {{ drug.strength }}{% endif %}"
+        data-generic="{{ drug.generic_name }}"
+        data-dose="{{ drug.default_dose }}"
+        data-freq="{{ drug.default_frequency }}"
+        data-dur="{{ drug.default_duration }}"
+        data-inst="{{ drug.default_instructions }}"> {{ drug.name }} <span style="color:#aaa;font-size:10px;">({{ drug.strength }})</span>
+    </label>
+    {% endfor %}
+  </div>
+
+  <!-- All by category collapsed — excludes the first 12 already shown above -->
+  <div id="more-meds-collapse" style="display:none;margin-top:6px;">
+    {% regroup drug_masters|slice:"12:" by category as drug_groups %}
+    {% for group in drug_groups %}
+    <div style="margin-bottom:8px;">
+      <div style="font-size:10px;font-weight:700;color:#007676;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;border-bottom:1px solid #e0f2f1;padding-bottom:2px;">{{ group.grouper }}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+        {% for drug in group.list %}
+        <label style="display:flex;align-items:center;gap:4px;background:#f0f9f9;border:1px solid #b2dfdb;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px;">
+          <input type="checkbox" class="quick-med-cb"
+            data-name="{{ drug.name }}{% if drug.strength %} {{ drug.strength }}{% endif %}"
+            data-generic="{{ drug.generic_name }}"
+            data-dose="{{ drug.default_dose }}"
+            data-freq="{{ drug.default_frequency }}"
+            data-dur="{{ drug.default_duration }}"
+            data-inst="{{ drug.default_instructions }}"> {{ drug.name }} <span style="color:#aaa;font-size:10px;">({{ drug.strength }})</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div id="quick-meds-top" style="color:#999;font-size:12px;">No medicines in Drug Master. Add from Admin → Drug Masters.</div>
+  <div id="more-meds-collapse" style="display:none;"></div>
+  {% endif %}
+
+  <button type="button" id="toggle-more-meds" onclick="toggleMoreMeds()"
+    style="margin-top:4px;background:none;border:none;color:#007676;font-size:12px;font-weight:600;cursor:pointer;padding:2px 0;">
+    ▼ Show all medicines by category
+  </button>
+</div>
+
+<!-- ═══ PRESCRIPTION ═══ -->
+<div class="sec">
+    <div class="sec-head sh-blue" style="display:flex;align-items:center;justify-content:space-between;"><span>💊 Prescription</span><button type="button" id="rx-ai-btn" onclick="generateAIMedicines()" style="background:#fff;color:#2563eb;border:1px solid #93c5fd;border-radius:6px;padding:3px 12px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">🤖 AI Suggest Medicines</button></div>
+    <div class="sec-body">
+        <table class="rx-table">
+            <thead>
+                <tr>
+                    <th style="width:20%">Medicine</th>
+                    <th style="width:14%">Generic Name</th>
+                    <th style="width:8%">ATC</th>
+                    <th style="width:10%">Dose</th>
+                    <th style="width:14%">Frequency</th>
+                    <th style="width:10%">Duration</th>
+                    <th>Instructions</th>
+                    <th style="width:32px;"></th>
+                </tr>
+            </thead>
+            <tbody id="rx-body">
+                {% if prescriptions %}
+                {% for p in prescriptions %}
+                <tr>
+                    <td>
+                        <select name="medicine[]" class="medicine-search" style="width:100%">
+                            <option value="{{ p.medicine }}" selected>{{ p.medicine }}</option>
+                        </select>
+                    </td>
+                    <td><input type="text" name="generic_name[]" value="" placeholder="Generic…" style="color:#888;"></td>
+                    <td><input type="text" name="atc_code[]" placeholder="ATC" readonly style="color:#0891b2;font-weight:600;background:#f0fdfa;"></td>
+                    <td><input type="text" name="dose[]" value="{{ p.dose }}" placeholder="e.g. 500mg"></td>
+                    <td><input type="text" name="frequency[]" value="{{ p.frequency }}" placeholder="e.g. TDS"></td>
+                    <td><input type="text" name="duration[]" value="{{ p.duration }}" placeholder="e.g. 5 days"></td>
+                    <td><input type="text" name="instructions[]" value="{{ p.instructions }}" placeholder="After food…"></td>
+                    <td style="text-align:center;vertical-align:middle;white-space:nowrap;">
+                        <button type="button" onclick="saveRowToDrugMaster(this)" title="Save to Drug Master" style="background:none;border:none;cursor:pointer;color:#00b8a9;font-size:16px;padding:4px 4px;border-radius:5px;" onmouseover="this.style.background='#e6f4f4'" onmouseout="this.style.background='none'">➕</button>
+                        <button type="button" onclick="deleteRxRow(this)" title="Remove" style="background:none;border:none;cursor:pointer;color:#dc3545;font-size:16px;padding:4px 4px;border-radius:5px;" onmouseover="this.style.background='#fff0f0'" onmouseout="this.style.background='none'">🗑</button>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% endif %}
+                <tr>
+                    <td>
+                        <select name="medicine[]" class="medicine-search" style="width:100%">
+                            <option></option>
+                        </select>
+                    </td>
+                    <td><input type="text" name="generic_name[]" placeholder="Generic…" style="color:#888;"></td>
+                    <td><input type="text" name="dose[]" placeholder="Dose"></td>
+                    <td><input type="text" name="frequency[]" placeholder="Frequency"></td>
+                    <td><input type="text" name="duration[]" placeholder="Duration"></td>
+                    <td><input type="text" name="instructions[]" placeholder="Instructions"></td>
+                    <td style="text-align:center;vertical-align:middle;white-space:nowrap;">
+                        <button type="button" onclick="saveRowToDrugMaster(this)" title="Save to Drug Master" style="background:none;border:none;cursor:pointer;color:#00b8a9;font-size:16px;padding:4px 4px;border-radius:5px;" onmouseover="this.style.background='#e6f4f4'" onmouseout="this.style.background='none'">➕</button>
+                        <button type="button" onclick="deleteRxRow(this)" title="Remove" style="background:none;border:none;cursor:pointer;color:#dc3545;font-size:16px;padding:4px 4px;border-radius:5px;" onmouseover="this.style.background='#fff0f0'" onmouseout="this.style.background='none'">🗑</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; align-items:center;">
+            <button type="button" class="btn-add-rx" onclick="addRxRow()">➕ Add Medicine</button>
+            <button type="button" class="btn-add-rx" onclick="openSaveTemplate()" style="background:#e6f4f4;border-color:#007676;color:#007676;">💾 Save as Template</button>
+            <button type="button" class="btn-add-rx" onclick="openLoadTemplate()" style="background:#fff8e6;border-color:#f0a500;color:#835a00;">📂 Load Template</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ TEMPLATE MODALS ═══ -->
+<div id="tmpl-save-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:24px;width:360px;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+        <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:14px;">💾 Save Prescription Template</div>
+        <label style="font-size:12px;color:#555;font-weight:600;">Template Name *</label>
+        <input type="text" id="tmpl-name-input" placeholder="e.g. Post-op Appendix, Gastritis, UTI..."
+               style="width:100%;margin-top:5px;margin-bottom:14px;padding:9px 12px;border:1px solid #ccc;border-radius:7px;font-size:13px;">
+        <div id="tmpl-save-preview" style="background:#f5f5f5;border-radius:7px;padding:10px;font-size:12px;color:#555;margin-bottom:14px;max-height:140px;overflow-y:auto;"></div>
+        <div style="display:flex;gap:8px;">
+            <button onclick="doSaveTemplate()" style="flex:1;background:#007676;color:#fff;border:none;border-radius:7px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;">✅ Save</button>
+            <button onclick="closeTmplModal('tmpl-save-modal')" style="flex:1;background:#f5f5f5;color:#555;border:1px solid #ddd;border-radius:7px;padding:9px;font-size:13px;cursor:pointer;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="tmpl-load-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:24px;width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+        <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">📂 Load Prescription Template</div>
+        <div style="font-size:12px;color:#999;margin-bottom:14px;">Select a template to load into prescription</div>
+        <input type="text" id="tmpl-search" placeholder="🔍 Search templates..." oninput="filterTemplates()"
+               style="width:100%;margin-bottom:10px;padding:8px 12px;border:1px solid #ccc;border-radius:7px;font-size:13px;">
+        <div id="tmpl-list" style="max-height:260px;overflow-y:auto;border:1px solid #eee;border-radius:8px;"></div>
+        <div style="margin-top:12px;text-align:right;">
+            <button onclick="closeTmplModal('tmpl-load-modal')" style="background:#f5f5f5;color:#555;border:1px solid #ddd;border-radius:7px;padding:8px 18px;font-size:13px;cursor:pointer;">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ PROCEDURES PERFORMED TODAY ═══ -->
+<div class="sec">
+    <div class="sec-head" style="background:linear-gradient(135deg,#0891b2,#0e7490);color:#fff;">🩹 Procedures Performed Today</div>
+    <div class="sec-body">
+        <div class="ch-grid" style="margin-bottom:10px;">
+            <span class="ch-pill" onclick="addProcedure(this)">Dressing</span>
+            <span class="ch-pill" onclick="addProcedure(this)">Suture removal</span>
+            <span class="ch-pill" onclick="addProcedure(this)">Suturing under LA</span>
+            <span class="ch-pill" onclick="addProcedure(this)">Wound debridement</span>
+        </div>
+        <textarea name="procedures_performed" id="id_procedures_performed" rows="2" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Type procedure done today or click chips above…">{{ consultation.procedures_performed|default:'' }}</textarea>
+    </div>
+</div>
+
+<!-- ═══ ADVICE ═══ -->
+<div class="sec">
+    <div class="sec-head" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;">💬 Advice to Patient</div>
+    <div class="sec-body">
+        <div class="ch-grid" style="margin-bottom:10px;">
+            <span class="ch-pill" onclick="addAdvice(this)">Rest for 3 days</span>
+            <span class="ch-pill" onclick="addAdvice(this)">No heavy lifting</span>
+            <span class="ch-pill" onclick="addAdvice(this)">Avoid alcohol</span>
+            <span class="ch-pill" onclick="addAdvice(this)">Avoid smoking</span>
+            <span class="ch-pill" onclick="addAdvice(this)">Walk 30 min daily</span>
+            <span class="ch-pill" onclick="addAdvice(this)">Monitor BP daily</span>
+            <span class="ch-pill" onclick="addAdvice(this)">Monitor sugar daily</span>
+            <span class="ch-pill" onclick="addAdvice(this)">Keep wound dry</span>
+            <span class="ch-pill" onclick="addAdvice(this)">Dressing daily</span>
+            <span class="ch-pill" onclick="addAdvice(this)">Complete bed rest</span>
+        </div>
+        <textarea name="advice" id="id_advice" rows="3" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Type advice or click chips above…">{{ consultation.advice|default:'' }}</textarea>
+    </div>
+</div>
+
+<!-- ═══ DIET ═══ -->
+<div class="sec">
+    <div class="sec-head" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;">🥗 Diet Advice</div>
+    <div class="sec-body">
+        <div style="margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+            <button type="button" id="diet-ai-btn" onclick="generateAIDiet()" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">🤖 Generate Diet Chart</button>
+            <span id="diet-loading" style="display:none;font-size:12px;color:#16a34a;font-weight:600;">⏳ Generating...</span>
+        </div>
+        <div class="ch-grid" style="margin-bottom:10px;">
+            <span class="ch-pill" onclick="addDiet(this)">Normal diet</span>
+            <span class="ch-pill" onclick="addDiet(this)">Soft diet</span>
+            <span class="ch-pill" onclick="addDiet(this)">Liquid diet</span>
+            <span class="ch-pill" onclick="addDiet(this)">Diabetic diet</span>
+            <span class="ch-pill" onclick="addDiet(this)">Low salt diet</span>
+            <span class="ch-pill" onclick="addDiet(this)">High protein diet</span>
+        </div>
+        <textarea name="diet_advice" id="id_diet_advice" rows="2" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Type diet advice or click chips above…">{{ consultation.diet_advice|default:'' }}</textarea>
+    </div>
+</div>
+
+<!-- ═══ FOLLOW-UP ═══ -->
+<div class="sec">
+    <div class="sec-head" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;">📅 Follow-up</div>
+    <div class="sec-body">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+            <div style="flex:1;min-width:160px;">
+                <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Follow-up Date</label>
+                <input type="date" name="follow_up_date" id="id_follow_up_date" value="{{ consultation.follow_up_date|date:'Y-m-d'|default:'' }}" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 12px;font-size:13px;">
+            </div>
+            <div style="flex:2;min-width:200px;">
+                <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Quick Select</label>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button type="button" onclick="setFollowUp(3,'days')"   style="padding:6px 12px;border:1px solid #7c3aed;background:#f5f3ff;color:#7c3aed;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">3 Days</button>
+                    <button type="button" onclick="setFollowUp(1,'weeks')"  style="padding:6px 12px;border:1px solid #7c3aed;background:#f5f3ff;color:#7c3aed;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">1 Week</button>
+                    <button type="button" onclick="setFollowUp(2,'weeks')"  style="padding:6px 12px;border:1px solid #7c3aed;background:#f5f3ff;color:#7c3aed;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">2 Weeks</button>
+                    <button type="button" onclick="setFollowUp(1,'months')" style="padding:6px 12px;border:1px solid #7c3aed;background:#f5f3ff;color:#7c3aed;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">1 Month</button>
+                    <button type="button" onclick="setFollowUp(3,'months')" style="padding:6px 12px;border:1px solid #7c3aed;background:#f5f3ff;color:#7c3aed;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">3 Months</button>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top:10px;">
+            <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Follow-up Notes</label>
+            <textarea name="follow_up_notes" id="id_follow_up_notes" rows="2" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="e.g. Review after surgery, Check BP, Repeat blood test…">{{ consultation.follow_up_notes|default:'' }}</textarea>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ ACTION BAR ═══ -->
+<div class="action-bar">
+    <button type="submit" class="btn-save">💾 Save Consultation</button>
+    <a href="{% url 'hms:consultation_pdf' appointment.id %}" target="_blank" class="btn-print">
+        🖨️ Print OPD Sheet
+    </a>
+</div>
+
+</form>
+
+<!-- ═══ AI CLINICAL ASSIST ═══ -->
+<div class="sec" style="margin-top:14px; border: 2px solid #e0e0e0;">
+    <div class="sec-head" style="background:linear-gradient(135deg,#555,#555); color:#fff; border-bottom:none; padding:10px 16px;">
+        <span>🧠</span> AI Clinical Assist
+        <span style="margin-left:auto; font-size:10px; font-weight:400; opacity:0.8;">Powered by GPT-4o</span>
+    </div>
+    <div class="sec-body">
+        <textarea class="ai-inv-input" id="investigation_results" rows="2"
+            placeholder="Enter investigation results here (e.g. Hb-6 gm, RBS-400 mg/dl, TLC-11000…)"></textarea>
+        <div style="margin-top:10px;">
+            <button class="ai-btn" id="ai-btn" type="button" onclick="runFullAI()">
+                🤖 Generate AI Suggestion
+            </button>
+        </div>
+        <div class="ai-loading" id="ai-loading">⏳ &nbsp;Analysing clinical data, please wait…</div>
+        <div class="ai-error"   id="ai-error"></div>
+        <div class="ai-warning" id="ai-draft-warning">
+            ⚠️ <strong>AI Draft — Review before saving.</strong>
+            This suggestion is AI-generated and must be verified by the treating physician.
+        </div>
+        <div class="ai-panel" id="ai-panel">
+            <div class="ai-card ai-card-probable">
+                <div class="ai-card-title">🔍 Probable Diagnosis</div>
+                <div id="ai-probable"></div>
+            </div>
+            <div class="ai-card ai-card-required">
+                <div class="ai-card-title">🧪 Required Investigations</div>
+                <ul id="ai-required"></ul>
+            </div>
+            <div class="ai-card ai-card-final">
+                <div class="ai-card-title">✅ Final Diagnosis</div>
+                <div id="ai-final"></div>
+            </div>
+            <div class="ai-card ai-card-treatment">
+                <div class="ai-card-title">💊 Treatment Plan</div>
+                <ul id="ai-treatment"></ul>
+            </div>
+            <div class="ai-card ai-card-rx">
+                <div class="ai-card-title">📋 Prescription</div>
+                <ul id="ai-rx"></ul>
+            </div>
+            <div class="ai-card ai-card-advice">
+                <div class="ai-card-title">📌 Advice</div>
+                <ul id="ai-advice"></ul>
+            </div>
+            <div class="ai-card ai-card-redflag">
+                <div class="ai-card-title">🚨 Red Flags</div>
+                <ul id="ai-redflag"></ul>
+            </div>
+        </div>
+        <textarea id="ai-result" name="ai_notes" style="display:none"></textarea>
+    </div>
+</div>
+
+<!-- ═══ RADIOLOGY IMAGES ═══ -->
+<div class="sec" style="margin-top:12px;">
+    <div class="sec-head sh-indigo">🩻 Radiology / Medical Images</div>
+    <div class="sec-body">
+        {% if appointment.patient.medical_images.all %}
+        <div class="radio-img-wrap">
+            {% for img in appointment.patient.medical_images.all %}
+            <div class="radio-img-card">
+                <img src="{{ img.image.url }}" alt="{{ img.title }}">
+                <div class="radio-img-info">
+                    <strong>{{ img.title }}</strong><br>
+                    <span>{{ img.image_type }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:#888; font-style:italic; margin:0;">No radiology images uploaded by lab.</p>
+        {% endif %}
+    </div>
+</div>
+
+</div><!-- end opd-wrap -->
+
+<!-- ═══ JS LIBRARIES ═══ -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+/* ── ICD-10 Search ── */
+$(function () {
+    $('#icd_search_box').select2({
+        ajax: {
+            url: "{% url 'hms:icd_search' %}",
+            dataType: "json", delay: 250,
+            data: p => ({ q: p.term }),
+            processResults: d => d
+        },
+        minimumInputLength: 2,
+        placeholder: "Search ICD-10 code or name…",
+        width: "100%",
+        dropdownParent: $('body')
+    });
+    $('#icd_search_box').on('select2:select', function(e) {
+        var text = e.params.data.text;
+        document.getElementById('icd-selected-text').textContent = text;
+        document.getElementById('icd-selected-display').style.display = 'block';
+        document.querySelectorAll('.icd-pill').forEach(p => p.style.outline = '');
+    });
+
+    setTimeout(function() {
+        var s2 = document.querySelector('#icd_search_box + .select2-container');
+        if (s2) {
+            var sel = s2.querySelector('.select2-selection');
+            if (sel) {
+                sel.style.cssText = 'background:#fff!important;border:1.5px solid #94a3b8!important;border-radius:8px!important;height:40px!important;display:flex!important;align-items:center!important;cursor:pointer!important;';
+            }
+            var rendered = s2.querySelector('.select2-selection__rendered');
+            if (rendered) {
+                rendered.style.cssText = 'color:#334155!important;font-size:13px!important;padding-left:12px!important;line-height:40px!important;';
+            }
+        }
+    }, 300);
+});
+
+$(document).on('select2:open', function() {
+    setTimeout(function() {
+        var search = document.querySelector('.select2-search--dropdown .select2-search__field');
+        if (search) {
+            search.style.cssText = 'background:#fff!important;color:#1a1a1a!important;border:1px solid #cbd5e1!important;border-radius:6px!important;padding:8px 12px!important;font-size:13px!important;width:100%!important;box-sizing:border-box!important;';
+            search.focus();
+        }
+        var dropdown = document.querySelector('.select2-dropdown');
+        if (dropdown) {
+            dropdown.style.cssText = 'background:#fff!important;border:1.5px solid #cbd5e1!important;border-radius:8px!important;box-shadow:0 8px 24px rgba(0,0,0,0.15)!important;z-index:99999!important;';
+            var trigger = document.querySelector('.select2-container--open');
+            if (trigger) {
+                dropdown.style.width = trigger.offsetWidth + 'px';
+            }
+        }
+    }, 50);
+});
+
+/* ══ ICD QUICK PILLS ══ */
+function selectICDByCode(code, desc) {
+    fetch("{% url 'hms:icd_search' %}?q=" + encodeURIComponent(code))
+    .then(r => r.json())
+    .then(function(data) {
+        var results = data.results || [];
+        var match = results.find(function(r) { return r.text.startsWith(code); });
+        if (!match && results.length > 0) match = results[0];
+        if (match) {
+            var option = new Option(match.text, match.id, true, true);
+            $('#icd_search_box').empty().append(option).trigger('change');
+            document.getElementById('icd-selected-text').textContent = match.text;
+            document.getElementById('icd-selected-display').style.display = 'block';
+        }
+    });
+}
+
+function clearICD() {
+    $('#icd_search_box').val(null).trigger('change');
+    document.getElementById('icd-selected-display').style.display = 'none';
+    document.querySelectorAll('.icd-pill-static,.icd-pill-extra').forEach(p => p.style.outline = '');
+}
+
+function addCurrentICDToPills() {
+    var sel = $('#icd_search_box').select2('data');
+    if (!sel || !sel.length || !sel[0].id) {
+        showToast('⚠️ Please search and select an ICD code first!', '#f59e0b');
+        return;
+    }
+    var text  = sel[0].text;
+    var parts = text.split(' - ');
+    var code  = parts[0].trim();
+    var desc  = parts.slice(1).join(' - ').trim();
+    var label = code + ' ' + (desc.length > 22 ? desc.substring(0,22) + '…' : desc);
+
+    var existing = document.querySelectorAll('#icd-pill-container [data-code="' + code + '"]');
+    if (existing.length > 0) {
+        showToast('⚠️ "' + code + '" already in quick pills!', '#f59e0b');
+        return;
+    }
+
+    var pill = { code: code, label: label, desc: desc };
+    try {
+        var extras = JSON.parse(localStorage.getItem('shradha_icd_extra') || '[]');
+        if (!extras.find(function(p){ return p.code === code; })) {
+            extras.push(pill);
+            localStorage.setItem('shradha_icd_extra', JSON.stringify(extras));
+        }
+    } catch(e) {}
+
+    addExtraPillToDOM(pill);
+    showToast('✅ "' + code + '" added to quick pills!', '#0891b2');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initStaticPills();
+    makeStaticPillsDeletable();
+    appendExtraPills();
+});
+
+function initStaticPills() {
+    var container = document.getElementById('icd-pill-container');
+    if (!container) return;
+    var pills = container.querySelectorAll('.icd-pill-static');
+    var dragSrcIdx = null;
+
+    pills.forEach(function(btn, idx) {
+        btn.draggable = true;
+        btn.addEventListener('click', function(e) {
+            pills.forEach(function(p){ p.style.outline=''; });
+            btn.style.outline = '2px solid #0891b2';
+            selectICDByCode(btn.dataset.code, btn.dataset.desc);
+        });
+        btn.addEventListener('dragstart', function(e) {
+            dragSrcIdx = idx;
+            btn.style.opacity = '0.4';
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        btn.addEventListener('dragend', function() {
+            btn.style.opacity = '1';
+            container.querySelectorAll('.icd-pill-static,.icd-pill-extra').forEach(function(p){
+                p.style.outline='';
+            });
+        });
+        btn.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            btn.style.outline = '2px dashed #0891b2';
+        });
+        btn.addEventListener('dragleave', function() {
+            btn.style.outline = '';
+        });
+        btn.addEventListener('drop', function(e) {
+            e.preventDefault();
+            btn.style.outline = '';
+            if (dragSrcIdx === null || dragSrcIdx === idx) return;
+            var allPills = Array.from(container.querySelectorAll('.icd-pill-static,.icd-pill-extra'));
+            var moved = allPills[dragSrcIdx];
+            var target = allPills[idx];
+            if (dragSrcIdx < idx) {
+                container.insertBefore(moved, target.nextSibling);
+            } else {
+                container.insertBefore(moved, target);
+            }
+            dragSrcIdx = null;
+            showToast('✅ Order saved!', '#0891b2');
+        });
+    });
+}
+
+function makeStaticPillsDeletable() {
+    var container = document.getElementById('icd-pill-container');
+    if (!container) return;
+    var removed = [];
+    try { removed = JSON.parse(localStorage.getItem('shradha_icd_removed') || '[]'); } catch(e) {}
+
+    container.querySelectorAll('.icd-pill-static').forEach(function(btn) {
+        var code = btn.dataset.code;
+        if (removed.includes(code)) {
+            btn.remove();
+            return;
+        }
+        if (btn.querySelector('.pill-delete-x')) return;
+        var x = document.createElement('span');
+        x.className = 'pill-delete-x';
+        x.textContent = ' ✕';
+        x.style.cssText = 'margin-left:6px;color:#aaa;font-weight:900;cursor:pointer;';
+        x.onmouseover = function(){ x.style.color = '#dc2626'; };
+        x.onmouseout  = function(){ x.style.color = '#aaa'; };
+        x.onclick = function(e) {
+            e.stopPropagation();
+            if (!confirm('Remove "' + btn.textContent.replace('✕','').trim() + '" from quick pills?')) return;
+            try {
+                var r = JSON.parse(localStorage.getItem('shradha_icd_removed') || '[]');
+                if (!r.includes(code)) { r.push(code); localStorage.setItem('shradha_icd_removed', JSON.stringify(r)); }
+            } catch(err) {}
+            btn.remove();
+            showToast('🗑 Removed from quick pills', '#dc3545');
+        };
+        btn.appendChild(x);
+    });
+}
+
+function appendExtraPills() {
+    try {
+        var extras = JSON.parse(localStorage.getItem('shradha_icd_extra') || '[]');
+        extras.forEach(function(pill) { addExtraPillToDOM(pill); });
+    } catch(e) {}
+}
+
+function addExtraPillToDOM(pill) {
+    var container = document.getElementById('icd-pill-container');
+    if (!container) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'icd-pill-extra';
+    btn.dataset.code = pill.code;
+    btn.dataset.desc = pill.desc;
+    btn.draggable = true;
+    btn.style.cssText = 'background:#f0fdf4;border:1px solid #86efac;color:#166534;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;';
+    btn.innerHTML = pill.label +
+        ' <span style="color:#aaa;font-size:11px;cursor:pointer;font-weight:900;" ' +
+        'onmouseover="this.style.color=\'#dc2626\'" onmouseout="this.style.color=\'#aaa\'" ' +
+        'onclick="removeExtraPill(this,\'' + pill.code + '\')">✕</span>';
+    btn.addEventListener('click', function(e) {
+        if (e.target.tagName === 'SPAN') return;
+        document.querySelectorAll('.icd-pill-static,.icd-pill-extra').forEach(function(p){ p.style.outline=''; });
+        btn.style.outline = '2px solid #0891b2';
+        selectICDByCode(pill.code, pill.desc);
+    });
+    container.appendChild(btn);
+}
+
+function removeExtraPill(span, code) {
+    if (!confirm('Remove this pill?')) return;
+    span.parentElement.remove();
+    try {
+        var extras = JSON.parse(localStorage.getItem('shradha_icd_extra') || '[]');
+        extras = extras.filter(function(p){ return p.code !== code; });
+        localStorage.setItem('shradha_icd_extra', JSON.stringify(extras));
+    } catch(e) {}
+    showToast('🗑 Pill removed', '#dc3545');
+}
+
+/* ── Drug Defaults Dictionary ── */
+const DRUG_DEFAULTS = {
+  "Pantocid 40 40mg": {dose:"40mg",frequency:"Once daily",duration:"14 days",instructions:"Before food"},
+  "Pantop 40 40mg": {dose:"40mg",frequency:"Once daily",duration:"14 days",instructions:"Before food"},
+  "Calpol 500 500mg": {dose:"500mg",frequency:"Thrice daily",duration:"5 days",instructions:"After food"},
+  "Calpol 650 650mg": {dose:"650mg",frequency:"Thrice daily",duration:"5 days",instructions:"After food"},
+  "Dolo 650 650mg": {dose:"650mg",frequency:"Thrice daily",duration:"5 days",instructions:"After food"},
+  "Zerodol P 100+325mg": {dose:"100+325mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Zerodol SP 100+15mg": {dose:"100+15mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Zerodol Spaz 100+325+250mg": {dose:"100+325+250mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Ultracet 37.5+325mg": {dose:"37.5+325mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Hyocimax MF 10mg": {dose:"10mg",frequency:"Thrice daily",duration:"3 days",instructions:"Before food"},
+  "Telma 40 40mg": {dose:"40mg",frequency:"Once daily",duration:"30 days",instructions:""},
+  "Telma AM 40+5mg": {dose:"40+5mg",frequency:"Once daily",duration:"30 days",instructions:""},
+  "Telma H 40+12.5mg": {dose:"40+12.5mg",frequency:"Once daily",duration:"30 days",instructions:""},
+  "Met XL 25 25mg": {dose:"25mg",frequency:"Once daily",duration:"30 days",instructions:""},
+  "Met XL 50 50mg": {dose:"50mg",frequency:"Once daily",duration:"30 days",instructions:""},
+  "Carvidiol 3.125 3.125mg": {dose:"3.125mg",frequency:"Once daily",duration:"30 days",instructions:""},
+  "Nitrocontin 2.6 2.6mg": {dose:"2.6mg",frequency:"Twice daily",duration:"30 days",instructions:""},
+  "Cipalar 40 40mg": {dose:"40mg",frequency:"Once daily",duration:"30 days",instructions:""},
+  "Udiliv 300 300mg": {dose:"300mg",frequency:"Twice daily",duration:"30 days",instructions:"After food"},
+  "Oncall Syrup 15ml/10ml": {dose:"15ml/10ml",frequency:"Once daily",duration:"7 days",instructions:"At bedtime"},
+  "Cap Darolac": {dose:"",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Disperzyme 10mg": {dose:"10mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Disperzyme CD 10+50mg": {dose:"10+50mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Augmentin 625 625mg": {dose:"625mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Augmentin 1000 1000mg": {dose:"1000mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Ceftum 500 500mg": {dose:"500mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Ceftum 250 250mg": {dose:"250mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Jetex 200 200mg": {dose:"200mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Zifi 200 200mg": {dose:"200mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Levoflox 500 500mg": {dose:"500mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Moxif 400 400mg": {dose:"400mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Zanocin OZ 200+500mg": {dose:"200+500mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Martifur 100 100mg": {dose:"100mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Wikoryl 500+4mg": {dose:"500+4mg",frequency:"Thrice daily",duration:"3 days",instructions:"After food"},
+  "Piriton XP 4mg": {dose:"4mg",frequency:"Once daily",duration:"5 days",instructions:"At bedtime"},
+  "Coscopin Plus": {dose:"",frequency:"Thrice daily",duration:"5 days",instructions:"After food"},
+  "Vozet 5 5mg": {dose:"5mg",frequency:"Once daily",duration:"5 days",instructions:"At bedtime"},
+  "Defcort 6 6mg": {dose:"6mg",frequency:"Once daily",duration:"5 days",instructions:"After food"},
+  "Defcort 12 12mg": {dose:"12mg",frequency:"Once daily",duration:"5 days",instructions:"After food"},
+  "Wysalon 10 10mg": {dose:"10mg",frequency:"Once daily",duration:"5 days",instructions:"After food"},
+  "Pregalin M 75 75+1500mcg": {dose:"75+1500mcg",frequency:"Twice daily",duration:"30 days",instructions:"After food"},
+  "Nexito Plus 5+0.5mg": {dose:"5+0.5mg",frequency:"Once daily",duration:"30 days",instructions:"At bedtime"},
+  "Tryptomer 25 25mg": {dose:"25mg",frequency:"Once daily",duration:"30 days",instructions:"At bedtime"},
+  "Glycomet 500 SR 500mg": {dose:"500mg",frequency:"Twice daily",duration:"30 days",instructions:"After food"},
+  "Glycomet 1000 SR 1000mg": {dose:"1000mg",frequency:"Twice daily",duration:"30 days",instructions:"After food"},
+  "Glycomet GP 1 500+1mg": {dose:"500+1mg",frequency:"Twice daily",duration:"30 days",instructions:"After food"},
+  "Glycomet GP 2 500+2mg": {dose:"500+2mg",frequency:"Twice daily",duration:"30 days",instructions:"After food"},
+  "Gluconorm P 15 500+15mg": {dose:"500+15mg",frequency:"Twice daily",duration:"30 days",instructions:"After food"},
+  "Gluconorm P 30 500+30mg": {dose:"500+30mg",frequency:"Twice daily",duration:"30 days",instructions:"After food"},
+  "Shelcal XT": {dose:"",frequency:"Once daily",duration:"30 days",instructions:"After food"},
+  "CCM": {dose:"",frequency:"Once daily",duration:"30 days",instructions:"After food"},
+  "Levogen Z": {dose:"",frequency:"Once daily",duration:"30 days",instructions:"After food"},
+  "Cobadex CZS": {dose:"",frequency:"Once daily",duration:"30 days",instructions:"After food"},
+  "Becasule Z": {dose:"",frequency:"Once daily",duration:"30 days",instructions:"After food"},
+  "Zincovit Syrup": {dose:"",frequency:"Once daily",duration:"30 days",instructions:"After food"},
+  "Lumia 60K 60000 IU": {dose:"60000 IU",frequency:"Once daily",duration:"30 days",instructions:"After food"},
+  "Dosin D 8+0.5mg": {dose:"8+0.5mg",frequency:"Once daily",duration:"30 days",instructions:"After food"},
+  "Umrimax 0.4mg": {dose:"0.4mg",frequency:"Once daily",duration:"30 days",instructions:"After food"},
+  "Myoril 8 8mg": {dose:"8mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Esmobion DSR 40+10mg": {dose:"40+10mg",frequency:"Once daily",duration:"14 days",instructions:"Before food"},
+  "Tcbion AP 100+325mg": {dose:"100+325mg",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Deriphylin 150 150mg": {dose:"150mg",frequency:"Twice daily",duration:"30 days",instructions:""},
+  "AB Phylling 100mg": {dose:"100mg",frequency:"Twice daily",duration:"30 days",instructions:""},
+  "Bilasure M 20+10mg": {dose:"20+10mg",frequency:"Once daily",duration:"10 days",instructions:"At bedtime"},
+  "Ultibro Breezhaler 110+50mcg": {dose:"110+50mcg",frequency:"Twice daily",duration:"30 days",instructions:""},
+  "Erdostin NAC 600+300mg": {dose:"600+300mg",frequency:"Twice daily",duration:"7 days",instructions:"After food"},
+  "Ecospring Gold": {dose:"",frequency:"Twice daily",duration:"5 days",instructions:"After food"},
+  "Telvas AM 40+5mg": {dose:"40+5mg",frequency:"Once daily",duration:"30 days",instructions:""},
+  "Grillintus 30+50mg": {dose:"30+50mg",frequency:"Thrice daily",duration:"5 days",instructions:"After food"},
+  "Periton CS 4+10mg": {dose:"4+10mg",frequency:"Once daily",duration:"10 days",instructions:"At bedtime"},
+};
+
+function getDrugDefault(name) {
+    if (!name) return null;
+    if (DRUG_DEFAULTS[name]) return DRUG_DEFAULTS[name];
+    const key = name.toLowerCase().trim();
+    for (const k in DRUG_DEFAULTS) {
+        if (k.toLowerCase() === key) return DRUG_DEFAULTS[k];
+    }
+    for (const k in DRUG_DEFAULTS) {
+        if (k.toLowerCase().startsWith(key.split(' ')[0].toLowerCase())) return DRUG_DEFAULTS[k];
+    }
+    return null;
+}
+
+function autoFillRow($select) {
+    const name = $select.find(':selected').text() || $select.val();
+    const $row = $select.closest('tr');
+    const doseInp    = $row.find('input[name="dose[]"]');
+    const freqInp    = $row.find('input[name="frequency[]"]');
+    const durInp     = $row.find('input[name="duration[]"]');
+    const instInp    = $row.find('input[name="instructions[]"]');
+    const genericInp = $row.find('input[name="generic_name[]"]');
+    const atcInp      = $row.find('input[name="atc_code[]"]');
+
+    function applyDefaults(d) {
+        if (!d) return;
+        if (!doseInp.val()    && d.dose)         doseInp.val(d.dose).css('background','#e6f4f4');
+        if (!freqInp.val()    && d.frequency)     freqInp.val(d.frequency).css('background','#e6f4f4');
+        if (!durInp.val()     && d.duration)      durInp.val(d.duration).css('background','#e6f4f4');
+        if (!instInp.val()    && d.instructions)  instInp.val(d.instructions).css('background','#e6f4f4');
+        if (!genericInp.val() && d.generic_name)  genericInp.val(d.generic_name).css('background','#e6f4f4');
+        if (atcInp.length && d.atc_code)          atcInp.val(d.atc_code);
+        setTimeout(() => { $row.find('input').css('background',''); }, 2000);
+    }
+
+    if (!name || !name.trim()) return;
+    fetch('/drugs/defaults/?name=' + encodeURIComponent(name.trim()))
+    .then(r => r.json())
+    .then(function(d) {
+        if (d && d.found) { applyDefaults(d); }
+        else { applyDefaults(getDrugDefault(name)); }
+    })
+    .catch(function() { applyDefaults(getDrugDefault(name)); });
+}
+
+/* ── Medicine Search (Select2) ── */
+function initMedicineSearch($select) {
+    var target = $select || $('.medicine-search:not(.select2-hidden-accessible)');
+    target.each(function() {
+        $(this).select2({
+            tags: true,
+            placeholder: "Type medicine name…",
+            minimumInputLength: 0,
+            minimumResultsForSearch: 0,
+            dropdownParent: $('body'),
+            ajax: {
+                url: "{% url 'hms:medicine_search' %}",
+                dataType: "json", delay: 250,
+                data: p => ({ q: p.term || '' }),
+                processResults: d => ({ results: d })
+            },
+            width: "100%",
+            templateResult: function(drug) {
+                if (!drug.id) return drug.text;
+                return $("<span>").text(drug.text.split(" (")[0]);
+            },
+            templateSelection: function(drug) {
+                if (!drug.id) return drug.text;
+                return $("<span>").text(drug.text.split(" (")[0]);
+            }
+        });
+        $(this).on('select2:select', function() {
+            autoFillRow($(this));
+        });
+    });
+}
+$(document).ready(() => initMedicineSearch());
+
+function addRxRow() {
+    const row = `<tr>
+        <td><select name="medicine[]" class="medicine-search" style="width:100%"></select></td>
+        <td><input type="text" name="generic_name[]" placeholder="Generic…" style="color:#888;"></td>
+        <td><input type="text" name="dose[]" placeholder="Dose"></td>
+        <td><input type="text" name="frequency[]" placeholder="Frequency"></td>
+        <td><input type="text" name="duration[]" placeholder="Duration"></td>
+        <td><input type="text" name="instructions[]" placeholder="Instructions"></td>
+        <td style="text-align:center;vertical-align:middle;white-space:nowrap;">
+            <button type="button" onclick="saveRowToDrugMaster(this)" title="Save to Drug Master" style="background:none;border:none;cursor:pointer;color:#00b8a9;font-size:16px;padding:4px 4px;border-radius:5px;" onmouseover="this.style.background='#e6f4f4'" onmouseout="this.style.background='none'">➕</button>
+            <button type="button" onclick="deleteRxRow(this)" title="Remove" style="background:none;border:none;cursor:pointer;color:#dc3545;font-size:16px;padding:4px 4px;border-radius:5px;" onmouseover="this.style.background='#fff0f0'" onmouseout="this.style.background='none'">🗑</button>
+        </td>
+    </tr>`;
+    document.getElementById("rx-body").insertAdjacentHTML("beforeend", row);
+    const $newSelect = $('#rx-body tr:last-child .medicine-search');
+    initMedicineSearch($newSelect);
+}
+
+function deleteRxRow(btn) {
+    const rows = document.querySelectorAll('#rx-body tr');
+    if (rows.length <= 1) {
+        const row = btn.closest('tr');
+        row.querySelectorAll('input').forEach(i => i.value = '');
+        const sel = row.querySelector('.medicine-search');
+        if (sel) { $(sel).val(null).trigger('change'); }
+        return;
+    }
+    btn.closest('tr').remove();
+}
+
+/* ── Live Vital Alerts ── */
+function checkVitals() {
+    const pulseVal = document.getElementById("v-pulse")?.value.trim() || "";
+    const bpVal    = document.getElementById("v-bp")?.value.trim()    || "";
+    const spo2Val  = document.getElementById("v-spo2")?.value.trim()  || "";
+    const alertDiv = document.getElementById("vital-alerts");
+    if (!alertDiv) return;
+    let alerts = [];
+    const bpMatch = bpVal.match(/^(\d+)[\/\s](\d+)$/);
+    if (bpMatch) {
+        const sys = parseInt(bpMatch[1]), dia = parseInt(bpMatch[2]);
+        if      (sys >= 180 || dia >= 120) alerts.push({c:"va-red",    m:"🔴 Hypertensive Emergency (BP "+bpVal+")"});
+        else if (sys >= 160 || dia >= 100) alerts.push({c:"va-red",    m:"🔴 Stage 2 Hypertension (BP "+bpVal+")"});
+        else if (sys >= 140 || dia >= 90)  alerts.push({c:"va-yellow", m:"🟡 Stage 1 Hypertension (BP "+bpVal+")"});
+        else if (sys >= 120 && dia < 80)   alerts.push({c:"va-yellow", m:"🟡 Elevated BP ("+bpVal+")"});
+        else if (sys < 90  || dia < 60)    alerts.push({c:"va-red",    m:"🔴 Hypotension (BP "+bpVal+")"});
+        else                               alerts.push({c:"va-green",  m:"✅ BP Normal ("+bpVal+")"});
+    }
+    const pulse = parseInt(pulseVal);
+    if (!isNaN(pulse)) {
+        if      (pulse > 120) alerts.push({c:"va-red",    m:"🔴 Severe Tachycardia ("+pulse+" bpm)"});
+        else if (pulse > 100) alerts.push({c:"va-yellow", m:"🟡 Tachycardia ("+pulse+" bpm)"});
+        else if (pulse < 50)  alerts.push({c:"va-red",    m:"🔴 Severe Bradycardia ("+pulse+" bpm)"});
+        else if (pulse < 60)  alerts.push({c:"va-yellow", m:"🟡 Bradycardia ("+pulse+" bpm)"});
+        else                  alerts.push({c:"va-green",  m:"✅ Pulse Normal ("+pulse+" bpm)"});
+    }
+    const spo2 = parseInt(spo2Val);
+    if (!isNaN(spo2)) {
+        if      (spo2 < 90) alerts.push({c:"va-red",    m:"🔴 Critical Hypoxia (SpO₂ "+spo2+"%) — O₂ urgently!"});
+        else if (spo2 < 94) alerts.push({c:"va-yellow", m:"🟡 Low SpO₂ ("+spo2+"%) — give O₂"});
+        else                alerts.push({c:"va-green",  m:"✅ SpO₂ Normal ("+spo2+"%)"});
+    }
+    alertDiv.innerHTML = alerts.map(a => `<span class="va-pill ${a.c}">${a.m}</span>`).join("");
+}
+document.addEventListener("DOMContentLoaded", checkVitals);
+
+function getVitalInterpretation() {
+    const pulse = parseInt(document.getElementById("v-pulse")?.value || "0");
+    const spo2  = parseInt(document.getElementById("v-spo2")?.value  || "0");
+    const bpVal = document.getElementById("v-bp")?.value.trim() || "";
+    const bpM   = bpVal.match(/^(\d+)[\/\s](\d+)$/);
+    let notes = [];
+    if (bpM) {
+        const sys = parseInt(bpM[1]), dia = parseInt(bpM[2]);
+        if      (sys >= 180 || dia >= 120) notes.push("BP "+bpVal+" = HYPERTENSIVE EMERGENCY");
+        else if (sys >= 160)               notes.push("BP "+bpVal+" = Stage 2 Hypertension");
+        else if (sys >= 140)               notes.push("BP "+bpVal+" = Stage 1 Hypertension");
+        else if (sys < 90)                 notes.push("BP "+bpVal+" = HYPOTENSION");
+        else                               notes.push("BP "+bpVal+" = Normal");
+    }
+    if (pulse > 100)                  notes.push("Pulse "+pulse+" = Tachycardia");
+    else if (pulse < 60 && pulse > 0) notes.push("Pulse "+pulse+" = Bradycardia");
+    if (spo2 > 0 && spo2 < 94)       notes.push("SpO2 "+spo2+"% = Hypoxia — needs O2");
+    return notes.join("; ");
+}
+
+function parseAndRender(text) {
+    const sections = [
+        { key:"Probable Diagnosis",      id:"ai-probable",  list:false },
+        { key:"Required Investigations", id:"ai-required",  list:true  },
+        { key:"Final Diagnosis",         id:"ai-final",     list:false },
+        { key:"Treatment Plan",          id:"ai-treatment", list:true  },
+        { key:"Prescription",            id:"ai-rx",        list:true  },
+        { key:"Advice",                  id:"ai-advice",    list:true  },
+        { key:"Red Flag",                id:"ai-redflag",   list:true  },
+    ];
+    const map = {};
+    let cur = null;
+    text.split("\n").forEach(line => {
+        line = line.trim();
+        if (!line) return;
+        const h = sections.find(s => line.replace(/\*+/g,"").toLowerCase().startsWith(s.key.toLowerCase()));
+        if (h) { cur = h.key; map[cur] = []; }
+        else if (cur) {
+            const clean = line.replace(/^[-•*]\s*/,"").replace(/\*+/g,"").trim();
+            if (clean) map[cur].push(clean);
+        }
+    });
+    sections.forEach(({ key, id, list }) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const lines = map[key] || [];
+        if (!lines.length) { el.innerHTML = "<em style='color:#aaa'>—</em>"; return; }
+        el.innerHTML = list ? lines.map(l => `<li>${l}</li>`).join("") : lines.join(" ");
+    });
+    document.getElementById("ai-panel").style.display = "block";
+}
+
+function runFullAI() {
+    let complaints = [];
+    document.querySelectorAll("input[name='symptoms']:checked").forEach(el => {
+        complaints.push(el.parentElement.innerText.trim());
+    });
+    let exam = [];
+    document.querySelectorAll("input[name='signs']:checked").forEach(el => {
+        exam.push(el.parentElement.innerText.trim());
+    });
+    const pulse  = document.querySelector("[name='pulse']")?.value  ?? "";
+    const bp     = document.querySelector("[name='bp']")?.value     ?? "";
+    const spo2   = document.querySelector("[name='spo2']")?.value   ?? "";
+    const weight = document.querySelector("[name='weight']")?.value ?? "";
+    const vitalInterp = getVitalInterpretation();
+    const vitals = `Pulse ${pulse}, BP ${bp}, SpO2 ${spo2}, Weight ${weight}. Interpretation: ${vitalInterp}`;
+    const investigations = document.getElementById("investigation_results").value;
+
+    const btn     = document.getElementById("ai-btn");
+    const loading = document.getElementById("ai-loading");
+    const errBox  = document.getElementById("ai-error");
+    const warning = document.getElementById("ai-draft-warning");
+    const result  = document.getElementById("ai-result");
+    const panel   = document.getElementById("ai-panel");
+
+    btn.disabled = true;
+    btn.innerHTML = "⏳ Generating…";
+    loading.style.display  = "block";
+    errBox.style.display   = "none";
+    warning.style.display  = "none";
+    panel.style.display    = "none";
+
+    const params = new URLSearchParams();
+    complaints.forEach(c => params.append("complaints[]", c));
+    exam.forEach(e       => params.append("exam[]", e));
+    params.set("vitals", vitals);
+    params.set("investigation_results", investigations);
+
+    fetch("/ai-full-opd/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: params
+    })
+    .then(res => { if (!res.ok) throw new Error("Server error "+res.status); return res.json(); })
+    .then(data => {
+        result.value = data.result;
+        parseAndRender(data.result);
+        warning.style.display = "block";
+    })
+    .catch(err => {
+        errBox.textContent = "⚠️ AI request failed: " + err.message;
+        errBox.style.display = "block";
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = "🤖 Generate AI Suggestion";
+        loading.style.display = "none";
+    });
+}
+
+/* ── AJAX Save ── */
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.querySelector("form");
+    if (!form) return;
+    form.addEventListener("submit", function (e) {
+        const aiResult = document.getElementById("ai-result")?.value.trim();
+        const warning  = document.getElementById("ai-draft-warning");
+        if (aiResult && warning && warning.style.display !== "none") {
+            if (!confirm("⚠️ You are about to save an AI-generated clinical note.\n\nPlease confirm you have reviewed and verified the AI suggestion before saving.")) {
+                e.preventDefault();
+                return;
+            }
+        }
+        const scrollY = window.scrollY;
+        sessionStorage.setItem('scrollAfterSave', scrollY);
+    });
+});
+
+window.addEventListener('load', function() {
+    var savedScroll = sessionStorage.getItem('scrollAfterSave');
+    if (savedScroll) {
+        sessionStorage.removeItem('scrollAfterSave');
+        window.scrollTo({ top: parseInt(savedScroll), behavior: 'instant' });
+    }
+});
+
+/* ══ PRESCRIPTION TEMPLATES ══ */
+var allTemplates = [];
+
+function getCurrentRxMedicines() {
+    var rows = document.querySelectorAll('#rx-body tr');
+    var meds = [];
+    rows.forEach(function(row) {
+        var sel  = row.querySelector('select[name="medicine[]"]');
+        var dose = row.querySelector('input[name="dose[]"]');
+        var freq = row.querySelector('input[name="frequency[]"]');
+        var dur  = row.querySelector('input[name="duration[]"]');
+        var inst = row.querySelector('input[name="instructions[]"]');
+        var name = sel ? ($(sel).find(':selected').text() || $(sel).val() || '').trim() : '';
+        if (name && name !== '') {
+            meds.push({
+                medicine:     name,
+                dose:         dose ? dose.value.trim() : '',
+                frequency:    freq ? freq.value.trim() : '',
+                duration:     dur  ? dur.value.trim()  : '',
+                instructions: inst ? inst.value.trim()  : '',
+            });
+        }
+    });
+    return meds;
+}
+
+function openSaveTemplate() {
+    var meds = getCurrentRxMedicines();
+    if (meds.length === 0) { alert('Please add medicines to the prescription first.'); return; }
+    var preview = meds.map(function(m, i) {
+        return (i+1) + '. ' + m.medicine + ' — ' + m.dose + ' | ' + m.frequency + ' | ' + m.duration;
+    }).join('<br>');
+    document.getElementById('tmpl-save-preview').innerHTML = preview;
+    document.getElementById('tmpl-name-input').value = '';
+    document.getElementById('tmpl-save-modal').style.display = 'flex';
+    setTimeout(function(){ document.getElementById('tmpl-name-input').focus(); }, 100);
+}
+
+function doSaveTemplate() {
+    var name = document.getElementById('tmpl-name-input').value.trim();
+    if (!name) { alert('Please enter a template name.'); return; }
+    var meds = getCurrentRxMedicines();
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    fetch('/prescriptions/template/save/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ name: name, medicines: meds })
+    })
+    .then(r => r.json())
+    .then(function(d) {
+        if (d.success) {
+            closeTmplModal('tmpl-save-modal');
+            showToast('✅ Template "' + d.name + '" ' + (d.created ? 'saved!' : 'updated!'), '#007676');
+        } else {
+            alert('Error: ' + (d.error || 'Could not save template'));
+        }
+    })
+    .catch(function() { alert('Network error — please try again.'); });
+}
+
+function openLoadTemplate() {
+    document.getElementById('tmpl-search').value = '';
+    document.getElementById('tmpl-load-modal').style.display = 'flex';
+    fetch('/prescriptions/template/list/')
+    .then(r => r.json())
+    .then(function(d) {
+        allTemplates = d.templates || [];
+        renderTemplateList(allTemplates);
+    });
+}
+
+function renderTemplateList(templates) {
+    var list = document.getElementById('tmpl-list');
+    if (templates.length === 0) {
+        list.innerHTML = '<div style="padding:20px;text-align:center;color:#999;font-size:13px;">No templates saved yet</div>';
+        return;
+    }
+    list.innerHTML = templates.map(function(t) {
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #f0f0f0;background:#ffffff !important;" onmouseover="this.style.background=\'#f5fbfa\'" onmouseout="this.style.background=\'#ffffff\'">' +
+        '<div style="font-size:13px;font-weight:600;color:#1a1a1a !important;">' + t.name + '</div>' +
+        '<div style="display:flex;gap:6px;">' +
+        '<button onclick="loadTemplate(' + t.id + ',\'' + t.name.replace(/'/g,"\\'") + '\')" style="background:#007676;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;">Load</button>' +
+        '<button onclick="deleteTemplate(' + t.id + ')" style="background:#fff0f0;color:#dc3545;border:1px solid #f5c6cb;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;">🗑</button>' +
+        '</div></div>';
+}).join('');
+}
+
+function filterTemplates() {
+    var q = document.getElementById('tmpl-search').value.toLowerCase();
+    var filtered = allTemplates.filter(function(t){ return t.name.toLowerCase().includes(q); });
+    renderTemplateList(filtered);
+}
+
+function loadTemplate(id, name) {
+    fetch('/prescriptions/template/load/' + id + '/')
+    .then(r => r.json())
+    .then(function(d) {
+        if (!d.items || d.items.length === 0) { alert('Template is empty.'); return; }
+        if (!confirm('Load template "' + name + '"?\nThis will ADD ' + d.items.length + ' medicine(s) to the current prescription.')) return;
+        closeTmplModal('tmpl-load-modal');
+        d.items.forEach(function(item) {
+            addRxRow();
+            var rows = document.querySelectorAll('#rx-body tr');
+            var lastRow = rows[rows.length - 1];
+            var $sel = $(lastRow).find('.medicine-search');
+            var option = new Option(item.medicine, item.medicine, true, true);
+            $sel.append(option).trigger('change');
+            $(lastRow).find('input[name="dose[]"]').val(item.dose);
+            $(lastRow).find('input[name="frequency[]"]').val(item.frequency);
+            $(lastRow).find('input[name="duration[]"]').val(item.duration);
+            $(lastRow).find('input[name="instructions[]"]').val(item.instructions);
+        });
+        showToast('✅ Template "' + name + '" loaded — ' + d.items.length + ' medicines added', '#007676');
+    });
+}
+
+function deleteTemplate(id) {
+    if (!confirm('Delete this template?')) return;
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    fetch('/prescriptions/template/delete/' + id + '/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken }
+    })
+    .then(r => r.json())
+    .then(function(d) {
+        if (d.success) {
+            allTemplates = allTemplates.filter(function(t){ return t.id !== id; });
+            renderTemplateList(allTemplates);
+            showToast('🗑 Template deleted', '#dc3545');
+        }
+    });
+}
+
+function closeTmplModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
+
+function showToast(msg, color) {
+    var t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:' + color + ';color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,0.18);';
+    document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, 3000);
+}
+
+document.addEventListener('click', function(e) {
+    ['tmpl-save-modal','tmpl-load-modal'].forEach(function(id) {
+        var modal = document.getElementById(id);
+        if (modal && e.target === modal) modal.style.display = 'none';
+    });
+});
+
+/* ══ SYMPTOMS & SIGNS ══ */
+var DEPT_ID = {{ appointment.department.id }};
+var CSRF = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+function addSymptom() {
+    var inp = document.getElementById('new-symptom-input');
+    var name = inp.value.trim();
+    if (!name) return;
+    fetch('/symptoms/add/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ name: name, department_id: DEPT_ID })
+    })
+    .then(r => r.json())
+    .then(function(d) {
+        if (d.id) {
+            var grid = document.getElementById('symptom-grid');
+            var label = document.createElement('label');
+            label.className = 'cb-item';
+            label.dataset.id = d.id;
+            label.innerHTML = '<input type="checkbox" name="symptoms" value="' + d.id + '" checked> ' + d.name +
+                ' <span onclick="deleteItem(\'symptom\',' + d.id + ',this)" title="Delete" style="margin-left:auto;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color=\'#dc3545\'" onmouseout="this.style.color=\'#ccc\'">✕</span>';
+            grid.appendChild(label);
+            inp.value = '';
+            showToast('✅ "' + d.name + '" added', '#007676');
+        }
+    });
+}
+
+function addSign() {
+    var inp = document.getElementById('new-sign-input');
+    var name = inp.value.trim();
+    if (!name) return;
+    fetch('/signs/add/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ name: name, department_id: DEPT_ID })
+    })
+    .then(r => r.json())
+    .then(function(d) {
+        if (d.id) {
+            var grid = document.getElementById('sign-grid');
+            var label = document.createElement('label');
+            label.className = 'cb-item';
+            label.dataset.id = d.id;
+            label.innerHTML = '<input type="checkbox" name="signs" value="' + d.id + '" checked> ' + d.name +
+                ' <span onclick="deleteItem(\'sign\',' + d.id + ',this)" title="Delete" style="margin-left:auto;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color=\'#dc3545\'" onmouseout="this.style.color=\'#ccc\'">✕</span>';
+            grid.appendChild(label);
+            inp.value = '';
+            showToast('✅ "' + d.name + '" added', '#007676');
+        }
+    });
+}
+
+function deleteItem(type, id, el) {
+    if (!confirm('Delete this ' + type + '?')) return;
+    var url = type === 'symptom' ? '/symptoms/delete/' + id + '/' : '/signs/delete/' + id + '/';
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF }
+    })
+    .then(r => r.json())
+    .then(function(d) {
+        if (d.success) {
+            el.closest('label').remove();
+            showToast('🗑 Deleted', '#dc3545');
+        }
+    });
+}
+
+function openManage(type) {
+    var inp = type === 'symptom' ? 'new-symptom-input' : 'new-sign-input';
+    document.getElementById(inp).focus();
+}
+
+/* ── Advice chips ── */
+function addAdvice(chip) {
+    var ta = document.getElementById('id_advice');
+    var txt = chip.textContent.trim();
+    ta.value = ta.value.trim() ? ta.value.trim() + '\n' + txt : txt;
+    chip.style.background='#007676'; chip.style.color='#fff'; chip.style.borderColor='#007676';
+}
+
+/* ── Diet chips ── */
+function addDiet(chip) {
+    var ta = document.getElementById('id_diet_advice');
+    var txt = chip.textContent.trim();
+    ta.value = ta.value.trim() ? ta.value.trim() + '\n' + txt : txt;
+    chip.style.background='#16a34a'; chip.style.color='#fff'; chip.style.borderColor='#16a34a';
+}
+
+/* ── Procedure chips ── */
+function addProcedure(chip) {
+    var ta = document.getElementById('id_procedures_performed');
+    var txt = chip.textContent.trim();
+    ta.value = ta.value.trim() ? ta.value.trim() + '\n' + txt : txt;
+    chip.style.background='#0891b2'; chip.style.color='#fff'; chip.style.borderColor='#0891b2';
+}
+
+/* ── Follow-up quick select ── */
+function setFollowUp(n, unit) {
+    var d = new Date();
+    if (unit==='days')   d.setDate(d.getDate()+n);
+    if (unit==='weeks')  d.setDate(d.getDate()+n*7);
+    if (unit==='months') d.setMonth(d.getMonth()+n);
+    var yyyy=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+    document.getElementById('id_follow_up_date').value=yyyy+'-'+mm+'-'+dd;
+}
+
+/* ══ SAVE ROW TO DRUG MASTER ══ */
+function saveRowToDrugMaster(btn) {
+    var row = btn.closest('tr');
+    var sel = row.querySelector('select[name="medicine[]"]');
+    var name = sel ? ($(sel).find(':selected').text() || $(sel).val() || '').trim() : '';
+    if (!name) { showToast('⚠️ No medicine name!', '#f59e0b'); return; }
+    var generic = (row.querySelector('input[name="generic_name[]"]') || {}).value || '';
+    var dose    = (row.querySelector('input[name="dose[]"]') || {}).value || '';
+    var freq    = (row.querySelector('input[name="frequency[]"]') || {}).value || '';
+    var dur     = (row.querySelector('input[name="duration[]"]') || {}).value || '';
+    var inst    = (row.querySelector('input[name="instructions[]"]') || {}).value || '';
+
+    if (!confirm('Save "' + name + '" to Drug Master?')) return;
+
+    fetch('/drugs/add-quick/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({
+            name: name, generic_name: generic, strength: dose,
+            category: '', default_dose: dose, default_frequency: freq,
+            default_duration: dur, default_instructions: inst
+        })
+    })
+    .then(r => r.json())
+    .then(function(d) {
+        if (d.success) {
+            showToast('✅ "' + name + '" saved to Drug Master!', '#00b8a9');
+            var pill = document.createElement('label');
+            pill.style.cssText = 'display:flex;align-items:center;gap:4px;background:#f0f9f9;border:1px solid #b2dfdb;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px;';
+            pill.innerHTML = '<input type="checkbox" class="quick-med-cb"' +
+                ' data-name="' + name + '" data-generic="' + generic + '" data-dose="' + dose + '"' +
+                ' data-freq="' + freq + '" data-dur="' + dur + '" data-inst="' + inst + '"> ' +
+                name + ' <span style="color:#aaa;font-size:10px;">(' + dose + ')</span>';
+            document.getElementById('quick-meds-top').appendChild(pill);
+        } else {
+            showToast('❌ ' + (d.error || 'Error saving'), '#dc3545');
+        }
+    })
+    .catch(function() { showToast('❌ Network error', '#dc3545'); });
+}
+
+/* ══ TOGGLE MORE MEDS ══ */
+function toggleMoreMeds() {
+    var el = document.getElementById('more-meds-collapse');
+    var btn = document.getElementById('toggle-more-meds');
+    if (el.style.display === 'none') {
+        el.style.display = 'block';
+        btn.textContent = '▲ Show less';
+    } else {
+        el.style.display = 'none';
+        btn.textContent = '▼ Show all medicines by category';
+    }
+}
+
+/* ══ FIX 1+2: Quick Medicine Checkbox → Select2 row ══ */
+document.addEventListener('change', function(e) {
+    if (!e.target.classList.contains('quick-med-cb')) return;
+    var cb = e.target;
+    var name    = cb.dataset.name    || '';
+    var generic = cb.dataset.generic || '';
+    var d = getDrugDefault(name) || {};
+    var dose = (cb.dataset.dose && cb.dataset.dose.trim()) ? cb.dataset.dose : (d.dose || '');
+    var freq = (cb.dataset.freq && cb.dataset.freq.trim()) ? cb.dataset.freq : (d.frequency || '');
+    var dur  = (cb.dataset.dur  && cb.dataset.dur.trim())  ? cb.dataset.dur  : (d.duration  || '');
+    var inst = (cb.dataset.inst && cb.dataset.inst.trim()) ? cb.dataset.inst : (d.instructions || '');
+
+    if (cb.checked) {
+        // FIX 1: Use <select class="medicine-search"> not readonly <input>
+        var row = document.createElement('tr');
+        row.setAttribute('data-quick-med', name);
+        row.innerHTML =
+            '<td><select name="medicine[]" class="medicine-search" style="width:100%">' +
+            '<option value="' + name + '" selected>' + name + '</option>' +
+            '</select></td>' +
+            '<td><input type="text" name="generic_name[]" value="' + generic + '" placeholder="Generic…" style="color:#888;"></td>' +
+            '<td><input type="text" name="dose[]" value="' + dose + '" placeholder="Dose"></td>' +
+            '<td><input type="text" name="frequency[]" value="' + freq + '" placeholder="Frequency"></td>' +
+            '<td><input type="text" name="duration[]" value="' + dur + '" placeholder="Duration"></td>' +
+            '<td><input type="text" name="instructions[]" value="' + inst + '" placeholder="Instructions"></td>' +
+            '<td style="text-align:center;vertical-align:middle;white-space:nowrap;">' +
+            '<button type="button" onclick="saveRowToDrugMaster(this)" title="Save to Drug Master" style="background:none;border:none;cursor:pointer;color:#00b8a9;font-size:16px;padding:4px 4px;">➕</button>' +
+            '<button type="button" onclick="deleteRxRow(this)" style="background:none;border:none;cursor:pointer;color:#dc3545;font-size:16px;padding:4px 4px;">🗑</button></td>';
+        document.getElementById('rx-body').appendChild(row);
+        // FIX 2: Initialize Select2 on the new row
+        var $newSel = $(row).find('.medicine-search');
+        initMedicineSearch($newSel);
+    } else {
+        var rows = document.querySelectorAll('#rx-body tr[data-quick-med]');
+        for (var i = 0; i < rows.length; i++) {
+            if (rows[i].getAttribute('data-quick-med') === name) {
+                rows[i].remove();
+                break;
+            }
+        }
+    }
+});
+</script>
+
+<script>
+function addICDToSelection() {
+    var sel = $('#icd_search_box').select2('data');
+    if (!sel || !sel.length || !sel[0].id) {
+        showToast('⚠️ Please select an ICD code first!', '#f59e0b');
+        return;
+    }
+    var id   = sel[0].id;
+    var text = sel[0].text;
+
+    var existing = document.querySelectorAll('#icd-tags-container input[name="icd_codes[]"]');
+    for (var i = 0; i < existing.length; i++) {
+        if (existing[i].value == id) {
+            showToast('⚠️ Already added!', '#f59e0b');
+            return;
+        }
+    }
+
+    var container = document.getElementById('icd-tags-container');
+    var span = document.createElement('span');
+    span.className = 'icd-selected-tag';
+    span.style.cssText = 'display:inline-flex;align-items:center;gap:5px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;color:#065f46;';
+    span.innerHTML = text +
+        '<input type="hidden" name="icd_codes[]" value="' + id + '">' +
+        '<span onclick="removeICDTag(this)" style="cursor:pointer;color:#dc2626;font-weight:900;margin-left:4px;">✕</span>';
+    container.appendChild(span);
+    showToast('✅ ' + text + ' added!', '#0891b2');
+    autoSuggestDiet();
+}
+
+function removeICDTag(el) {
+    el.closest('span.icd-selected-tag').remove();
+}
+
+/* ══ ICD DIET MAP ══ */
+var ICD_DIET_MAP = {
+    'E11':   'Early Morning: warm water, 5 almonds.\nBreakfast: oats/poha, no sugar.\nLunch: 2 chapati, dal, vegetables, salad, buttermilk.\nEvening: roasted chana, fruits.\nDinner: 1-2 light chapati, vegetables.\nAvoid: sugar, fried foods, white rice, maida.',
+    'E10':   'Early Morning: warm water, 5 almonds.\nBreakfast: oats/poha, no sugar.\nLunch: 2 chapati, dal, vegetables, salad, buttermilk.\nEvening: roasted chana, fruits.\nDinner: 1-2 light chapati, vegetables.\nAvoid: sugar, fried foods, white rice, maida.',
+    'I10':   'Early Morning: warm water, walnuts.\nBreakfast: oats, banana, low-fat milk.\nLunch: 2 chapati, dal, vegetables, salad.\nEvening: fruits, coconut water.\nDinner: light chapati, vegetables.\nAvoid: salt, pickles, papad, fried foods, alcohol.',
+    'I25':   'Early Morning: warm water, walnuts.\nBreakfast: oats, fruits.\nLunch: 2 chapati, dal, vegetables, salad.\nEvening: roasted chana, fruits.\nDinner: light chapati, vegetables.\nAvoid: fried foods, ghee, oil, red meat.',
+    'K2970': 'Early Morning: warm water (empty stomach).\nBreakfast: oats/banana, plain toast.\nLunch: soft chapati, dal, boiled vegetables, curd.\nEvening: plain biscuits, warm milk.\nDinner: soft chapati, dal.\nAvoid: spicy food, tea/coffee, alcohol, citrus.',
+    'K529':  'Early Morning: warm water (empty stomach).\nBreakfast: oats/banana, plain toast.\nLunch: soft chapati, dal, boiled vegetables, curd.\nEvening: plain biscuits, warm milk.\nDinner: soft chapati, dal.\nAvoid: spicy food, tea/coffee, alcohol.',
+    'K589':  'Early Morning: warm water + isabgol.\nBreakfast: oats, papaya, fruits.\nLunch: chapati, dal, vegetables, salad, buttermilk.\nEvening: fruits, roasted chana.\nDinner: light chapati, vegetables.\nAvoid: maida, fried foods, caffeine.',
+    'K5900': 'Early Morning: warm water + isabgol, papaya.\nBreakfast: oats, fruits.\nLunch: chapati, dal, vegetables, salad, buttermilk.\nEvening: fruits.\nDinner: light chapati, vegetables.\nAvoid: maida, fried foods; drink 3-4 litres water daily.',
+    'K602':  'Early Morning: warm water + isabgol.\nBreakfast: oats, papaya.\nLunch: chapati, dal, vegetables, salad.\nEvening: fruits.\nDinner: light chapati, vegetables.\nAvoid: spicy foods, maida; drink 3-4 litres water daily.',
+    'K641':  'Early Morning: warm water + isabgol.\nBreakfast: oats, papaya.\nLunch: chapati, dal, vegetables, salad.\nEvening: fruits.\nDinner: light chapati, vegetables.\nAvoid: spicy foods, maida; drink 3-4 litres water daily.',
+    'N390':  'Early Morning: 2 glasses warm water.\nBreakfast: normal diet, fruits.\nLunch: chapati, dal, vegetables, buttermilk.\nEvening: coconut water, fruits.\nDinner: light normal diet.\nDrink 3-4 litres water daily; avoid holding urine.',
+    'N200':  'Early Morning: 2 glasses warm water.\nBreakfast: normal diet, fruits.\nLunch: chapati, dal, vegetables, buttermilk.\nEvening: coconut water, barley water.\nDinner: light normal diet.\nAvoid: spinach, tomato, nuts; drink 3-4 litres water daily.',
+    'N201':  'Early Morning: 2 glasses warm water.\nBreakfast: normal diet, fruits.\nLunch: chapati, dal, vegetables, buttermilk.\nEvening: coconut water, barley water.\nDinner: light normal diet.\nAvoid: spinach, tomato, nuts; drink 3-4 litres water daily.',
+    'N210':  'Early Morning: 2 glasses warm water.\nBreakfast: normal diet, fruits.\nLunch: chapati, dal, vegetables, buttermilk.\nEvening: coconut water.\nDinner: light normal diet.\nAvoid: spinach, tomato; drink 3-4 litres water daily.',
+    'N401':  'Early Morning: warm water, pumpkin seeds.\nBreakfast: oats, fruits.\nLunch: chapati, dal, vegetables, salad.\nEvening: pumpkin seeds, fruits.\nDinner: light chapati, vegetables.\nAvoid: spicy foods, caffeine, alcohol.',
+    'K8020': 'Early Morning: warm water, apple.\nBreakfast: oats, fruits.\nLunch: chapati, dal, boiled vegetables.\nEvening: fruits.\nDinner: light chapati, boiled vegetables.\nStrictly avoid oily, fried, fatty foods.',
+    'K760':  'Early Morning: warm water + amla juice.\nBreakfast: oats, fruits.\nLunch: chapati, dal, vegetables, salad.\nEvening: fruits.\nDinner: light chapati, vegetables.\nStrictly avoid alcohol, oily foods, fried foods.',
+    'K4090': 'Early Morning: warm water.\nBreakfast: soft chapati, banana.\nLunch: soft chapati, dal, boiled vegetables.\nEvening: light snack, fruits.\nDinner: soft chapati, dal.\nAvoid heavy meals; eat small frequent meals.',
+    'K429':  'Early Morning: warm water.\nBreakfast: soft chapati, banana.\nLunch: soft chapati, dal, boiled vegetables.\nEvening: light snack, fruits.\nDinner: soft chapati, dal.\nAvoid heavy meals; eat small frequent meals.',
+    'K3580': 'Early Morning: warm water only.\nBreakfast: liquid/soft diet as advised.\nLunch: soft dal, rice, boiled vegetables.\nEvening: light snack.\nDinner: soft diet.\nFollow surgeon advice; avoid heavy meals.',
+    'N739':  'Early Morning: warm water.\nBreakfast: normal diet, fruits.\nLunch: chapati, dal, vegetables, salad.\nEvening: fruits.\nDinner: light chapati, vegetables, curd.\nAvoid spicy, oily foods; prefer curd, buttermilk.',
+    'N18':   'Early Morning: warm water, apple.\nBreakfast: oats, apple (limited protein).\nLunch: chapati (2 only), vegetables, low protein dal.\nEvening: fruits (low potassium).\nDinner: light chapati, vegetables.\nStrictly limit salt, protein, potassium.',
+    'J069':  'Early Morning: warm water + honey + ginger.\nBreakfast: normal diet, warm soup.\nLunch: chapati, dal, vegetables.\nEvening: warm milk with turmeric.\nDinner: light normal diet, soup.\nAvoid cold drinks, ice cream, cold water.',
+    'J22':   'Early Morning: warm water + honey + ginger.\nBreakfast: normal diet, warm soup.\nLunch: chapati, dal, vegetables.\nEvening: warm milk with turmeric.\nDinner: light normal diet, soup.\nAvoid cold drinks, ice cream, cold water.',
+    'G43909':'Early Morning: warm water.\nBreakfast: normal diet.\nLunch: chapati, dal, vegetables, salad.\nEvening: fruits (avoid citrus).\nDinner: light normal diet.\nAvoid: chocolate, cheese, caffeine, alcohol.',
+    'F419':  'Early Morning: warm water, almonds.\nBreakfast: oats, banana.\nLunch: normal balanced diet.\nEvening: green tea (weak), fruits.\nDinner: light normal diet.\nAvoid caffeine, alcohol; eat regularly.',
+};
+
+function autoSuggestDiet() {
+    var tags = document.querySelectorAll('#icd-tags-container span.icd-selected-tag');
+    if (!tags.length) return;
+    var allDiets = [];
+    var seen = new Set();
+    tags.forEach(function(span) {
+        var text = span.textContent.replace('\u2715','').trim();
+        var code = text.split('\u2014')[0].trim().split(' ')[0].trim();
+        var diet = ICD_DIET_MAP[code];
+        if (!diet) {
+            for (var key in ICD_DIET_MAP) {
+                if (code.startsWith(key)) { diet = ICD_DIET_MAP[key]; break; }
+            }
+        }
+        if (diet && !seen.has(diet)) {
+            seen.add(diet);
+            allDiets.push(diet);
+        }
+    });
+    if (allDiets.length === 0) return;
+
+    if (allDiets.length === 1) {
+        document.getElementById('id_diet_advice').value = allDiets[0];
+        showToast('\U0001f957 Diet auto-suggested!', '#16a34a');
+        return;
+    }
+
+    // Merge multiple diagnoses into ONE combined plan
+    var baseLines = allDiets[0].split('\n').filter(function(l) { return !l.trim().startsWith('Avoid:'); });
+    var avoidItems = [];
+    var avoidSeen = new Set();
+
+    allDiets.forEach(function(diet) {
+        diet.split('\n').forEach(function(line) {
+            if (line.trim().startsWith('Avoid:')) {
+                var items = line.replace('Avoid:', '').split(',');
+                items.forEach(function(item) {
+                    var clean = item.trim().replace(/\.$/, '');
+                    var key = clean.toLowerCase();
+                    if (clean && !avoidSeen.has(key)) {
+                        avoidSeen.add(key);
+                        avoidItems.push(clean);
+                    }
+                });
+            }
+        });
+    });
+
+    var merged = baseLines.join('\n');
+    if (avoidItems.length > 0) {
+        merged += '\nAvoid: ' + avoidItems.join(', ') + '.';
+    }
+
+    document.getElementById('id_diet_advice').value = merged;
+    showToast('\U0001f957 Combined diet suggested (' + allDiets.length + ' diagnoses)!', '#16a34a');
+}
+
+/* ══ AI GENERATE DIET ══ */
+function generateAIDiet() {
+    var icdTexts = [];
+    document.querySelectorAll('#icd-tags-container span.icd-selected-tag').forEach(function(span) {
+        var text = span.textContent.replace('\u2715','').trim();
+        if (text) icdTexts.push(text);
+    });
+    var diagnosis = document.querySelector('input[name="diagnosis_text"]') ?
+                    document.querySelector('input[name="diagnosis_text"]').value : '';
+    if (!icdTexts.length && !diagnosis) {
+        showToast('\u26a0\ufe0f Please add ICD codes or diagnosis first!', '#f59e0b');
+        return;
+    }
+    var btn = document.getElementById('diet-ai-btn');
+    var loading = document.getElementById('diet-loading');
+    btn.disabled = true;
+    btn.innerHTML = '\u23f3 Generating...';
+    loading.style.display = 'inline';
+    var diagStr = icdTexts.length ? icdTexts.join(', ') : diagnosis;
+
+    fetch('/generate-diet/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ diagnosis: diagStr })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.diet) {
+            document.getElementById('id_diet_advice').value = data.diet;
+            showToast('\u2705 AI Diet chart generated!', '#16a34a');
+        } else {
+            autoSuggestDiet();
+            showToast('\u26a0\ufe0f ' + (data.error || 'Using local suggestions'), '#f59e0b');
+        }
+    })
+    .catch(function() {
+        autoSuggestDiet();
+        showToast('\U0001f957 Using local diet suggestions', '#16a34a');
+    })
+    .finally(function() {
+        btn.disabled = false;
+        btn.innerHTML = '\U0001f916 Generate Diet Chart';
+        loading.style.display = 'none';
+    });
+}
+
+/* ══ AI GENERATE MEDICINES ══ */
+function generateAIMedicines() {
+    // ── ICD codes ──
+    var icdTexts = [];
+    document.querySelectorAll('#icd-tags-container span.icd-selected-tag').forEach(function(span) {
+        var text = span.textContent.replace('\u2715','').trim();
+        if (text) icdTexts.push(text);
+    });
+    var diagText = document.querySelector('input[name="diagnosis_text"]') ?
+                   document.querySelector('input[name="diagnosis_text"]').value : '';
+    var diagStr = icdTexts.length ? icdTexts.join(', ') : diagText;
+
+    if (!diagStr) {
+        showToast('\u26a0\ufe0f Please add diagnosis or ICD codes first!', '#f59e0b');
+        return;
+    }
+
+    // ── Chief Complaints (checked only) ──
+    var complaints = [];
+    document.querySelectorAll('input[name="symptoms"]:checked').forEach(function(cb) {
+        var label = cb.closest('label') ? cb.closest('label').textContent.trim() : cb.value;
+        if (label) complaints.push(label);
+    });
+
+    // ── Examination Findings (checked only) ──
+    var findings = [];
+    document.querySelectorAll('input[name="signs"]:checked').forEach(function(cb) {
+        var label = cb.closest('label') ? cb.closest('label').textContent.trim() : cb.value;
+        if (label) findings.push(label);
+    });
+
+    // ── Vitals ──
+    var bp   = (document.querySelector('input[name="bp"]') || {}).value || '';
+    var spo2 = (document.querySelector('input[name="spo2"]') || {}).value || '';
+
+    // ── Age / Sex from patient details table ──
+    var age = '', sex = '';
+    document.querySelectorAll('table tr').forEach(function(row) {
+        var cells = row.querySelectorAll('td');
+        cells.forEach(function(cell, i) {
+            if (cell.textContent.trim() === 'Age / Sex' && cells[i+1]) {
+                var parts = cells[i+1].textContent.trim().split('/');
+                if (!age) age = (parts[0] || '').trim();
+                if (!sex) sex = (parts[1] || '').trim();
+            }
+        });
+    });
+
+    // ── Drug List ──
+    var drugList = [];
+    document.querySelectorAll('.quick-med-cb').forEach(function(cb) {
+    var name = (cb.dataset.name || '').trim();
+    var generic = (cb.dataset.generic || '').trim();
+    if (name) drugList.push(generic ? name + ' [' + generic + ']' : name);
+    });
+
+    // ── Fire request ──
+    var btn = document.getElementById('rx-ai-btn');
+    btn.disabled = true;
+    btn.innerHTML = '\u23f3 Generating...';
+    showToast('\U0001f916 AI generating prescription...', '#2563eb');
+
+    fetch('/generate-ai-medicines/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({
+            diagnosis  : diagStr,
+            complaints : complaints.join(', '),
+            findings   : findings.join(', '),
+            age        : age,
+            sex        : sex,
+            bp         : bp,
+            spo2       : spo2,
+            drug_list  : drugList
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.medicines && data.medicines.length) {
+            document.querySelectorAll('#rx-body tr').forEach(function(row) {
+                var sel = row.querySelector('select[name="medicine[]"]');
+                var val = sel ? ($(sel).val() || '').trim() : '';
+                if (!val) row.remove();
+            });
+            data.medicines.forEach(function(med) {
+                addRxRow();
+                var rows = document.querySelectorAll('#rx-body tr');
+                var lastRow = rows[rows.length - 1];
+                var $sel = $(lastRow).find('.medicine-search');
+                var option = new Option(med.medicine, med.medicine, true, true);
+                $sel.append(option).trigger('change');
+                $(lastRow).find('input[name="dose[]"]').val(med.dose || '');
+                $(lastRow).find('input[name="frequency[]"]').val(med.frequency || '');
+                $(lastRow).find('input[name="duration[]"]').val(med.duration || '');
+                $(lastRow).find('input[name="instructions[]"]').val(med.instructions || '');
+            });
+            showToast('\u2705 ' + data.medicines.length + ' medicines added! Please review and save.', '#16a34a');
+        } else {
+            showToast('\u26a0\ufe0f ' + (data.error || 'No medicines generated'), '#f59e0b');
+        }
+    })
+    .catch(function() {
+        showToast('\u274c Network error \u2014 check server', '#dc3545');
+    })
+    .finally(function() {
+        btn.disabled = false;
+        btn.innerHTML = '\U0001f916 AI Suggest Medicines';
+    });
+}
+</script>
+
+{% endblock %}

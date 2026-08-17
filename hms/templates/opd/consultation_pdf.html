@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>OPD Consultation</title>
+<style>
+@page {
+    size: A4;
+    margin-top: 1.5cm;
+    margin-bottom: 2cm;
+    margin-left: 2cm;
+    margin-right: 1.5cm;
+    @top-left { content: ""; }
+    @top-right { content: ""; }
+    @bottom-left { content: ""; }
+    @bottom-right { content: ""; }
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    color: #000;
+    text-align: left;
+}
+
+/* ── Hospital Header ── */
+.hosp-header {
+    text-align: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+}
+.hosp-name {
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #000;
+}
+.hosp-sub {
+    font-size: 11px;
+    color: #333;
+    margin-top: 2px;
+}
+.hosp-contact {
+    font-size: 10px;
+    color: #333;
+    margin-top: 3px;
+}
+.doc-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #333;
+    margin-top: 4px;
+}
+
+/* ── Document Title Bar ── */
+.doc-title-bar {
+    background: #fff;
+    color: #000;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 5px;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    border-radius: 3px;
+}
+
+/* ── Receipt row ── */
+.receipt-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f7f7f7;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    padding: 4px 10px;
+    margin-bottom: 8px;
+    font-size: 11px;
+}
+.receipt-row span { font-weight: 700; }
+
+/* ── Section heading ── */
+.sec-title {
+    background: #e8e8e8;
+    color: #000;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 7px;
+    margin: 14px 0 4px 0;
+    letter-spacing: 0.5px;
+    text-align: left;
+    display: block;
+    width: 100%;
+}
+
+/* ── Tables ── */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 6px;
+}
+td, th {
+    border: 1px solid #999;
+    padding: 4px 7px;
+    vertical-align: top;
+    font-size: 11px;
+}
+th {
+    background: #e8e8e8;
+    font-weight: 700;
+    text-align: left;
+}
+.lbl {
+    font-weight: 700;
+    background: #f5f5f5;
+    width: 20%;
+    white-space: nowrap;
+}
+
+/* ── Vitals table ── */
+.vitals-table td { text-align: center; }
+.vitals-table .vlbl { font-weight: 700; background: #f5f5f5; text-align: left; }
+
+/* ── Vital alert badges ── */
+.vital-badges { margin: 4px 0 6px 0; }
+.vbadge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 9px;
+    font-weight: 700;
+    margin-right: 4px;
+    border: 1px solid;
+}
+.vb-red    { background: #ffebee; color: #b71c1c; border-color: #ef9a9a; }
+.vb-yellow { background: #fff8e1; color: #e65100; border-color: #ffe082; }
+.vb-green  { background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; }
+
+/* ── Complaints / Exam grid ── */
+.item-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    padding: 4px 0 4px 7px;
+    justify-content: flex-start;
+    text-align: left;
+}
+.sec-body-text {
+    padding-left: 7px;
+}
+.item-pill {
+    background: #f7f7f7;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #333;
+}
+
+/* ── AI Notes ── */
+.ai-section {
+    border-left: 4px solid #999;
+    background: #f9f9f9;
+    padding: 6px 10px;
+    margin-bottom: 5px;
+    border-radius: 0 4px 4px 0;
+}
+.ai-section-title {
+    font-weight: 700;
+    font-size: 11px;
+    color: #333;
+    margin-bottom: 3px;
+}
+
+/* ── Prescription table ── */
+.rx-table th { background: #f7f7f7; color: #000; }
+
+/* ── Footer ── */
+.footer {
+    border-top: 2px solid #e8e8e8;
+    margin-top: 16px;
+    padding-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    font-size: 10px;
+    color: #333;
+    background: #fff;
+}
+.sign-box {
+    text-align: center;
+    border-top: 1px solid #000;
+    padding-top: 3px;
+    width: 180px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-left: auto;
+}
+
+ul { margin: 3px 0 4px 16px; padding: 0; }
+li { margin-bottom: 2px; }
+p  { margin: 3px 0; }
+a  { color: #000; text-decoration: none; }
+::selection { background: transparent; }
+
+@media print {
+    .no-print { display: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Hospital Header ── -->
+<div class="hosp-header">
+    <div class="hosp-name">Shradha Hospital &amp; Multispeciality Centre</div>
+    <div class="hosp-sub">Pani Ki Do Tanki, Surajpole, Pali (Raj.) — 306401</div>
+    <div class="hosp-contact">📞 9414122542 &nbsp;|&nbsp; Emergency: 9414122542</div>
+</div>
+
+
+
+<!-- ── Patient Details ── -->
+<div class="sec-title">PATIENT DETAILS</div>
+<table>
+    <tr>
+        <td class="lbl">Patient Name</td>
+        <td><strong>{{ appointment.patient.full_name|title }}</strong></td>
+        <td class="lbl">Age / Sex</td>
+        <td>{% if appointment.patient.age_years %}{{ appointment.patient.age_years }} Yrs{% else %}-{% endif %} / {{ appointment.patient.gender }}</td>
+    </tr>
+    <tr>
+        <td class="lbl">UHID</td>
+        <td>{{ appointment.patient.uhid }}</td>
+        <td class="lbl">Mobile</td>
+        <td>{{ appointment.patient.mobile_no }}</td>
+    </tr>
+    <tr>
+        <td class="lbl">Address</td>
+        <td>{{ appointment.patient.address|title|default:"-" }}</td>
+        <td class="lbl">Consultant</td>
+        <td>{{ appointment.doctor.full_name }}</td>
+    </tr>
+    <tr>
+        <td class="lbl">Date</td>
+        <td>{{ appointment.date|date:"d-m-Y" }}</td>
+        <td class="lbl">Time</td>
+        <td>{{ appointment.time|time:"H:i" }}</td>
+    </tr>
+    <tr>
+        <td class="lbl">Receipt No</td>
+        <td>OPD-{{ appointment.date|date:"Y" }}-{{ appointment.id|stringformat:"04d" }}</td>
+        <td class="lbl">OPD Fee / Mode</td>
+        <td>₹ {% if appointment.fee and appointment.fee != 0 %}{{ appointment.fee }}{% else %}{{ appointment.doctor.op_fee|default:"0" }}{% endif %} / {{ appointment.payment_mode|default:"-" }}</td>
+    </tr>
+</table>
+
+<!-- ── Vital Signs ── -->
+<div class="sec-title">VITAL SIGNS</div>
+<table class="vitals-table">
+    <tr>
+        <td class="vlbl">Pulse</td>
+        <td><strong>{{ consultation.pulse|default:"-" }}</strong> /min</td>
+        <td class="vlbl">Blood Pressure</td>
+        <td><strong>{{ consultation.bp|default:"-" }}</strong> mmHg</td>
+        <td class="vlbl">SpO₂</td>
+        <td><strong>{{ consultation.spo2|default:"-" }}</strong> %</td>
+        <td class="vlbl">Weight</td>
+        <td><strong>{{ consultation.weight|default:"-" }}</strong> kg</td>
+    </tr>
+</table>
+
+<!-- ── Chief Complaints ── -->
+<div class="sec-title">CHIEF COMPLAINTS</div>
+<div class="sec-body-text" style="padding:5px 0 5px 7px; text-align:left; font-size:11px;"></div>
+{% for c in chief_complaints_list %}{{ c.name }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% empty %}None recorded{% endfor %}
+</div>
+{% if consultation.chief_complaints %}
+<p style="margin:3px 0; font-size:11px;"><em>Note: {{ consultation.chief_complaints }}</em></p>
+{% endif %}
+
+<!-- ── Examination ── -->
+<div class="sec-title">EXAMINATION FINDINGS</div>
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
+{% for e in examination_list %}{{ e.name }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% empty %}None recorded{% endfor %}
+</div>
+{% if consultation.examination %}
+<p style="margin:3px 0; font-size:11px;"><em>Note: {{ consultation.examination }}</em></p>
+{% endif %}
+
+<!-- ── Diagnosis ── -->
+<div class="sec-title">DIAGNOSIS</div>
+{% if consultation.diagnosis_text %}
+<p class="sec-body-text"><strong>{{ consultation.diagnosis_text }}</strong></p>
+{% elif not consultation.icd_codes.all and not consultation.diagnosis_icd %}
+<p class="sec-body-text"><strong>-</strong></p>
+{% endif %}
+{% if consultation.icd_codes.all %}
+<p class="sec-body-text"><strong>ICD-10:</strong><br>
+{% for icd in consultation.icd_codes.all %}
+    {{ icd.code }} — {{ icd.description }}{% if not forloop.last %}<br>{% endif %}
+{% endfor %}
+</p>
+{% elif consultation.diagnosis_icd %}
+<p class="sec-body-text"><strong>ICD-10:</strong> {{ consultation.diagnosis_icd.code }} — {{ consultation.diagnosis_icd.description }}</p>
+{% endif %}
+
+<!-- ── Investigations ── -->
+<div class="sec-title">INVESTIGATIONS ADVISED</div>
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
+{% for inv in investigations %}{{ inv.name }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% empty %}{% if not consultation.custom_investigations %}None recorded{% endif %}{% endfor %}
+</div>
+{% if consultation.custom_investigations %}
+<p style="margin:3px 0; font-size:11px;"><em>Other: {{ consultation.custom_investigations|linebreaksbr }}</em></p>
+{% endif %}
+
+<!-- ── Prescription ── -->
+<div class="sec-title">PRESCRIPTION</div>
+<table class="rx-table" style="table-layout:fixed; border-collapse:collapse;">
+    <tr>
+        <th style="width:30%">Medicine</th>
+        <th style="width:12%">Dose</th>
+        <th style="width:18%">Frequency</th>
+        <th style="width:15%">Duration</th>
+        <th>Instructions</th>
+    </tr>
+    {% for p in prescriptions %}
+    <tr style="page-break-inside:avoid; break-inside:avoid;">
+        <td style="word-wrap:break-word; overflow-wrap:break-word;">{{ p.medicine }}</td>
+        <td style="word-wrap:break-word; overflow-wrap:break-word;">{{ p.dose }}</td>
+        <td style="word-wrap:break-word; overflow-wrap:break-word;">{{ p.frequency }}</td>
+        <td style="word-wrap:break-word; overflow-wrap:break-word;">{{ p.duration }}</td>
+        <td style="word-wrap:break-word; overflow-wrap:break-word;">{{ p.instructions }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5" style="text-align:center; color:#999;">No prescription recorded</td></tr>
+    {% endfor %}
+</table>
+
+<!-- ── Procedures ── -->
+{% if consultation.procedures_performed %}
+<div class="sec-title">PROCEDURES PERFORMED TODAY</div>
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
+{% for line in consultation.procedures_performed.splitlines %}{{ line }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% endfor %}
+</div>
+{% endif %}
+
+<!-- ── AI Clinical Notes ── -->
+{% if consultation.ai_notes %}
+<div class="sec-title">AI CLINICAL NOTES (For Reference Only)</div>
+<div style="background:#f9f9f9; border:1px solid #e0e0e0; border-radius:4px; padding:8px; font-size:10px; color:#000;">
+    <em>⚠️ AI-generated — verified by treating physician</em><br><br>
+    {{ consultation.ai_notes|linebreaksbr }}
+</div>
+{% endif %}
+
+<!-- ── Advice ── -->
+{% if consultation.advice %}
+<div class="sec-title">ADVICE TO PATIENT</div>
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
+{% for line in consultation.advice.splitlines %}{{ line }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% endfor %}
+</div>
+{% endif %}
+
+<!-- ── Diet ── -->
+{% if consultation.diet_advice %}
+<div class="sec-title">DIET ADVICE</div>
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
+{% for line in consultation.diet_advice.splitlines %}{{ line }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% endfor %}
+</div>
+{% endif %}
+
+<!-- ── Follow-up ── -->
+{% if consultation.follow_up_date or consultation.follow_up_notes %}
+<div class="sec-title">FOLLOW-UP</div>
+<div class="sec-body-text" style="padding:5px 0; font-size:11px; text-align:left;">
+    {% if consultation.follow_up_date %}
+        <strong>Follow-up Date:</strong> {{ consultation.follow_up_date|date:"d M Y" }}
+    {% endif %}
+    {% if consultation.follow_up_notes %}
+        <br><strong>Notes:</strong> {{ consultation.follow_up_notes }}
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- ── Print Button (hidden when printing) ── -->
+<div style="text-align:center; margin: 16px 0 8px 0;" class="no-print">
+    <button onclick="window.print()" style="
+        background: #374151;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 32px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        letter-spacing: 0.5px;
+    ">🖨️ Print OPD Sheet</button>
+</div>
+
+<!-- ── Footer ── -->
+<div class="footer">
+    <div class="sign-box">
+        {{ appointment.doctor.full_name }}<br>
+        RMC No - 27994<br>
+        Signature &amp; Stamp
+    </div>
+</div>
+
+</body>
+</html>

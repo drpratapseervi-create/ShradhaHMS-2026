@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block title %}Document Manager — Shradha HMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="mb-0 fw-bold" style="color:#1a6b5a;">
+        <i class="fa-solid fa-folder-open me-2"></i>Document Manager
+      </h4>
+      <small class="text-muted">Hospital, Doctor, Staff &amp; Equipment Documents</small>
+    </div>
+    <a href="{% url 'hms:document_add' %}" class="btn btn-success">
+      <i class="fa-solid fa-plus-circle me-1"></i> Add Document
+    </a>
+  </div>
+
+  {% if expired_count or expiring_count %}
+  <div class="alert alert-warning border-0 shadow-sm mb-4 py-2" role="alert">
+    <i class="fa-solid fa-triangle-exclamation me-2 text-warning"></i>
+    {% if expired_count %}<strong>{{ expired_count }} document(s) expired.</strong>{% endif %}
+    {% if expiring_count %}<strong class="ms-2">{{ expiring_count }} expiring within 30 days.</strong>{% endif %}
+    <a href="{% url 'hms:document_list' %}?status=expired" class="ms-3 text-danger fw-semibold">View →</a>
+  </div>
+  {% endif %}
+
+  <!-- Summary Cards Row 1 -->
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+      <a href="{% url 'hms:document_list' %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-white h-100" style="background:#1a6b5a;">
+          <div class="card-body py-3">
+            <div class="fs-2 fw-bold">{{ total_docs }}</div>
+            <div class="small opacity-75">Total Documents</div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="{% url 'hms:document_list' %}?category=hospital" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-white h-100" style="background:#2563eb;">
+          <div class="card-body py-3">
+            <div class="fs-2 fw-bold">{{ hospital_count }}</div>
+            <div class="small opacity-75">Hospital Docs</div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="{% url 'hms:document_list' %}?category=doctor" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-white h-100" style="background:#7c3aed;">
+          <div class="card-body py-3">
+            <div class="fs-2 fw-bold">{{ doctor_count }}</div>
+            <div class="small opacity-75">Doctor Docs</div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="{% url 'hms:document_list' %}?category=staff" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-white h-100" style="background:#b45309;">
+          <div class="card-body py-3">
+            <div class="fs-2 fw-bold">{{ staff_count }}</div>
+            <div class="small opacity-75">Staff Docs</div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary Cards Row 2 -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <a href="{% url 'hms:document_list' %}?category=equipment" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-white h-100" style="background:#0e7490;">
+          <div class="card-body py-3">
+            <div class="fs-2 fw-bold">{{ equipment_count }}</div>
+            <div class="small opacity-75">Equipment AMC</div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="{% url 'hms:document_list' %}?status=expired" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-white h-100" style="background:#dc2626;">
+          <div class="card-body py-3">
+            <div class="fs-2 fw-bold">{{ expired_count }}</div>
+            <div class="small opacity-75">Expired</div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="{% url 'hms:document_list' %}?status=expiring_soon" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-dark h-100" style="background:#fbbf24;">
+          <div class="card-body py-3">
+            <div class="fs-2 fw-bold">{{ expiring_count }}</div>
+            <div class="small opacity-75">Expiring Soon</div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="{% url 'hms:document_add' %}" class="text-decoration-none">
+        <div class="card border-2 border-success shadow-sm h-100" style="background:#f0fdf4;">
+          <div class="card-body py-3 text-success">
+            <div class="fs-2 fw-bold"><i class="fa-solid fa-plus-circle"></i></div>
+            <div class="small fw-semibold">Add New Document</div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Browse by Category -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white fw-semibold py-2" style="border-bottom:2px solid #1a6b5a;">
+      <i class="fa-solid fa-table-cells me-2 text-success"></i>Browse by Category
+    </div>
+    <div class="card-body">
+      <div class="row g-2">
+        {% for cat_val, cat_label in doc_categories %}
+        <div class="col-6 col-md-3">
+          <a href="{% url 'hms:document_list' %}?category={{ cat_val }}"
+             class="btn btn-outline-secondary w-100 text-start py-2">
+            <i class="fa-solid fa-folder me-2"></i>{{ cat_label }}
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Needs Attention + Recently Added -->
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-semibold py-2" style="border-bottom:2px solid #dc2626;">
+          <i class="fa-solid fa-circle-exclamation text-danger me-2"></i>Needs Attention
+        </div>
+        <div class="card-body p-0">
+          {% if expired_docs or expiring_docs %}
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr><th>Document</th><th>Expiry</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              {% for d in expired_docs %}
+              <tr>
+                <td>
+                  <a href="{% url 'hms:document_edit' d.id %}" class="text-decoration-none fw-semibold">{{ d.title }}</a>
+                  <div class="text-muted small">{{ d.get_category_display }}</div>
+                </td>
+                <td class="text-danger small">{{ d.expiry_date|date:"d M Y" }}</td>
+                <td><span class="badge bg-danger">Expired</span></td>
+              </tr>
+              {% endfor %}
+              {% for d in expiring_docs %}
+              <tr>
+                <td>
+                  <a href="{% url 'hms:document_edit' d.id %}" class="text-decoration-none fw-semibold">{{ d.title }}</a>
+                  <div class="text-muted small">{{ d.get_category_display }}</div>
+                </td>
+                <td class="text-warning small">{{ d.expiry_date|date:"d M Y" }}</td>
+                <td><span class="badge bg-warning text-dark">{{ d.days_to_expiry }}d left</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="text-center text-muted py-4">
+            <i class="fa-solid fa-circle-check text-success fs-3"></i>
+            <div class="mt-2">All documents are valid!</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-semibold py-2" style="border-bottom:2px solid #1a6b5a;">
+          <i class="fa-solid fa-clock-rotate-left text-success me-2"></i>Recently Added
+        </div>
+        <div class="card-body p-0">
+          {% if recent_docs %}
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr><th>Document</th><th>Category</th><th>Added</th></tr>
+            </thead>
+            <tbody>
+              {% for d in recent_docs %}
+              <tr>
+                <td><a href="{% url 'hms:document_edit' d.id %}" class="text-decoration-none fw-semibold">{{ d.title }}</a></td>
+                <td><span class="badge bg-secondary">{{ d.get_category_display }}</span></td>
+                <td class="text-muted small">{{ d.created_at|date:"d M" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="text-center text-muted py-4">No documents yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Edit OT Booking</h2>
+    <a href="{% url 'hms:ot_detail' booking.id %}" class="btn btn-secondary">← Back</a>
+  </div>
+
+  <div class="card p-4">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+
+        <div class="col-md-4">
+          <label class="form-label">Surgeon</label>
+          <select name="surgeon" class="form-select" required>
+            <option value="">-- Select Surgeon --</option>
+            {% for doc in doctors %}
+            <option value="{{ doc.full_name }}" {% if booking.surgeon == doc.full_name %}selected{% endif %}>
+              {{ doc.full_name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Assistant</label>
+          <select name="assistant" class="form-select">
+            <option value="">-- None --</option>
+            {% for doc in doctors %}
+            <option value="{{ doc.full_name }}" {% if booking.assistant == doc.full_name %}selected{% endif %}>
+              {{ doc.full_name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Anesthetist</label>
+          <select name="anesthetist" class="form-select" required>
+            <option value="">-- Select Anesthetist --</option>
+            {% for doc in doctors %}
+            <option value="{{ doc.full_name }}" {% if booking.anesthetist == doc.full_name %}selected{% endif %}>
+              {{ doc.full_name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Procedure</label>
+          <input type="text" name="procedure" class="form-control"
+                 value="{{ booking.procedure }}" required>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">OT Room</label>
+          <input type="text" name="ot_room" class="form-control"
+                 value="{{ booking.ot_room }}">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Date</label>
+          <input type="date" name="ot_date" class="form-control"
+                 value="{{ booking.ot_date|date:'Y-m-d' }}" required>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Time</label>
+          <input type="time" name="ot_time" class="form-control"
+                 value="{{ booking.ot_time|time:'H:i' }}" required>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Case Type</label>
+          <select name="case_type" class="form-select" required>
+            <option value="Elective" {% if booking.case_type == "Elective" %}selected{% endif %}>Elective</option>
+            <option value="Emergency" {% if booking.case_type == "Emergency" %}selected{% endif %}>Emergency</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Anesthesia Type</label>
+          <select name="anesthesia_type" class="form-select" required>
+            <option value="GA" {% if booking.anesthesia_type == "GA" %}selected{% endif %}>General Anaesthesia (GA)</option>
+            <option value="SA" {% if booking.anesthesia_type == "SA" %}selected{% endif %}>Spinal Anaesthesia (SA)</option>
+            <option value="LA" {% if booking.anesthesia_type == "LA" %}selected{% endif %}>Local Anaesthesia (LA)</option>
+          </select>
+        </div>
+
+      </div>
+      <div class="mt-4">
+        <button type="submit" class="btn btn-primary px-4">Update Booking</button>
+        <a href="{% url 'hms:ot_detail' booking.id %}" class="btn btn-outline-secondary ms-2">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,33 +1,272 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>OPD Receipt</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 24px; }
-    .head { display: flex; justify-content: space-between; }
-    .big { font-size: 22px; font-weight: bold; }
-    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-    td { padding: 8px; border: 1px solid #ccc; }
-  </style>
+<meta charset="utf-8">
+<title>OPD Receipt</title>
+{% load i18n %}
+
+<style>
+    @page {
+        size: A4;
+        margin: 0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        font-family: Cambria, serif;
+        font-size: 12px;
+        background: white;
+    }
+
+    /* Two receipt slots side by side */
+    .page {
+        width: 210mm;
+        height: 297mm;
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        padding-top: 10mm;
+    }
+
+    /* First receipt - left side */
+    .receipt-left {
+        width: 100mm;
+        padding: 6mm 5mm 6mm 8mm;
+    }
+
+    /* Second receipt - right side, shifted 5mm right for easy punching */
+    .receipt-right {
+        width: 100mm;
+        padding: 6mm 5mm 6mm 13mm; /* 8mm + 5mm shift */
+        border-left: 1px dashed #aaa;
+        margin-left: 2mm;
+    }
+
+    .receipt-box {
+        width: 100%;
+    }
+
+    .center {
+        text-align: center;
+        margin-bottom: 6px;
+    }
+
+    .center h3 {
+        font-size: 11px;
+        font-weight: bold;
+        margin-bottom: 3px;
+    }
+
+    .center div {
+        font-size: 9.5px;
+        line-height: 1.5;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 6px;
+    }
+
+    td {
+        border: 1px solid #000;
+        padding: 4px 5px;
+        vertical-align: top;
+        font-size: 10.5px;
+    }
+
+    .label {
+        width: 38%;
+        font-weight: bold;
+        background: #f9f9f9;
+    }
+
+    .value {
+        width: 62%;
+    }
+
+    .printed-on {
+        margin-top: 6px;
+        font-size: 9.5px;
+    }
+
+    /* Cut line between receipts */
+    .cut-line {
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        font-size: 8px;
+        color: #bbb;
+        letter-spacing: 3px;
+        margin-top: 20mm;
+        padding: 0 2px;
+    }
+</style>
 </head>
+
 <body>
-  <div class="head">
-    <div>
-      <div class="big">SHRADHA HOSPITAL & MULTISPECIALITY CENTRE</div>
-      <div>Pani Ki Do Tanki, Surajpole, Pali (Rajasthan) — Phone: 94141-22542</div>
+<div class="page">
+
+    <!-- LEFT RECEIPT (Patient copy) -->
+    <div class="receipt-left">
+        <div class="receipt-box">
+            <div class="center">
+                <h3>SHRADHA HOSPITAL &amp; MULTISPECIALITY CENTRE</h3>
+                <div>Pani Ki Do Tanki, Surajpole, Pali (Rajasthan) – 306401</div>
+                <div>Mobile: 9414122542</div>
+            </div>
+
+            <table>
+                <tr>
+                    <td class="label">Patient Name</td>
+                    <td class="value">{{ appointment.patient.full_name }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Age / Sex</td>
+                    <td class="value">
+                        {% if appointment.patient.date_of_birth %}
+                            {% now "Y" as current_year %}
+                            {{ appointment.patient.date_of_birth|timesince|truncatewords:1 }} /
+                            {{ appointment.patient.gender }}
+                        {% elif appointment.patient.age %}
+                            {{ appointment.patient.age }} Yrs / {{ appointment.patient.gender }}
+                        {% else %}
+                            - / {{ appointment.patient.gender }}
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">UHID</td>
+                    <td class="value">{{ appointment.patient.uhid }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Mobile No</td>
+                    <td class="value">{{ appointment.patient.mobile_no|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Address</td>
+                    <td class="value">
+                        {{ appointment.patient.address }}{% if appointment.patient.city %}, {{ appointment.patient.city }}{% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Consultant</td>
+                    <td class="value">{{ appointment.doctor.full_name }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Date</td>
+                    <td class="value">{{ appointment.date|date:"d-m-Y" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Time</td>
+                    <td class="value">{{ appointment.time|time:"H:i" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Fees</td>
+                    <td class="value">
+                        {% if appointment.doctor.op_fee and appointment.doctor.op_fee != 0 %}
+                            ₹ {{ appointment.doctor.op_fee }}
+                        {% else %}
+                            Free / OPD
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Receipt No</td>
+                    <td class="value">OPD-{{ appointment.date|date:"Y" }}-{{ appointment.id|stringformat:"04d" }}</td>
+                </tr>
+            </table>
+
+            <div class="printed-on">
+                <strong>Printed on:</strong>
+                {{ appointment.created_at|date:"d-m-Y" }}
+                {{ appointment.created_at|time:"h:i A" }}
+            </div>
+        </div>
     </div>
-    <div><b>Date:</b> {{ date }}<br><b>Receipt #</b> {{ receipt_no }}</div>
-  </div>
 
-  <table>
-    <tr><td><b>UHID</b> {{ uhid }}</td><td><b>Visit No</b> {{ visit_no }}</td></tr>
-    <tr><td><b>Patient</b> {{ patient_name }}</td><td><b>Age/Gender</b> {{ age }} / {{ gender }}</td></tr>
-    <tr><td><b>Doctor</b> {{ doctor_name }}</td><td><b>Purpose</b> {{ purpose }}</td></tr>
-    <tr><td colspan="2"><b>OPD Fee:</b> ₹ {{ fee }}</td></tr>
-  </table>
+    <!-- Dashed cut line label -->
+    <div class="cut-line">✂ &nbsp; CUT HERE</div>
 
-  <p style="margin-top:24px;">Printed: {{ created_at }}</p>
-  <script>window.print()</script>
+    <!-- RIGHT RECEIPT (Hospital copy) - shifted 5mm right -->
+    <div class="receipt-right">
+        <div class="receipt-box">
+            <div class="center">
+                <h3>SHRADHA HOSPITAL &amp; MULTISPECIALITY CENTRE</h3>
+                <div>Pani Ki Do Tanki, Surajpole, Pali (Rajasthan) – 306401</div>
+                <div>Mobile: 9414122542</div>
+            </div>
+
+            <table>
+                <tr>
+                    <td class="label">Patient Name</td>
+                    <td class="value">{{ appointment.patient.full_name }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Age / Sex</td>
+                    <td class="value">
+                        {% if appointment.patient.date_of_birth %}
+                            {% now "Y" as current_year %}
+                            {{ appointment.patient.date_of_birth|timesince|truncatewords:1 }} /
+                            {{ appointment.patient.gender }}
+                        {% elif appointment.patient.age %}
+                            {{ appointment.patient.age }} Yrs / {{ appointment.patient.gender }}
+                        {% else %}
+                            - / {{ appointment.patient.gender }}
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">UHID</td>
+                    <td class="value">{{ appointment.patient.uhid }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Mobile No</td>
+                    <td class="value">{{ appointment.patient.mobile_no|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Address</td>
+                    <td class="value">
+                        {{ appointment.patient.address }}{% if appointment.patient.city %}, {{ appointment.patient.city }}{% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Consultant</td>
+                    <td class="value">{{ appointment.doctor.full_name }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Date</td>
+                    <td class="value">{{ appointment.date|date:"d-m-Y" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Time</td>
+                    <td class="value">{{ appointment.time|time:"H:i" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Fees</td>
+                    <td class="value">
+                        {% if appointment.doctor.op_fee and appointment.doctor.op_fee != 0 %}
+                            ₹ {{ appointment.doctor.op_fee }}
+                        {% else %}
+                            Free / OPD
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Receipt No</td>
+                    <td class="value">OPD-{{ appointment.date|date:"Y" }}-{{ appointment.id|stringformat:"04d" }}</td>
+                </tr>
+            </table>
+
+            <div class="printed-on">
+                <strong>Printed on:</strong>
+                {{ appointment.created_at|date:"d-m-Y" }}
+                {{ appointment.created_at|time:"h:i A" }}
+                &nbsp;&nbsp;<em>(Hospital Copy)</em>
+            </div>
+        </div>
+    </div>
+
+</div>
 </body>
 </html>

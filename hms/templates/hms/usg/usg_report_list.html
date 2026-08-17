@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}USG Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <h4 class="mb-0 fw-bold">
+      <i class="bi bi-broadcast-pin text-primary me-1"></i> USG Reports
+    </h4>
+    <a href="{% url 'hms:usg_report_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-1"></i> New USG Report
+    </a>
+  </div>
+
+  <!-- Search -->
+  <form method="get" class="mb-3 d-flex gap-2" style="max-width:420px;">
+    <input type="text" name="q" value="{{ q }}"
+           class="form-control" placeholder="Search by patient name, UHID or report no…">
+    <button class="btn btn-outline-primary" type="submit">Search</button>
+    {% if q %}<a href="{% url 'hms:usg_report_list' %}" class="btn btn-outline-secondary">Clear</a>{% endif %}
+  </form>
+
+  <!-- Table -->
+  <div class="table-responsive">
+    <table class="table table-hover table-bordered align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>Report No</th>
+          <th>Date</th>
+          <th>Patient</th>
+          <th>UHID</th>
+          <th>Scan Type</th>
+          <th>Referred By</th>
+          <th>Impression</th>
+          <th>Verified</th>
+          <th class="text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reports %}
+        <tr>
+          <td><strong class="text-primary">{{ r.report_no }}</strong></td>
+          <td>{{ r.report_date|date:"d-M-Y" }}</td>
+          <td>{{ r.patient.full_name }}</td>
+          <td>{{ r.patient.uhid }}</td>
+          <td><span class="badge bg-secondary">{{ r.get_scan_type_display }}</span></td>
+          <td>{{ r.referred_by.full_name|default:"—" }}</td>
+          <td>
+            {% if r.impression_status == "NORMAL" %}
+              <span class="badge bg-success">Normal</span>
+            {% elif r.impression_status == "ABNORMAL" %}
+              <span class="badge bg-danger">Abnormal</span>
+            {% else %}
+              <span class="badge bg-warning text-dark">Inconclusive</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if r.is_verified %}
+              <i class="bi bi-check-circle-fill text-success" title="Verified"></i>
+            {% else %}
+              <i class="bi bi-hourglass-split text-warning" title="Draft"></i>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            <a href="{% url 'hms:usg_report_print' r.pk %}" class="btn btn-sm btn-outline-primary" target="_blank" title="Print">
+              <i class="bi bi-printer"></i>
+            </a>
+            <a href="{% url 'hms:usg_report_edit' r.pk %}" class="btn btn-sm btn-outline-warning" title="Edit">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <a href="{% url 'hms:usg_report_pdf' r.pk %}" class="btn btn-sm btn-outline-danger" title="PDF">
+              <i class="bi bi-file-earmark-pdf"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" class="text-center text-muted py-4">No USG reports found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

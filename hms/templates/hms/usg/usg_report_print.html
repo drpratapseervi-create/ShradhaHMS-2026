@@ -1,0 +1,667 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>USG Report — {{ report.report_no }}</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#dde3ea; font-family:'Times New Roman',Times,serif; font-size:14px; }
+
+  .action-bar { background:linear-gradient(135deg,#007676,#009e9e); padding:10px 28px;
+    display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:100;
+    box-shadow:0 2px 8px rgba(0,0,0,.2); }
+  .action-bar h5 { color:#fff; margin:0; flex:1; font-size:15px; }
+  .btn-print { background:#fff; color:#007676; border:none; padding:7px 18px;
+    border-radius:7px; font-weight:700; font-size:13px; cursor:pointer; }
+  .btn-print:hover { background:#e0f2f1; }
+  .btn-edit { background:rgba(255,255,255,.2); color:#fff;
+    border:1px solid rgba(255,255,255,.4); padding:7px 16px; border-radius:7px;
+    font-weight:600; font-size:13px; text-decoration:none; }
+  .btn-edit:hover { background:rgba(255,255,255,.3); color:#fff; }
+  .btn-back { background:transparent; color:rgba(255,255,255,.85); border:none;
+    font-size:13px; text-decoration:none; padding:5px 8px; border-radius:5px; }
+  .btn-back:hover { background:rgba(255,255,255,.15); color:#fff; }
+
+  .page-wrap { max-width:780px; margin:30px auto; padding:0 16px 60px; }
+  .report-card { background:#fff; border:1px solid #ccc; box-shadow:0 4px 20px rgba(0,0,0,.12); }
+
+  .hosp-header { border-bottom:3px double #000; padding:12px 20px 10px; text-align:center; }
+  .hosp-header .hosp-name { font-size:20px; font-weight:bold; text-transform:uppercase;
+    font-family:Arial,sans-serif; letter-spacing:.5px; }
+  .hosp-header .hosp-addr { font-size:12px; color:#333; font-family:Arial,sans-serif; }
+  .hosp-header .report-title { font-size:15px; font-weight:bold; margin-top:5px;
+    text-decoration:underline; letter-spacing:1px; font-family:Arial,sans-serif; }
+
+  .patient-table { width:100%; border-collapse:collapse; border-bottom:2px solid #000;
+    font-family:Arial,sans-serif; font-size:13px; }
+  .patient-table td { padding:5px 10px; border:1px solid #999; }
+  .patient-table .lbl { font-weight:bold; width:120px; }
+
+  .report-body { padding:16px 24px 20px; line-height:1.9; font-size:14px; }
+  .report-body p { margin-bottom:7px; text-align:justify; }
+  .report-body b { font-weight:bold; }
+
+  .impression-section { margin-top:14px; border-top:1px solid #000; padding-top:10px; }
+  .impression-section .imp-label { font-weight:bold; font-size:14px;
+    text-decoration:underline; font-family:Arial,sans-serif; }
+  .impression-section .imp-text { margin-top:4px; font-size:14px; }
+
+  .signature-block { margin-top:24px; text-align:right; padding-right:20px;
+    font-family:Arial,sans-serif; font-size:13px; }
+  .signature-block .sig-name { font-weight:bold; font-size:14px;
+    border-top:1px solid #000; display:inline-block; padding-top:4px;
+    min-width:200px; text-align:center; }
+  .signature-block .sig-detail { font-size:12px; text-align:center; }
+
+  .report-footer { border-top:1px solid #ccc; padding:6px 20px;
+    display:flex; justify-content:space-between; font-size:11px;
+    color:#888; font-family:Arial,sans-serif; }
+
+  @media print {
+    @page { size:A4; margin:10mm 14mm 12mm 14mm; }
+    body { background:#fff; }
+    .action-bar { display:none !important; }
+    .page-wrap { max-width:100%; margin:0; padding:0; }
+    .report-card { box-shadow:none; border:none; }
+    .report-footer { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="action-bar">
+  <a href="{% url 'hms:usg_report_list' %}" class="btn-back">← Back</a>
+  <h5>USG Report — {{ report.report_no }}</h5>
+  <a href="{% url 'hms:usg_report_edit' pk=report.pk %}" class="btn-edit">✏ Edit</a>
+  <button class="btn-print" onclick="window.print()">🖨 Print / PDF</button>
+</div>
+
+<div class="page-wrap">
+<div class="report-card">
+
+  <div class="hosp-header">
+    <div class="hosp-name">Shradha Hospital</div>
+    <div class="hosp-addr">Pani Ki Do Tanki, Surajpole, Pali (Raj) &nbsp;|&nbsp; Ph: 9414122542</div>
+    <div class="report-title">Ultrasonography Report</div>
+  </div>
+
+  <table class="patient-table">
+    <tr>
+      <td class="lbl">Patient's Name</td>
+      <td>{% if report.patient.gender == 'M' or report.patient.gender == 'Male' %}Mr.{% else %}Mrs./Ms.{% endif %} {{ report.patient.full_name }}</td>
+      <td class="lbl">Age / Sex</td>
+      <td>{{ report.patient.age }} yrs / {{ report.patient.gender }}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Reg No.</td>
+      <td>{{ report.patient.uhid }}</td>
+      <td class="lbl">Date</td>
+      <td>{{ report.report_date|date:"d/m/Y" }}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Referring Doctor</td>
+      <td>{% if report.referred_by %}Dr. {{ report.referred_by.full_name }}{% else %}—{% endif %}</td>
+      <td class="lbl">Indication</td>
+      <td>{{ report.clinical_indication|default:"—" }}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Scan Type</td>
+      <td colspan="3">{{ report.get_scan_type_display }}</td>
+    </tr>
+  </table>
+
+  <div class="report-body" id="reportBody"></div>
+
+  <div class="report-footer">
+    <span>{{ report.report_no }}</span>
+    <span>{{ report.report_date|date:"d M Y" }}</span>
+    <span>Shradha Hospital, Pali</span>
+  </div>
+
+</div>
+</div>
+
+<script>
+var R = {
+  /* LIVER */
+  liver_size:            "{{ report.liver_size|default:''|escapejs }}",
+  liver_echotexture:     "{{ report.liver_echotexture|default:''|escapejs }}",
+  liver_focal_lesion:    {% if report.liver_focal_lesion %}true{% else %}false{% endif %},
+  liver_cyst:            {% if report.liver_cyst %}true{% else %}false{% endif %},
+  liver_mass:            {% if report.liver_mass %}true{% else %}false{% endif %},
+  liver_ihbr_dilated:    {% if report.liver_ihbr_dilated %}true{% else %}false{% endif %},
+  liver_lesion:          "{{ report.liver_lesion|default:''|escapejs }}",
+  liver_notes:           "{{ report.liver_notes|default:''|escapejs }}",
+
+  /* GB & CBD */
+  gb_size:               "{{ report.gb_size|default:''|escapejs }}",
+  gb_wall_thickness:     "{{ report.gb_wall_thickness|default:''|escapejs }}",
+  gb_calculi_present:    {% if report.gb_calculi_present %}true{% else %}false{% endif %},
+  gb_calculi_detail:     "{{ report.gb_calculi_detail|default:''|escapejs }}",
+  gb_wall_thick:         {% if report.gb_wall_thick %}true{% else %}false{% endif %},
+  gb_distended:          {% if report.gb_distended %}true{% else %}false{% endif %},
+  gb_contracted:         {% if report.gb_contracted %}true{% else %}false{% endif %},
+  gb_sludge:             {% if report.gb_sludge %}true{% else %}false{% endif %},
+  gb_pericholecystic_fluid: {% if report.gb_pericholecystic_fluid %}true{% else %}false{% endif %},
+  gb_probe_tenderness:   {% if report.gb_probe_tenderness %}true{% else %}false{% endif %},
+  gb_notes:              "{{ report.gb_notes|default:''|escapejs }}",
+  cbd_diameter:          "{{ report.cbd_diameter|default:''|escapejs }}",
+  cbd_dilated:           {% if report.cbd_dilated %}true{% else %}false{% endif %},
+  cbd_notes:             "{{ report.cbd_notes|default:''|escapejs }}",
+
+  /* SPLEEN & PANCREAS */
+  spleen_size:           "{{ report.spleen_size|default:''|escapejs }}",
+  splenomegaly:          {% if report.splenomegaly %}true{% else %}false{% endif %},
+  spleen_cyst:           {% if report.spleen_cyst %}true{% else %}false{% endif %},
+  spleen_lesion:         {% if report.spleen_lesion %}true{% else %}false{% endif %},
+  spleen_notes:          "{{ report.spleen_notes|default:''|escapejs }}",
+  pancreas_notes:        "{{ report.pancreas_notes|default:''|escapejs }}",
+
+  /* RIGHT KIDNEY */
+  rk_size:               "{{ report.rk_size|default:''|escapejs }}",
+  rk_stone_present:      {% if report.rk_stone_present %}true{% else %}false{% endif %},
+  rk_stone_size:         "{{ report.rk_stone_size|default:''|escapejs }}",
+  rk_stone_site:         "{{ report.rk_stone_site|default:''|escapejs }}",
+  rk_mild_hydronephrosis:{% if report.rk_mild_hydronephrosis %}true{% else %}false{% endif %},
+  rk_moderate_hydronephrosis:{% if report.rk_moderate_hydronephrosis %}true{% else %}false{% endif %},
+  rk_severe_hydronephrosis:{% if report.rk_severe_hydronephrosis %}true{% else %}false{% endif %},
+  rk_hydroureter:        {% if report.rk_hydroureter %}true{% else %}false{% endif %},
+  rk_hydroureteronephrosis:{% if report.rk_hydroureteronephrosis %}true{% else %}false{% endif %},
+  rk_cyst_present:       {% if report.rk_cyst_present %}true{% else %}false{% endif %},
+  rk_cyst_size:          "{{ report.rk_cyst_size|default:''|escapejs }}",
+  rk_cyst_location:      "{{ report.rk_cyst_location|default:''|escapejs }}",
+  rk_cyst_type:          "{{ report.rk_cyst_type|default:''|escapejs }}",
+  rt_kidney_notes:       "{{ report.rt_kidney_notes|default:''|escapejs }}",
+
+  /* LEFT KIDNEY */
+  lk_size:               "{{ report.lk_size|default:''|escapejs }}",
+  lk_stone_present:      {% if report.lk_stone_present %}true{% else %}false{% endif %},
+  lk_stone_size:         "{{ report.lk_stone_size|default:''|escapejs }}",
+  lk_stone_site:         "{{ report.lk_stone_site|default:''|escapejs }}",
+  lk_mild_hydronephrosis:{% if report.lk_mild_hydronephrosis %}true{% else %}false{% endif %},
+  lk_moderate_hydronephrosis:{% if report.lk_moderate_hydronephrosis %}true{% else %}false{% endif %},
+  lk_severe_hydronephrosis:{% if report.lk_severe_hydronephrosis %}true{% else %}false{% endif %},
+  lk_hydroureter:        {% if report.lk_hydroureter %}true{% else %}false{% endif %},
+  lk_hydroureteronephrosis:{% if report.lk_hydroureteronephrosis %}true{% else %}false{% endif %},
+  lk_cyst_present:       {% if report.lk_cyst_present %}true{% else %}false{% endif %},
+  lk_cyst_size:          "{{ report.lk_cyst_size|default:''|escapejs }}",
+  lk_cyst_location:      "{{ report.lk_cyst_location|default:''|escapejs }}",
+  lk_cyst_type:          "{{ report.lk_cyst_type|default:''|escapejs }}",
+  lt_kidney_notes:       "{{ report.lt_kidney_notes|default:''|escapejs }}",
+
+  /* URETERIC */
+  ureteric_side:         "{{ report.ureteric_side|default:''|escapejs }}",
+  ureteric_size:         "{{ report.ureteric_size|default:''|escapejs }}",
+  ureteric_site:         "{{ report.ureteric_site|default:''|escapejs }}",
+  ureteric_hydroureter:  {% if report.ureteric_hydroureter %}true{% else %}false{% endif %},
+  ureteric_hydronephrosis:{% if report.ureteric_hydronephrosis %}true{% else %}false{% endif %},
+  ureteric_hydroureteronephrosis:{% if report.ureteric_hydroureteronephrosis %}true{% else %}false{% endif %},
+
+  /* BLADDER */
+  bladder_state:         "{{ report.bladder_state|default:''|escapejs }}",
+  bladder_wall_thick:    {% if report.bladder_wall_thick %}true{% else %}false{% endif %},
+  bladder_internal_echoes:{% if report.bladder_internal_echoes %}true{% else %}false{% endif %},
+  bladder_calculus:      {% if report.bladder_calculus %}true{% else %}false{% endif %},
+  bladder_mass:          {% if report.bladder_mass %}true{% else %}false{% endif %},
+  bladder_notes:         "{{ report.bladder_notes|default:''|escapejs }}",
+  pvrv:                  "{{ report.pvrv|default:''|escapejs }}",
+
+  /* UTERUS & OVARIES */
+  uterus_size:           "{{ report.uterus_size|default:''|escapejs }}",
+  uterus_position:       "{{ report.uterus_position|default:''|escapejs }}",
+  uterus_myometrium:     "{{ report.uterus_myometrium|default:''|escapejs }}",
+  endometrial_thickness: "{{ report.endometrial_thickness|default:''|escapejs }}",
+  uterus_notes:          "{{ report.uterus_notes|default:''|escapejs }}",
+  pid_changes:           {% if report.pid_changes %}true{% else %}false{% endif %},
+  fibroid_present:       {% if report.fibroid_present %}true{% else %}false{% endif %},
+  fibroid_size:          "{{ report.fibroid_size|default:''|escapejs }}",
+  fibroid_site:          "{{ report.fibroid_site|default:''|escapejs }}",
+  fibroid_type:          "{{ report.fibroid_type|default:''|escapejs }}",
+  ro_size:               "{{ report.ro_size|default:''|escapejs }}",
+  ro_volume:             "{{ report.ro_volume|default:''|escapejs }}",
+  ro_bulky:              {% if report.ro_bulky %}true{% else %}false{% endif %},
+  ro_cyst_present:       {% if report.ro_cyst_present %}true{% else %}false{% endif %},
+  ro_cyst_size:          "{{ report.ro_cyst_size|default:''|escapejs }}",
+  ro_cyst_type:          "{{ report.ro_cyst_type|default:''|escapejs }}",
+  lo_size:               "{{ report.lo_size|default:''|escapejs }}",
+  lo_volume:             "{{ report.lo_volume|default:''|escapejs }}",
+  lo_bulky:              {% if report.lo_bulky %}true{% else %}false{% endif %},
+  lo_cyst_present:       {% if report.lo_cyst_present %}true{% else %}false{% endif %},
+  lo_cyst_size:          "{{ report.lo_cyst_size|default:''|escapejs }}",
+  lo_cyst_type:          "{{ report.lo_cyst_type|default:''|escapejs }}",
+  rt_ovary_notes:        "{{ report.rt_ovary_notes|default:''|escapejs }}",
+  lt_ovary_notes:        "{{ report.lt_ovary_notes|default:''|escapejs }}",
+
+  /* OBSTETRIC */
+  ga_by_scan:            "{{ report.ga_by_scan|default:''|escapejs }}",
+  ga_by_lmp:             "{{ report.ga_by_lmp|default:''|escapejs }}",
+  edd_by_scan:           "{{ report.edd_by_scan|date:'d/m/Y'|default:''|escapejs }}",
+  lmp:                   "{{ report.lmp|date:'d/m/Y'|default:''|escapejs }}",
+  fetal_presentation:    "{{ report.fetal_presentation|default:''|escapejs }}",
+  fetal_heart_rate:      "{{ report.fetal_heart_rate|default:''|escapejs }}",
+  placental_location:    "{{ report.placental_location|default:''|escapejs }}",
+  liquor:                "{{ report.liquor|default:''|escapejs }}",
+  afi:                   "{{ report.afi|default:''|escapejs }}",
+  biometry_bpd:          "{{ report.biometry_bpd|default:''|escapejs }}",
+  biometry_hc:           "{{ report.biometry_hc|default:''|escapejs }}",
+  biometry_ac:           "{{ report.biometry_ac|default:''|escapejs }}",
+  biometry_fl:           "{{ report.biometry_fl|default:''|escapejs }}",
+  efw:                   "{{ report.efw|default:''|escapejs }}",
+  obstetric_notes:       "{{ report.obstetric_notes|default:''|escapejs }}",
+
+  /* PROSTATE */
+  prostate_size:         "{{ report.prostate_size|default:''|escapejs }}",
+  prostate_volume:       "{{ report.prostate_volume|default:''|escapejs }}",
+  prostate_echotexture:  "{{ report.prostate_echotexture|default:''|escapejs }}",
+  prostatomegaly:        {% if report.prostatomegaly %}true{% else %}false{% endif %},
+  prostate_median_lobe:  {% if report.prostate_median_lobe %}true{% else %}false{% endif %},
+  prostate_notes:        "{{ report.prostate_notes|default:''|escapejs }}",
+
+  /* HERNIA */
+  hernia_type:           "{{ report.hernia_type|default:''|escapejs }}",
+  hernia_side:           "{{ report.hernia_side|default:''|escapejs }}",
+  hernia_defect_size:    "{{ report.hernia_defect_size|default:''|escapejs }}",
+  hernia_reducible:      {% if report.hernia_reducible %}true{% else %}false{% endif %},
+  hernia_irreducible:    {% if report.hernia_irreducible %}true{% else %}false{% endif %},
+  hernia_bowel_loops:    {% if report.hernia_bowel_loops %}true{% else %}false{% endif %},
+  hernia_omentum:        {% if report.hernia_omentum %}true{% else %}false{% endif %},
+  hernia_cough_impulse:  {% if report.hernia_cough_impulse %}true{% else %}false{% endif %},
+
+  /* APPENDIX */
+  appendix_visualized:   {% if report.appendix_visualized %}true{% else %}false{% endif %},
+  appendix_diameter:     "{{ report.appendix_diameter|default:''|escapejs }}",
+  appendix_noncompressible:{% if report.appendix_noncompressible %}true{% else %}false{% endif %},
+  appendix_probe_tenderness:{% if report.appendix_probe_tenderness %}true{% else %}false{% endif %},
+  appendix_periappendiceal_fluid:{% if report.appendix_periappendiceal_fluid %}true{% else %}false{% endif %},
+  appendicolith:         {% if report.appendicolith %}true{% else %}false{% endif %},
+  inflamed_fat:          {% if report.inflamed_fat %}true{% else %}false{% endif %},
+
+  /* BOWEL */
+  colitis_present:       {% if report.colitis_present %}true{% else %}false{% endif %},
+  colitis_site:          "{{ report.colitis_site|default:''|escapejs }}",
+  sbo_present:           {% if report.sbo_present %}true{% else %}false{% endif %},
+  dilated_bowel_loops:   {% if report.dilated_bowel_loops %}true{% else %}false{% endif %},
+  to_and_fro_peristalsis:{% if report.to_and_fro_peristalsis %}true{% else %}false{% endif %},
+  collapsed_distal_bowel:{% if report.collapsed_distal_bowel %}true{% else %}false{% endif %},
+  gaseous_bowel_loops:   {% if report.gaseous_bowel_loops %}true{% else %}false{% endif %},
+  ibs_suggestion:        {% if report.ibs_suggestion %}true{% else %}false{% endif %},
+
+  /* MISC */
+  additional_findings:   "{{ report.additional_findings|default:''|escapejs }}",
+  impression:            "{{ report.impression|escapejs }}",
+  advice:                "{{ report.advice|default:''|escapejs }}",
+  doctor_name:           "{% if report.reporting_doctor %}Dr. {{ report.reporting_doctor.full_name }}{% else %}Dr. Pratap Senecha{% endif %}",
+  doctor_qual:           "{% if report.reporting_doctor and report.reporting_doctor.specialization %}{{ report.reporting_doctor.specialization }}{% else %}(MBBS, MS){% endif %}"
+};
+
+function num(s) { if(!s) return null; var m=s.replace(/[~≈]/g,'').match(/\d+\.?\d*/); return m?parseFloat(m[0]):null; }
+function b(t)   { return '<b>'+t+'</b>'; }
+function p(t)   { return '<p>'+t+'</p>'; }
+
+/* ── LIVER ─────────────────────────────────────────────── */
+function liverPara() {
+  var n=num(R.liver_size);
+  var status = n===null?'normal in size': n>15?'enlarged (hepatomegaly)': n<10?'small in size':'normal in size';
+  var echo = R.liver_echotexture || 'The echotexture is normal. No focal hepatic lesion is seen. The intrahepatic ducts are not dilated. The portal vein and common bile duct show normal calibre.';
+  var t = b('Liver:') + ' The liver is ' + status;
+  if (R.liver_size) t += ', measuring ' + b(R.liver_size);
+  t += '. ' + echo + '.';
+  var extras = [];
+  if (R.liver_focal_lesion) extras.push('focal lesion noted');
+  if (R.liver_cyst)         extras.push('cyst noted');
+  if (R.liver_mass)         extras.push('mass / SOL noted');
+  if (R.liver_ihbr_dilated) extras.push('IHBR dilated');
+  if (extras.length) t += ' ' + b(extras.join(', ').charAt(0).toUpperCase() + extras.join(', ').slice(1)) + '.';
+  if (R.liver_lesion) t += ' ' + R.liver_lesion + '.';
+  if (R.liver_notes)  t += ' ' + R.liver_notes + '.';
+  return p(t);
+}
+
+/* ── GALLBLADDER & CBD ──────────────────────────────────── */
+function gbPara() {
+  if (!R.gb_size && !R.gb_wall_thickness && !R.gb_calculi_present && !R.gb_notes && !R.cbd_diameter) return '';
+  var t = b('Gallbladder:') + ' ';
+  if (R.gb_notes) {
+    t += R.gb_notes + '.';
+  } else {
+    if (R.gb_distended)   t += 'The gallbladder is distended. ';
+    else if (R.gb_contracted) t += 'The gallbladder is contracted. ';
+    else t += 'The gallbladder is adequately distended. ';
+    if (R.gb_calculi_present) {
+      t += b('Calculus / calculi seen');
+      if (R.gb_calculi_detail) t += b(' — ' + R.gb_calculi_detail);
+      t += '. ';
+    } else { t += 'No calculus seen. '; }
+    if (R.gb_sludge) t += 'Biliary sludge noted. ';
+    var wn = num(R.gb_wall_thickness);
+    if (wn!==null) t += 'Wall thickness is ' + b(R.gb_wall_thickness + ' mm') + (wn>4?' '+b('(thickened)'):' (normal)') + '. ';
+    if (R.gb_pericholecystic_fluid) t += b('Pericholecystic fluid present. ');
+    else t += 'No pericholecystic fluid. ';
+    if (R.gb_probe_tenderness) t += b('Probe tenderness positive (Murphy\'s sign). ');
+  }
+  var out = p(t);
+  if (R.cbd_diameter) {
+    var cn = num(R.cbd_diameter);
+    var cs = (cn!==null && cn>6) ? ' ' + b('(dilated — normal &lt;6mm)') : ' (normal)';
+    out += p(b('CBD:') + ' Measuring ' + b(R.cbd_diameter + ' mm') + cs + '.' + (R.cbd_notes ? ' '+R.cbd_notes+'.' : ''));
+  }
+  return out;
+}
+
+/* ── SPLEEN & PANCREAS ─────────────────────────────────── */
+function spleenPara() {
+  var out = '';
+  if (R.spleen_size || R.splenomegaly || R.spleen_notes) {
+    var sn = num(R.spleen_size);
+    var ss = R.splenomegaly ? 'enlarged (splenomegaly)' : (sn===null?'normal in size': sn>13?'enlarged (splenomegaly)': sn<7?'small in size':'normal in size');
+    var t = b('Spleen:') + ' ';
+    if (R.spleen_notes) { t += R.spleen_notes + '.'; }
+    else {
+      t += 'The spleen is ' + ss;
+      if (R.spleen_size) t += ', measuring ' + b(R.spleen_size + ' cm');
+      t += '. ';
+      if (R.spleen_cyst)   t += b('Splenic cyst noted. ');
+      if (R.spleen_lesion) t += b('Focal splenic lesion noted. ');
+      if (!R.spleen_cyst && !R.spleen_lesion) t += 'No splenic lesion seen.';
+    }
+    out += p(t);
+  }
+  if (R.pancreas_notes) out += p(b('Pancreas:') + ' ' + R.pancreas_notes + '.');
+  return out;
+}
+
+/* ── RIGHT KIDNEY ──────────────────────────────────────── */
+function rkPara() {
+  if (!R.rk_size && !R.rk_stone_present && !R.rk_mild_hydronephrosis &&
+      !R.rk_moderate_hydronephrosis && !R.rk_severe_hydronephrosis && !R.rk_cyst_present) return '';
+  var n = num(R.rk_size);
+  var status = n===null?'':n>12?' '+b('(enlarged)'):n<8?' '+b('(small)'):'';
+  var t = b('Right Kidney:') + ' ';
+  if (R.rk_size) t += 'Measures ' + b(R.rk_size) + status + '. ';
+  // Stone
+  if (R.rk_stone_present) {
+    t += b('Calculus noted');
+    if (R.rk_stone_size) t += ' — size ' + b(R.rk_stone_size);
+    if (R.rk_stone_site) t += ', located at ' + b(R.rk_stone_site);
+    t += '. ';
+  }
+  // Hydronephrosis
+  if (R.rk_severe_hydronephrosis)        t += b('Severe hydronephrosis noted. ');
+  else if (R.rk_moderate_hydronephrosis) t += b('Moderate hydronephrosis noted. ');
+  else if (R.rk_mild_hydronephrosis)     t += b('Mild hydronephrosis noted. ');
+  if (R.rk_hydroureteronephrosis) t += b('Hydroureteronephrosis noted. ');
+  else if (R.rk_hydroureter)      t += b('Hydroureter noted. ');
+  // Cyst
+  if (R.rk_cyst_present) {
+    t += b('Renal cyst noted');
+    if (R.rk_cyst_size) t += ' — size ' + b(R.rk_cyst_size);
+    if (R.rk_cyst_location) t += ', location: ' + R.rk_cyst_location;
+    if (R.rk_cyst_type) t += ' (' + R.rk_cyst_type + ')';
+    t += '. ';
+  }
+  if (!R.rk_stone_present && !R.rk_mild_hydronephrosis && !R.rk_moderate_hydronephrosis &&
+      !R.rk_severe_hydronephrosis && !R.rk_cyst_present) {
+    t += 'Normal cortical echogenicity, corticomedullary differentiation maintained. No calculus or hydronephrosis.';
+  }
+  if (R.rt_kidney_notes) t += ' ' + R.rt_kidney_notes;
+  return p(t);
+}
+
+/* ── LEFT KIDNEY ───────────────────────────────────────── */
+function lkPara() {
+  if (!R.lk_size && !R.lk_stone_present && !R.lk_mild_hydronephrosis &&
+      !R.lk_moderate_hydronephrosis && !R.lk_severe_hydronephrosis && !R.lk_cyst_present) return '';
+  var n = num(R.lk_size);
+  var status = n===null?'':n>12?' '+b('(enlarged)'):n<8?' '+b('(small)'):'';
+  var t = b('Left Kidney:') + ' ';
+  if (R.lk_size) t += 'Measures ' + b(R.lk_size) + status + '. ';
+  if (R.lk_stone_present) {
+    t += b('Calculus noted');
+    if (R.lk_stone_size) t += ' — size ' + b(R.lk_stone_size);
+    if (R.lk_stone_site) t += ', located at ' + b(R.lk_stone_site);
+    t += '. ';
+  }
+  if (R.lk_severe_hydronephrosis)        t += b('Severe hydronephrosis noted. ');
+  else if (R.lk_moderate_hydronephrosis) t += b('Moderate hydronephrosis noted. ');
+  else if (R.lk_mild_hydronephrosis)     t += b('Mild hydronephrosis noted. ');
+  if (R.lk_hydroureteronephrosis) t += b('Hydroureteronephrosis noted. ');
+  else if (R.lk_hydroureter)      t += b('Hydroureter noted. ');
+  if (R.lk_cyst_present) {
+    t += b('Renal cyst noted');
+    if (R.lk_cyst_size) t += ' — size ' + b(R.lk_cyst_size);
+    if (R.lk_cyst_location) t += ', location: ' + R.lk_cyst_location;
+    if (R.lk_cyst_type) t += ' (' + R.lk_cyst_type + ')';
+    t += '. ';
+  }
+  if (!R.lk_stone_present && !R.lk_mild_hydronephrosis && !R.lk_moderate_hydronephrosis &&
+      !R.lk_severe_hydronephrosis && !R.lk_cyst_present) {
+    t += 'Normal cortical echogenicity, corticomedullary differentiation maintained. No calculus or hydronephrosis.';
+  }
+  if (R.lt_kidney_notes) t += ' ' + R.lt_kidney_notes;
+  return p(t);
+}
+
+/* ── URETERIC CALCULUS ─────────────────────────────────── */
+function uretericPara() {
+  if (!R.ureteric_size && !R.ureteric_side) return '';
+  var t = b('Ureteric Calculus:') + ' ';
+  if (R.ureteric_side) t += b(R.ureteric_side + ' side') + '. ';
+  if (R.ureteric_size) t += 'Stone size ' + b(R.ureteric_size) + '. ';
+  if (R.ureteric_site) t += 'Located at ' + b(R.ureteric_site) + '. ';
+  if (R.ureteric_hydroureteronephrosis) t += b('Hydroureteronephrosis noted. ');
+  else {
+    if (R.ureteric_hydronephrosis) t += b('Hydronephrosis noted. ');
+    if (R.ureteric_hydroureter)    t += b('Hydroureter noted. ');
+  }
+  return p(t);
+}
+
+/* ── BLADDER ───────────────────────────────────────────── */
+function bladderPara() {
+  if (!R.bladder_state && !R.bladder_wall_thick && !R.bladder_calculus &&
+      !R.bladder_mass && !R.bladder_notes && !R.pvrv) return '';
+  var t = b('Urinary Bladder:') + ' ';
+  if (R.bladder_notes) {
+    t += R.bladder_notes + '.';
+  } else {
+    t += (R.bladder_state || 'Well distended') + '. ';
+    if (R.bladder_wall_thick)      t += b('Wall thickening noted. ');
+    if (R.bladder_internal_echoes) t += b('Internal echoes noted. ');
+    if (R.bladder_calculus)        t += b('Calculus in bladder noted. ');
+    if (R.bladder_mass)            t += b('Mass lesion noted. ');
+    if (!R.bladder_wall_thick && !R.bladder_calculus && !R.bladder_mass) {
+      t += 'Smooth walls, no calculus or mass lesion. ';
+    }
+  }
+  if (R.pvrv) t += ' Post-void residual volume: ' + b(R.pvrv + ' ml') + '.';
+  return p(t);
+}
+
+/* ── UTERUS & OVARIES ──────────────────────────────────── */
+function uterusPara() {
+  if (!R.uterus_size && !R.uterus_notes && !R.ro_size && !R.lo_size && !R.endometrial_thickness) return '';
+  var t = b('Uterus and Ovaries:') + ' ';
+  if (R.uterus_notes) {
+    t += R.uterus_notes + '.';
+  } else {
+    t += 'The uterus ';
+    if (R.uterus_size) t += 'measures ' + b(R.uterus_size) + ', ';
+    if (R.uterus_position) t += b(R.uterus_position) + ' in position. ';
+    if (R.uterus_myometrium) t += R.uterus_myometrium + '. ';
+    if (R.endometrial_thickness) {
+      var en=num(R.endometrial_thickness);
+      var es=(en!==null&&en>14)?' '+b('(thickened)'):(en!==null&&en<4)?' '+b('(thin)'):'';
+      t += 'Endometrial thickness is ' + b(R.endometrial_thickness + ' mm') + es + '. ';
+    }
+    if (R.pid_changes)    t += b('PID changes noted. ');
+    if (R.fibroid_present) {
+      t += b('Fibroid noted');
+      if (R.fibroid_size) t += ' — size: ' + b(R.fibroid_size);
+      if (R.fibroid_site) t += ', site: ' + R.fibroid_site;
+      if (R.fibroid_type) t += ' (' + R.fibroid_type + ')';
+      t += '. ';
+    }
+    if (R.ro_size || R.lo_size) {
+      t += 'Ovaries — Right: ' + b(R.ro_size||'—');
+      if (R.ro_bulky) t += ' ' + b('(bulky)');
+      if (R.ro_cyst_present) t += ', cyst: ' + b(R.ro_cyst_size||'present') + (R.ro_cyst_type?' ('+R.ro_cyst_type+')':'');
+      t += '; Left: ' + b(R.lo_size||'—');
+      if (R.lo_bulky) t += ' ' + b('(bulky)');
+      if (R.lo_cyst_present) t += ', cyst: ' + b(R.lo_cyst_size||'present') + (R.lo_cyst_type?' ('+R.lo_cyst_type+')':'');
+      t += '. ';
+    } else {
+      t += 'Both ovaries are normal in size. ';
+    }
+  }
+  return p(t);
+}
+
+/* ── OBSTETRIC ─────────────────────────────────────────── */
+function obstetricPara() {
+  if (!R.ga_by_scan && !R.fetal_heart_rate && !R.biometry_bpd) return '';
+  var t = b('Obstetric Findings:') + '<br>';
+  if (R.lmp)                t += 'LMP: '+b(R.lmp)+'. ';
+  if (R.ga_by_lmp)          t += 'GA by LMP: '+b(R.ga_by_lmp)+'. ';
+  if (R.ga_by_scan)         t += 'GA by Scan: '+b(R.ga_by_scan)+'. ';
+  if (R.edd_by_scan)        t += 'EDD by Scan: '+b(R.edd_by_scan)+'. ';
+  if (R.fetal_presentation) t += 'Presentation: '+b(R.fetal_presentation)+'. ';
+  if (R.fetal_heart_rate)   t += 'FHR: '+b(R.fetal_heart_rate)+'. ';
+  if (R.placental_location) t += 'Placenta: '+b(R.placental_location)+'. ';
+  if (R.liquor)             t += 'Liquor: '+b(R.liquor)+'. ';
+  if (R.afi)                t += 'AFI: '+b(R.afi+' cm')+'. ';
+  if (R.biometry_bpd||R.biometry_hc||R.biometry_ac||R.biometry_fl) {
+    t += '<br>Biometry — ';
+    if (R.biometry_bpd) t += 'BPD: '+b(R.biometry_bpd)+'  ';
+    if (R.biometry_hc)  t += 'HC: '+b(R.biometry_hc)+'  ';
+    if (R.biometry_ac)  t += 'AC: '+b(R.biometry_ac)+'  ';
+    if (R.biometry_fl)  t += 'FL: '+b(R.biometry_fl)+'.';
+  }
+  if (R.efw) t += ' EFW: '+b(R.efw)+'.';
+  if (R.obstetric_notes) t += '<br>'+R.obstetric_notes+'.';
+  return p(t);
+}
+
+/* ── PROSTATE ──────────────────────────────────────────── */
+function prostatePara() {
+  if (!R.prostate_size && !R.prostate_volume && !R.prostate_notes && !R.prostatomegaly) return '';
+  var t = b('Prostate:') + ' ';
+  if (R.prostate_notes) {
+    t += R.prostate_notes + '.';
+  } else {
+    if (R.prostate_size) t += 'Measures ' + b(R.prostate_size);
+    if (R.prostate_volume) {
+      var pv = num(R.prostate_volume);
+      var pvNote = pv!==null ? (pv>30?' '+b('(enlarged — BPH)'):pv>20?' '+b('(mildly enlarged)'):'') : '';
+      t += ', volume ' + b(R.prostate_volume + ' cc') + pvNote;
+    }
+    t += '. ';
+    if (R.prostatomegaly) t += b('Prostatomegaly / BPH noted. ');
+    if (R.prostate_median_lobe) t += b('Median lobe hypertrophy noted. ');
+    if (R.prostate_echotexture) t += R.prostate_echotexture + '. ';
+    else t += 'Echotexture is normal. No focal lesion. ';
+  }
+  return p(t);
+}
+
+/* ── HERNIA ────────────────────────────────────────────── */
+function herniaPara() {
+  if (!R.hernia_type && !R.hernia_side) return '';
+  var t = b('Hernia:') + ' ';
+  if (R.hernia_type) t += b(R.hernia_type) + ' hernia ';
+  if (R.hernia_side) t += 'on ' + b(R.hernia_side + ' side') + '. ';
+  if (R.hernia_defect_size) t += 'Defect size: ' + b(R.hernia_defect_size) + '. ';
+  var findings = [];
+  if (R.hernia_reducible)    findings.push('Reducible');
+  if (R.hernia_irreducible)  findings.push(b('Irreducible'));
+  if (R.hernia_bowel_loops)  findings.push('Bowel loops in sac');
+  if (R.hernia_omentum)      findings.push('Omentum in sac');
+  if (R.hernia_cough_impulse) findings.push('Cough impulse positive');
+  if (findings.length) t += findings.join('. ') + '. ';
+  return p(t);
+}
+
+/* ── APPENDIX ──────────────────────────────────────────── */
+function appendixPara() {
+  if (!R.appendix_visualized && !R.appendix_diameter) return '';
+  var t = b('Appendix:') + ' ';
+  if (R.appendix_visualized) {
+    t += 'Visualized. ';
+    if (R.appendix_diameter) {
+      var ad = num(R.appendix_diameter);
+      t += 'Diameter ' + b(R.appendix_diameter + ' mm');
+      if (ad!==null && ad>=6) t += ' ' + b('(thickened — suggestive of appendicitis)');
+      t += '. ';
+    }
+    if (R.appendix_noncompressible) t += b('Non-compressible. ');
+    if (R.appendix_probe_tenderness) t += b('Probe tenderness positive. ');
+    if (R.appendix_periappendiceal_fluid) t += b('Periappendiceal fluid noted. ');
+    if (R.appendicolith) t += b('Appendicolith noted. ');
+    if (R.inflamed_fat)  t += b('Inflamed periappendiceal fat noted. ');
+    if (R.appendix_noncompressible || R.appendix_probe_tenderness) {
+      t += b('Findings are suggestive of acute appendicitis.');
+    }
+  } else {
+    t += 'Not visualized (likely due to overlying bowel gas).';
+  }
+  return p(t);
+}
+
+/* ── BOWEL ─────────────────────────────────────────────── */
+function bowelPara() {
+  var any = R.colitis_present||R.sbo_present||R.dilated_bowel_loops||
+            R.to_and_fro_peristalsis||R.collapsed_distal_bowel||
+            R.gaseous_bowel_loops||R.ibs_suggestion;
+  if (!any) return '';
+  var t = b('Bowel:') + ' ';
+  if (R.colitis_present) {
+    t += b('Colitis noted');
+    if (R.colitis_site) t += ' — ' + b(R.colitis_site);
+    t += '. ';
+  }
+  if (R.sbo_present)             t += b('Small bowel obstruction noted. ');
+  if (R.dilated_bowel_loops)     t += b('Dilated bowel loops seen. ');
+  if (R.to_and_fro_peristalsis)  t += b('To-and-fro peristalsis noted. ');
+  if (R.collapsed_distal_bowel)  t += b('Collapsed distal bowel noted. ');
+  if (R.gaseous_bowel_loops)     t += 'Gaseous bowel loops noted. ';
+  if (R.ibs_suggestion)          t += 'Findings may be consistent with irritable bowel syndrome (IBS). ';
+  return p(t);
+}
+
+/* ── BUILD ─────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function() {
+  var html = '';
+  html += liverPara();
+  html += gbPara();
+  html += spleenPara();
+  html += rkPara();
+  html += lkPara();
+  html += uretericPara();
+  html += bladderPara();
+  html += uterusPara();
+  html += prostatePara();
+  html += obstetricPara();
+  html += herniaPara();
+  html += appendixPara();
+  html += bowelPara();
+  if (R.additional_findings) html += p(b('Additional Findings:') + ' ' + R.additional_findings + '.');
+
+  // Impression
+  html += '<div class="impression-section">';
+  html += '<div class="imp-label">Impression:-</div>';
+  html += '<div class="imp-text">' + R.impression + '</div>';
+  if (R.advice) html += '<div class="imp-text" style="margin-top:6px;"><b>Advice:</b> ' + R.advice + '</div>';
+  html += '</div>';
+
+  // Signature
+  html += '<div class="signature-block">';
+  html += '<div class="sig-name">' + R.doctor_name + '</div>';
+  html += '<div class="sig-detail">' + R.doctor_qual + '</div>';
+  html += '<div class="sig-detail">RMC No-27994</div>';
+  html += '</div>';
+
+  document.getElementById('reportBody').innerHTML = html;
+});
+</script>
+</body>
+</html>

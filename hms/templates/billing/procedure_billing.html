@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Procedure Charges{% endblock %}
+
+{% block content %}
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<style>
+body { font-family: Cambria, Georgia, serif; }
+.proc-page { padding: 10px 20px; max-width: 1000px; }
+h4 { margin-bottom: 4px; font-size: 18px; }
+
+.form-row { display:flex; gap:12px; margin-bottom:10px; align-items:flex-end; flex-wrap:wrap; }
+.form-group { display:flex; flex-direction:column; gap:3px; }
+.form-group label { font-size:12px; font-weight:bold; color:#333; }
+.form-group select, .form-group input {
+  padding:4px 8px; font-size:13px; border:1px solid #ccc;
+  border-radius:4px; height:30px;
+}
+
+.select2-container .select2-selection--single { height:30px !important; border:1px solid #ccc !important; border-radius:4px !important; }
+.select2-container--default .select2-selection--single .select2-selection__rendered { line-height:28px !important; font-size:13px; padding-left:8px; }
+.select2-container--default .select2-selection--single .select2-selection__arrow { height:28px !important; }
+.select2-results__option { font-size:13px; padding:5px 10px; }
+
+.section-title { font-size:13px; font-weight:bold; background:#e9ecef; border:1px solid #ccc; border-bottom:none; padding:5px 8px; }
+
+table { border-collapse:collapse; width:100%; background:#fff; margin-bottom:0; }
+th, td { border:1px solid #000; padding:5px 8px; font-size:13px; }
+th { background:#e9ecef; text-align:center; }
+td.center { text-align:center; }
+tbody tr:hover { background:#f2f9ff; }
+
+.billing-bar {
+  background:#fff; border:1px solid #ccc; border-top:none;
+  padding:7px 12px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+  margin-bottom:10px;
+}
+.billing-bar label { font-size:12px; font-weight:bold; margin-right:4px; }
+.billing-bar select, .billing-bar input {
+  padding:4px 8px; font-size:13px; border:1px solid #ccc;
+  border-radius:4px; height:28px; width:120px;
+}
+.total-display { margin-left:auto; font-size:14px; font-weight:bold; }
+.total-display .big { color:#0d6efd; font-size:20px; }
+.net-display { color:#198754; font-weight:bold; font-size:13px; }
+
+.submit-bar { border-top:1px solid #ccc; padding:8px 0; text-align:right; }
+.btn-submit {
+  background:#198754; color:white; border:none;
+  padding:7px 28px; font-size:14px; font-family:Cambria,Georgia,serif;
+  border-radius:4px; cursor:pointer;
+}
+.btn-submit:hover { background:#157347; }
+</style>
+
+<div class="proc-page">
+
+  <h4>🧾 Procedure Billing</h4>
+  <small style="color:#666">Generate patient procedure bill</small>
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div style="margin:6px 0;padding:5px 10px;background:#d1e7dd;border:1px solid #badbcc;border-radius:4px;font-size:13px">{{ msg }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="form-row" style="margin-top:10px">
+      <div class="form-group" style="flex:2;min-width:260px">
+        <label>Patient *</label>
+        <select name="patient_id" id="patient" required>
+          <option value="">-- Select Patient --</option>
+          {% for p in patients %}
+          <option value="{{ p.id }}">{{ p.uhid }} - {{ p.full_name }} ({{ p.age }} / {{ p.gender }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="flex:1;min-width:150px">
+        <label>Department</label>
+        <select name="department_id" id="department">
+          <option value="">-- All --</option>
+          {% for d in departments %}
+          <option value="{{ d.id }}">{{ d.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="flex:1;min-width:150px">
+        <label>Consultant</label>
+        <select name="doctor_id" id="doctor">
+          <option value="">-- Select --</option>
+          {% for d in doctors %}
+          <option value="{{ d.id }}" data-dept="{{ d.department.id }}">{{ d.full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="section-title">Select Procedures</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:40px">✓</th>
+          <th style="text-align:left">Procedure Name</th>
+          <th style="width:90px">Price (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if procedures %}
+          {% for proc in procedures %}
+          <tr id="row-{{ proc.id }}">
+            <td class="center">
+              <input type="checkbox" class="proc-check" name="procedures"
+                value="{{ proc.id }}" data-price="{{ proc.price }}"
+                onchange="updateTotal(); toggleRow(this)">
+            </td>
+            <td>{{ proc.name }}</td>
+            <td class="center">{{ proc.price }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="3" style="text-align:center;color:#888">No procedures. <a href="/admin/hms/procedureitem/add/" target="_blank">Add from Admin</a></td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    <div class="billing-bar">
+      <div><label>Payment</label>
+        <select name="payment_mode">
+          <option value="CASH">Cash</option>
+          <option value="UPI">UPI</option>
+          <option value="FREE">Free</option>
+        </select>
+      </div>
+      <div><label>Discount (₹)</label>
+        <input type="number" id="discount" name="discount" value="0" min="0">
+      </div>
+      <div class="total-display">
+        Total: ₹<span id="total" class="big">0.00</span>
+        &nbsp;&nbsp;
+        <span class="net-display">Net: ₹<span id="net">0.00</span></span>
+      </div>
+    </div>
+
+    <div class="submit-bar">
+      <button type="submit" class="btn-submit">🧾 Generate Bill &amp; Print</button>
+    </div>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(function() {
+  $('#patient').select2({
+    placeholder: "🔍 Search patient by name or UHID...",
+    allowClear: true,
+    width: '100%'
+  });
+});
+
+function updateTotal() {
+  let total = 0;
+  document.querySelectorAll('.proc-check:checked').forEach(cb => {
+    total += parseFloat(cb.dataset.price || 0);
+  });
+  const discount = parseFloat(document.getElementById('discount').value || 0);
+  const net = Math.max(total - discount, 0);
+  document.getElementById('total').textContent = total.toFixed(2);
+  document.getElementById('net').textContent = net.toFixed(2);
+}
+
+function toggleRow(cb) {
+  const row = cb.closest('tr');
+  row.style.background = cb.checked ? '#eef5ff' : '';
+  row.style.fontWeight = cb.checked ? 'bold' : '';
+}
+
+document.getElementById('discount').addEventListener('input', updateTotal);
+
+document.getElementById("department").addEventListener("change", function () {
+  let dept = this.value;
+  Array.from(document.getElementById("doctor").options).forEach(o => {
+    if (!o.value) return;
+    o.hidden = dept ? o.dataset.dept !== dept : false;
+  });
+});
+
+updateTotal();
+</script>
+
+{% endblock %}
