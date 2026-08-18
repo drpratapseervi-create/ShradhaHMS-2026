@@ -1,12 +1,20 @@
 from encrypted_model_fields.fields import EncryptedCharField
 from auditlog.registry import auditlog
 from django.db import models
+from django.core.validators import RegexValidator
 from django.utils import timezone
 from datetime import date, timedelta
 from django.contrib.auth.models import User
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+
+# WHO ATC codes always start with a letter (e.g. 'N02BE01'); drug strength
+# values like "250+10mg" start with a digit — this catches that mix-up.
+atc_code_validator = RegexValidator(
+    regex=r'^[A-Za-z][A-Za-z0-9]*$',
+    message="Enter a valid ATC code (e.g. 'N02BE01'), not a drug strength.",
+)
 
 # ===================== PATIENT =====================
 class Patient(models.Model):
@@ -399,7 +407,8 @@ class Prescription(models.Model):
     frequency    = models.CharField(max_length=50)
     duration     = models.CharField(max_length=50)
     instructions = models.CharField(max_length=200, blank=True)
-    atc_code     = models.CharField(max_length=10, blank=True, default="")
+    atc_code     = models.CharField(max_length=10, blank=True, null=True, default="",
+                       validators=[atc_code_validator])
 
     def __str__(self):
         return self.medicine
@@ -1862,6 +1871,7 @@ class DrugMaster(models.Model):
     strength     = models.CharField(max_length=50,  blank=True, default="")
     category     = models.CharField(max_length=100, blank=True, default="")
     atc_code     = models.CharField(max_length=10, blank=True, default="",
+                       validators=[atc_code_validator],
                        help_text="WHO ATC code e.g. 'N02BE01' for Paracetamol")
     is_active    = models.BooleanField(default=True)
     sort_order   = models.IntegerField(default=99)
