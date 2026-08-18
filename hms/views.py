@@ -284,13 +284,17 @@ def start_consultation(request, appointment_id):
                 freqs     = request.POST.getlist("frequency[]")
                 durs      = request.POST.getlist("duration[]")
                 instrs    = request.POST.getlist("instructions[]")
-                for m, d, f, du, ins in zip(medicines, doses, freqs, durs, instrs):
+                atc_codes = request.POST.getlist("atc_code[]")
+                for i, m in enumerate(medicines):
                     if m.strip():
                         Prescription.objects.create(
                             consultation=obj,
-                            medicine=m, dose=d,
-                            frequency=f, duration=du,
-                            instructions=ins,
+                            medicine=m,
+                            dose=doses[i] if i < len(doses) else "",
+                            frequency=freqs[i] if i < len(freqs) else "",
+                            duration=durs[i] if i < len(durs) else "",
+                            instructions=instrs[i] if i < len(instrs) else "",
+                            atc_code=atc_codes[i] if i < len(atc_codes) else "",
                         )
 
                 messages.success(request, "Consultation saved successfully.")

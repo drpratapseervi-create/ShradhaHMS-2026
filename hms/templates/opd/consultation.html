@@ -808,12 +808,14 @@
     {% for drug in drug_masters|slice:":12" %}
     <label style="display:flex;align-items:center;gap:4px;background:#f0f9f9;border:1px solid #b2dfdb;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px;">
       <input type="checkbox" class="quick-med-cb"
-        data-name="{{ drug.name }}{% if drug.strength %} {{ drug.strength }}{% endif %}"
+        data-name="{{ drug.name }}"
         data-generic="{{ drug.generic_name }}"
         data-dose="{{ drug.default_dose }}"
+        data-strength="{{ drug.strength }}"
         data-freq="{{ drug.default_frequency }}"
         data-dur="{{ drug.default_duration }}"
-        data-inst="{{ drug.default_instructions }}"> {{ drug.name }} <span style="color:#aaa;font-size:10px;">({{ drug.strength }})</span>
+        data-inst="{{ drug.default_instructions }}"
+        data-atc="{{ drug.atc_code }}"> {{ drug.name }} <span style="color:#aaa;font-size:10px;">({{ drug.strength }})</span>
     </label>
     {% endfor %}
   </div>
@@ -828,12 +830,14 @@
         {% for drug in group.list %}
         <label style="display:flex;align-items:center;gap:4px;background:#f0f9f9;border:1px solid #b2dfdb;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px;">
           <input type="checkbox" class="quick-med-cb"
-            data-name="{{ drug.name }}{% if drug.strength %} {{ drug.strength }}{% endif %}"
+            data-name="{{ drug.name }}"
             data-generic="{{ drug.generic_name }}"
             data-dose="{{ drug.default_dose }}"
+            data-strength="{{ drug.strength }}"
             data-freq="{{ drug.default_frequency }}"
             data-dur="{{ drug.default_duration }}"
-            data-inst="{{ drug.default_instructions }}"> {{ drug.name }} <span style="color:#aaa;font-size:10px;">({{ drug.strength }})</span>
+            data-inst="{{ drug.default_instructions }}"
+            data-atc="{{ drug.atc_code }}"> {{ drug.name }} <span style="color:#aaa;font-size:10px;">({{ drug.strength }})</span>
         </label>
         {% endfor %}
       </div>
@@ -879,7 +883,7 @@
                         </select>
                     </td>
                     <td><input type="text" name="generic_name[]" value="" placeholder="Generic…" style="color:#888;"></td>
-                    <td><input type="text" name="atc_code[]" placeholder="ATC" readonly style="color:#0891b2;font-weight:600;background:#f0fdfa;"></td>
+                    <td><input type="text" name="atc_code[]" value="{{ p.atc_code }}" placeholder="ATC" readonly style="color:#0891b2;font-weight:600;background:#f0fdfa;"></td>
                     <td><input type="text" name="dose[]" value="{{ p.dose }}" placeholder="e.g. 500mg"></td>
                     <td><input type="text" name="frequency[]" value="{{ p.frequency }}" placeholder="e.g. TDS"></td>
                     <td><input type="text" name="duration[]" value="{{ p.duration }}" placeholder="e.g. 5 days"></td>
@@ -898,6 +902,7 @@
                         </select>
                     </td>
                     <td><input type="text" name="generic_name[]" placeholder="Generic…" style="color:#888;"></td>
+                    <td><input type="text" name="atc_code[]" placeholder="ATC" readonly style="color:#0891b2;font-weight:600;background:#f0fdfa;"></td>
                     <td><input type="text" name="dose[]" placeholder="Dose"></td>
                     <td><input type="text" name="frequency[]" placeholder="Frequency"></td>
                     <td><input type="text" name="duration[]" placeholder="Duration"></td>
@@ -1511,6 +1516,7 @@ function addRxRow() {
     const row = `<tr>
         <td><select name="medicine[]" class="medicine-search" style="width:100%"></select></td>
         <td><input type="text" name="generic_name[]" placeholder="Generic…" style="color:#888;"></td>
+        <td><input type="text" name="atc_code[]" placeholder="ATC" readonly style="color:#0891b2;font-weight:600;background:#f0fdfa;"></td>
         <td><input type="text" name="dose[]" placeholder="Dose"></td>
         <td><input type="text" name="frequency[]" placeholder="Frequency"></td>
         <td><input type="text" name="duration[]" placeholder="Duration"></td>
@@ -2035,10 +2041,11 @@ document.addEventListener('change', function(e) {
     var name    = cb.dataset.name    || '';
     var generic = cb.dataset.generic || '';
     var d = getDrugDefault(name) || {};
-    var dose = (cb.dataset.dose && cb.dataset.dose.trim()) ? cb.dataset.dose : (d.dose || '');
+    var dose = (cb.dataset.dose && cb.dataset.dose.trim()) ? cb.dataset.dose : ((cb.dataset.strength && cb.dataset.strength.trim()) ? cb.dataset.strength : (d.dose || ''));
     var freq = (cb.dataset.freq && cb.dataset.freq.trim()) ? cb.dataset.freq : (d.frequency || '');
     var dur  = (cb.dataset.dur  && cb.dataset.dur.trim())  ? cb.dataset.dur  : (d.duration  || '');
     var inst = (cb.dataset.inst && cb.dataset.inst.trim()) ? cb.dataset.inst : (d.instructions || '');
+    var atc  = (cb.dataset.atc  && cb.dataset.atc.trim())  ? cb.dataset.atc  : (d.atc_code || '');
 
     if (cb.checked) {
         // FIX 1: Use <select class="medicine-search"> not readonly <input>
@@ -2049,6 +2056,7 @@ document.addEventListener('change', function(e) {
             '<option value="' + name + '" selected>' + name + '</option>' +
             '</select></td>' +
             '<td><input type="text" name="generic_name[]" value="' + generic + '" placeholder="Generic…" style="color:#888;"></td>' +
+            '<td><input type="text" name="atc_code[]" value="' + atc + '" placeholder="ATC" readonly style="color:#0891b2;font-weight:600;background:#f0fdfa;"></td>' +
             '<td><input type="text" name="dose[]" value="' + dose + '" placeholder="Dose"></td>' +
             '<td><input type="text" name="frequency[]" value="' + freq + '" placeholder="Frequency"></td>' +
             '<td><input type="text" name="duration[]" value="' + dur + '" placeholder="Duration"></td>' +

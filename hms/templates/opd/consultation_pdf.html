@@ -324,22 +324,24 @@ a  { color: #000; text-decoration: none; }
 <div class="sec-title">PRESCRIPTION</div>
 <table class="rx-table" style="table-layout:fixed; border-collapse:collapse;">
     <tr>
-        <th style="width:30%">Medicine</th>
+        <th style="width:24%">Medicine</th>
+        <th style="width:10%">ATC</th>
         <th style="width:12%">Dose</th>
-        <th style="width:18%">Frequency</th>
-        <th style="width:15%">Duration</th>
+        <th style="width:16%">Frequency</th>
+        <th style="width:13%">Duration</th>
         <th>Instructions</th>
     </tr>
     {% for p in prescriptions %}
     <tr style="page-break-inside:avoid; break-inside:avoid;">
         <td style="word-wrap:break-word; overflow-wrap:break-word;">{{ p.medicine }}</td>
+        <td style="word-wrap:break-word; overflow-wrap:break-word;">{{ p.atc_code|default:"-" }}</td>
         <td style="word-wrap:break-word; overflow-wrap:break-word;">{{ p.dose }}</td>
         <td style="word-wrap:break-word; overflow-wrap:break-word;">{{ p.frequency }}</td>
         <td style="word-wrap:break-word; overflow-wrap:break-word;">{{ p.duration }}</td>
         <td style="word-wrap:break-word; overflow-wrap:break-word;">{{ p.instructions }}</td>
     </tr>
     {% empty %}
-    <tr><td colspan="5" style="text-align:center; color:#999;">No prescription recorded</td></tr>
+    <tr><td colspan="6" style="text-align:center; color:#999;">No prescription recorded</td></tr>
     {% endfor %}
 </table>
 

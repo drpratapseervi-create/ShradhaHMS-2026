@@ -399,6 +399,7 @@ class Prescription(models.Model):
     frequency    = models.CharField(max_length=50)
     duration     = models.CharField(max_length=50)
     instructions = models.CharField(max_length=200, blank=True)
+    atc_code     = models.CharField(max_length=10, blank=True, default="")
 
     def __str__(self):
         return self.medicine
