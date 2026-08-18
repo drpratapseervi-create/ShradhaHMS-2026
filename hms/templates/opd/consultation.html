@@ -858,7 +858,13 @@
 
 <!-- ═══ PRESCRIPTION ═══ -->
 <div class="sec">
-    <div class="sec-head sh-blue" style="display:flex;align-items:center;justify-content:space-between;"><span>💊 Prescription</span><button type="button" id="rx-ai-btn" onclick="generateAIMedicines()" style="background:#fff;color:#2563eb;border:1px solid #93c5fd;border-radius:6px;padding:3px 12px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">🤖 AI Suggest Medicines</button></div>
+    <div class="sec-head sh-blue" style="display:flex;align-items:center;justify-content:space-between;"><span>💊 Prescription</span>
+        {% if ai_enabled %}
+        <button type="button" id="rx-ai-btn" onclick="generateAIMedicines()" style="background:#fff;color:#2563eb;border:1px solid #93c5fd;border-radius:6px;padding:3px 12px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">🤖 AI Suggest Medicines</button>
+        {% else %}
+        <span title="AI features not configured" style="color:#94a3b8;border:1px dashed #cbd5e1;border-radius:6px;padding:3px 12px;font-size:11px;font-weight:600;">🤖 AI Suggest Medicines (not configured)</span>
+        {% endif %}
+    </div>
     <div class="sec-body">
         <table class="rx-table">
             <thead>
@@ -1042,6 +1048,7 @@
 </form>
 
 <!-- ═══ AI CLINICAL ASSIST ═══ -->
+{% if ai_enabled %}
 <div class="sec" style="margin-top:14px; border: 2px solid #e0e0e0;">
     <div class="sec-head" style="background:linear-gradient(135deg,#555,#555); color:#fff; border-bottom:none; padding:10px 16px;">
         <span>🧠</span> AI Clinical Assist
@@ -1094,6 +1101,13 @@
         <textarea id="ai-result" name="ai_notes" style="display:none"></textarea>
     </div>
 </div>
+{% else %}
+<div class="sec" style="margin-top:14px; border: 2px dashed #e2e8f0;">
+    <div class="sec-body" style="color:#94a3b8; font-size:12px; padding:10px 16px;">
+        🧠 AI Clinical Assist — AI features not configured
+    </div>
+</div>
+{% endif %}
 
 <!-- ═══ RADIOLOGY IMAGES ═══ -->
 <div class="sec" style="margin-top:12px;">

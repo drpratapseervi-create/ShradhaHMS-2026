@@ -318,6 +318,7 @@ def start_consultation(request, appointment_id):
             consultation=consultation
         ).order_by("-created_at"),
         "drug_masters": DrugMaster.objects.filter(is_active=True).order_by("sort_order", "category", "name"),
+        "ai_enabled": settings.AI_FEATURES_ENABLED,
     })
 
 # ======================================================
@@ -2072,6 +2073,8 @@ client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
 def ai_full_opd(request):
     if request.method == "POST":
+        if not settings.AI_FEATURES_ENABLED:
+            return JsonResponse({"error": "AI features are not configured on this system."})
 
         complaints = request.POST.getlist("complaints[]")
         exam = request.POST.getlist("exam[]")
@@ -3029,6 +3032,8 @@ def drug_defaults(request):
 def generate_diet(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST only'}, status=405)
+    if not settings.AI_FEATURES_ENABLED:
+        return JsonResponse({'error': 'AI features are not configured on this system.'})
     import json
     data = json.loads(request.body)
     diagnosis = data.get('diagnosis', '').strip()
@@ -3059,6 +3064,8 @@ import json
 def generate_ai_medicines(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST only'}, status=405)
+    if not settings.AI_FEATURES_ENABLED:
+        return JsonResponse({'error': 'AI features are not configured on this system.'})
 
     try:
         data = json.loads(request.body)

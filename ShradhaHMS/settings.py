@@ -321,3 +321,7 @@ FIELD_ENCRYPTION_KEY = os.getenv(
 
 # ── ANTHROPIC (Claude) ──────────────────────────────────────────────────────
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')
+# Explicit on/off switch for the AI Clinical Assist / AI Suggest Medicines /
+# AI diet chart features, independent of whether a key is present — lets you
+# hold a key in .env without the app trying to call a not-yet-funded account.
+AI_FEATURES_ENABLED = os.getenv('AI_FEATURES_ENABLED', 'False').lower() in ('1', 'true', 'yes')
