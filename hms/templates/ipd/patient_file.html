@@ -4,6 +4,8 @@
 
 {% block content %}
 
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+
 <style>
 
 .ipd-container{
@@ -132,6 +134,44 @@ font-size:13px;
 font-weight:600;
 display:block;
 margin-bottom:5px;
+}
+
+/* Dark-mode data table (mirrors the .opd-table pattern used on dashboard.html) */
+.ipd-table{
+width:100%;
+border-collapse:collapse;
+}
+.ipd-table thead tr{
+background:#161616;
+}
+.ipd-table th{
+padding:11px 16px;
+text-align:left;
+font-size:11px;
+font-weight:700;
+color:#8892a4;
+text-transform:uppercase;
+letter-spacing:0.5px;
+border-bottom:2px solid #2a2a2a;
+}
+.ipd-table td{
+padding:13px 16px;
+font-size:13px;
+color:#cbd5e1;
+border-bottom:1px solid #1e1e1e;
+vertical-align:middle;
+}
+.ipd-table tbody tr:last-child td{
+border-bottom:none;
+}
+.ipd-table tbody tr:hover td{
+background:#1a1a1a;
+}
+.ipd-table tbody tr:nth-child(even) td{
+background:#111111;
+}
+.ipd-table tbody tr:nth-child(even):hover td{
+background:#1a1a1a;
 }
 
 .save-btn{
@@ -595,11 +635,36 @@ Discharge Bill
 {% csrf_token %}
 <input type="hidden" name="form_type" value="treatment">
 
-<textarea name="treatment_plan" class="form-control" style="height:150px">{{ admission.treatment_plan }}</textarea>
+<textarea name="treatment_plan" class="form-control" rows="2" style="height:auto" placeholder="Add a new treatment plan entry..."></textarea>
 
 <button class="save-btn">Save Treatment</button>
 
 </form>
+
+<hr>
+
+<h5>Treatment History</h5>
+
+<table class="ipd-table">
+    <thead>
+    <tr>
+        <th>Date &amp; Time</th>
+        <th>Treatment Plan</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for t in treatment_history %}
+    <tr>
+        <td>{{ t.recorded_at|date:"M d, Y H:i" }}</td>
+        <td>{{ t.treatment_plan }}</td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="2">No treatment plan entries yet.</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
 
 </div>
 
@@ -614,8 +679,8 @@ Discharge Bill
 {% csrf_token %}
 <input type="hidden" name="form_type" value="medication">
 
-<input type="text" name="medicine_name" placeholder="Medicine Name" class="form-control">
-<input type="text" name="dose" placeholder="Dose" class="form-control">
+<select name="drug_id" id="ipd-medicine-search" class="form-control" style="width:100%"></select>
+<input type="text" name="dose" id="ipd-medicine-dose" placeholder="Dose" class="form-control">
 <input type="text" name="route" placeholder="Route (IV/IM/PO)" class="form-control">
 <input type="text" name="frequency" placeholder="Frequency (OD/BD/TDS)" class="form-control">
 
@@ -774,7 +839,32 @@ Print Discharge
 </div>
 
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
+
+/* ── Medicine Search (Select2, linked to DrugMaster) ── */
+$(function () {
+    $('#ipd-medicine-search').select2({
+        placeholder: "Type medicine name…",
+        minimumInputLength: 0,
+        dropdownParent: $('body'),
+        ajax: {
+            url: "{% url 'hms:medicine_search' %}",
+            data: params => ({ q: params.term || '', by_id: 1 }),
+            dataType: "json", delay: 250,
+            processResults: d => ({ results: d })
+        },
+        width: "100%"
+    });
+    $('#ipd-medicine-search').on('select2:select', function(e) {
+        var drug = e.params.data;
+        if (drug.strength) {
+            $('#ipd-medicine-dose').val(drug.strength);
+        }
+    });
+});
 
 function openTab(evt, tabName){
 

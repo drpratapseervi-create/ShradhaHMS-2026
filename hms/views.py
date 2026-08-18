@@ -32,7 +32,7 @@ from .models import USGReport
 from .forms  import USGReportForm
 from django.utils import timezone
 from .models import (
-    Ward, Bed, IPDAdmission, IPDVital, IPDMedication, IPDProgressNote, IPDSymptomHistory,
+    Ward, Bed, IPDAdmission, IPDVital, IPDMedication, IPDProgressNote, IPDSymptomHistory, IPDTreatmentHistory,
     Patient, Doctor, Department, Appointment, Consultation, Prescription,
     Investigation, InvestigationCategory, InvestigationBill, InvestigationBillItem,
     InvestigationResult, InvestigationParameter, ICDCode, DrugMaster,
@@ -565,6 +565,7 @@ def export_opd_csv(request):
 @login_required
 def medicine_search(request):
     q = request.GET.get("q", "")
+    by_id = request.GET.get("by_id") == "1"
     medicines = DrugMaster.objects.filter(
         Q(name__icontains=q) | Q(generic_name__icontains=q),
         is_active=True
@@ -572,7 +573,7 @@ def medicine_search(request):
     results = []
     for m in medicines:
         results.append({
-            "id":           m.name,
+            "id":           m.id if by_id else m.name,
             "text":         m.name,
             "name":         m.name,
             "generic_name": m.generic_name,
@@ -954,13 +955,38 @@ def ipd_patient_file(request, admission_id):
                     symptoms=symptoms_text,
                 )
 
+        elif form_type == "treatment":
+            treatment_text = request.POST.get("treatment_plan", "").strip()
+            if treatment_text:
+                admission.treatment_plan = treatment_text
+                IPDTreatmentHistory.objects.create(
+                    admission=admission,
+                    treatment_plan=treatment_text,
+                )
+
+        elif form_type == "medication":
+            drug_id = request.POST.get("drug_id", "").strip()
+            drug_obj = DrugMaster.objects.filter(id=drug_id, is_active=True).first() if drug_id.isdigit() else None
+            medicine_name = drug_obj.name if drug_obj else drug_id
+
+            if medicine_name:
+                IPDMedication.objects.create(
+                    admission=admission,
+                    drug=drug_obj,
+                    medicine_name=medicine_name,
+                    dose=request.POST.get("dose", ""),
+                    route=request.POST.get("route", ""),
+                    frequency=request.POST.get("frequency", ""),
+                )
+
         admission.save()
         return redirect(f"/ipd/patient/{admission.id}/?tab={form_type}")
 
     vitals     = IPDVital.objects.filter(admission=admission).order_by("-recorded_at")
     medications = IPDMedication.objects.filter(admission=admission)
     symptom_history = IPDSymptomHistory.objects.filter(admission=admission).order_by("-recorded_at")
-    
+    treatment_history = IPDTreatmentHistory.objects.filter(admission=admission).order_by("-recorded_at")
+
     # Optional helper: converts text back to a list so boxes stay checked on refresh
     saved_symptoms_list = [s.strip() for s in admission.symptoms.split(",")] if admission.symptoms else []
 
@@ -970,6 +996,7 @@ def ipd_patient_file(request, admission_id):
         "medications":         medications,
         "saved_symptoms_list": saved_symptoms_list,
         "symptom_history":     symptom_history,
+        "treatment_history":   treatment_history,
     })
 
 # ======================================================

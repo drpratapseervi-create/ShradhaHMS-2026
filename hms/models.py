@@ -624,6 +624,10 @@ class IPDVital(models.Model):
 # ===================== IPD MEDICATION =====================
 class IPDMedication(models.Model):
     admission     = models.ForeignKey(IPDAdmission, on_delete=models.CASCADE)
+    drug          = models.ForeignKey(
+        'DrugMaster', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="ipd_medications"
+    )
     medicine_name = models.CharField(max_length=200)
     dose          = models.CharField(max_length=50, blank=True)
     route         = models.CharField(max_length=50, blank=True)
@@ -1922,6 +1926,32 @@ class IPDSymptomHistory(models.Model):
         ordering = ["-recorded_at"]
         verbose_name = "IPD Symptom Log"
         verbose_name_plural = "IPD Symptom History Records"
+
+    def __str__(self):
+        return f"{self.admission.patient.full_name} — {self.recorded_at.strftime('%b %d, %Y %H:%M')}"
+
+
+# ======================================================
+# IPD TREATMENT PLAN HISTORY
+# ======================================================
+
+class IPDTreatmentHistory(models.Model):
+    """
+    Logs each treatment plan entry saved for an admission, so past entries
+    remain visible instead of being overwritten.
+    """
+    admission = models.ForeignKey(
+        'IPDAdmission',
+        on_delete=models.CASCADE,
+        related_name="treatment_history"
+    )
+    treatment_plan = models.TextField()
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-recorded_at"]
+        verbose_name = "IPD Treatment Log"
+        verbose_name_plural = "IPD Treatment History Records"
 
     def __str__(self):
         return f"{self.admission.patient.full_name} — {self.recorded_at.strftime('%b %d, %Y %H:%M')}"
