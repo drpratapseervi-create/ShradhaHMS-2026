@@ -91,7 +91,7 @@ body {
     color: #000;
     font-size: 11px;
     font-weight: 700;
-    padding: 4px 7px;
+    padding: 4px 7px 4px 0;
     margin: 14px 0 4px 0;
     letter-spacing: 0.5px;
     text-align: left;
@@ -391,7 +391,7 @@ a  { color: #000; text-decoration: none; }
 
 <!-- ── Print Button (hidden when printing) ── -->
 <div style="text-align:center; margin: 16px 0 8px 0;" class="no-print">
-    <button onclick="window.print()" style="
+    <button onclick="printAndClose()" style="
         background: #374151;
         color: #fff;
         border: none;
@@ -403,6 +403,18 @@ a  { color: #000; text-decoration: none; }
         letter-spacing: 0.5px;
     ">🖨️ Print OPD Sheet</button>
 </div>
+<script>
+function printAndClose() {
+    window.onafterprint = function () {
+        if (window.opener) {
+            window.close();
+        } else {
+            window.location.href = "{% url 'hms:start_consultation' appointment.id %}";
+        }
+    };
+    window.print();
+}
+</script>
 
 <!-- ── Footer ── -->
 <div class="footer">
