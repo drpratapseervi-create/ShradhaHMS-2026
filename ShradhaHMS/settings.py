@@ -319,5 +319,5 @@ FIELD_ENCRYPTION_KEY = os.getenv(
     "lYVCcXXT4gu2HtCOJlBOw81SjA783BHHlmyB6qX1TRU="
 )
 
-# ── OPENAI ────────────────────────────────────────────────────────────────
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
+# ── ANTHROPIC (Claude) ──────────────────────────────────────────────────────
+ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')

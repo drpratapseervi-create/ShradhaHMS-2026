@@ -56,7 +56,7 @@ No custom user model — role is stored on `hms.UserProfile` (OneToOne to `auth.
 - **DICOM**: `hms/dicom.py` — thin wrapper for medical imaging upload/preview/study listing.
 - **Admin UI**: `django-jazzmin` (must be listed before `django.contrib.admin` in `INSTALLED_APPS`) drives a themed admin; branding/menu/icon config is centralized in `JAZZMIN_SETTINGS`/`JAZZMIN_UI_TWEAKS` in `settings.py` — extend those dicts rather than fighting Jazzmin's defaults.
 - **Static/media**: `whitenoise` serves static files in all environments (`CompressedManifestStaticFilesStorage`); media (patient uploads, documents, radiology) is filesystem-backed under `MEDIA_ROOT`, only served by Django itself when `DEBUG=True`.
-- OpenAI (`OPENAI_API_KEY`) is wired up for AI-assisted features referenced in urls (`ai-full-opd`, `generate-ai-medicines`, `generate-diet`) — check `hms/views.py` for the actual prompts/model calls before modifying these.
+- Claude (`ANTHROPIC_API_KEY`, `anthropic` package) is wired up for AI-assisted features referenced in urls (`ai-full-opd`, `generate-ai-medicines`, `generate-diet`) — check `hms/views.py` for the actual prompts/model calls before modifying these.
 
 ### Working in `hms/views.py`
 This single file (~3200 lines) implements dashboard, patient/appointment CRUD, consultation, lab billing/results, IPD admission/discharge/vitals, OT booking, billing/receipts, inventory, document management, USG reports, and construction/partner expense views — all as plain function-based views. There's no per-feature view module split, so when adding a feature, grep for the existing section marker comments (e.g. `# ── LAB`, `# ── IPD`, `# ── BILLING`) in both `views.py` and `urls.py` to find where similar logic already lives before adding new patterns.

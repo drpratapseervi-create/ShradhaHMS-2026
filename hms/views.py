@@ -5,7 +5,7 @@ import json
 from decimal import Decimal
 from datetime import date
 from django.http import JsonResponse
-from openai import OpenAI
+import anthropic
 from django.conf import settings
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -2068,7 +2068,7 @@ def document_types_ajax(request):
     return JsonResponse({'types': [{'value': v, 'label': l} for v, l in types]})
 
 
-client = OpenAI(api_key=settings.OPENAI_API_KEY)
+client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
 def ai_full_opd(request):
     if request.method == "POST":
@@ -2099,13 +2099,14 @@ def ai_full_opd(request):
         Keep short and practical.
         """
 
-        response = client.chat.completions.create(
-            model="gpt-4.1-mini",
+        response = client.messages.create(
+            model="claude-opus-5",
+            max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.2,
         )
+        result_text = next((b.text for b in response.content if b.type == "text"), "")
 
-        return JsonResponse({"result": response.choices[0].message.content})
+        return JsonResponse({"result": result_text})
 
         from django.shortcuts import render
 from django.http import HttpResponse
@@ -3034,17 +3035,16 @@ def generate_diet(request):
     if not diagnosis:
         return JsonResponse({'error': 'No diagnosis'}, status=400)
     try:
-        from openai import OpenAI
-        client = OpenAI(api_key=settings.OPENAI_API_KEY)
-        response = client.chat.completions.create(
-            model='gpt-4o-mini',
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        response = client.messages.create(
+            model='claude-opus-5',
             max_tokens=150,
             messages=[{
                 'role': 'user',
                 'content': f'Patient diagnosis: {diagnosis}.\nWrite Indian diet chart in exactly 6 lines:\nEarly Morning: ...\nBreakfast: ...\nLunch: ...\nEvening: ...\nDinner: ...\nAvoid: ...\nOnly diet chart, no extra text, 25 words max.'
             }]
         )
-        diet = response.choices[0].message.content.strip()
+        diet = next((b.text for b in response.content if b.type == "text"), "").strip()
         return JsonResponse({'diet': diet})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -3072,22 +3072,44 @@ def generate_ai_medicines(request):
         # Convert drug list to string
         drug_str = ', '.join(drug_list) if drug_list else 'No drugs available'
 
-        from openai import OpenAI
-        client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
         # 🔥 Strong Prompt + JSON Enforcement
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            response_format={"type": "json_object"},
+        response = client.messages.create(
+            model="claude-opus-5",
             max_tokens=600,
+            system=(
+                "You are a senior Indian physician. "
+                "Always return ONLY valid JSON. No explanation."
+            ),
+            output_config={
+                "format": {
+                    "type": "json_schema",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "medicines": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "medicine": {"type": "string"},
+                                        "dose": {"type": "string"},
+                                        "frequency": {"type": "string"},
+                                        "duration": {"type": "string"},
+                                        "instructions": {"type": "string"},
+                                    },
+                                    "required": ["medicine", "dose", "frequency", "duration", "instructions"],
+                                    "additionalProperties": False,
+                                },
+                            },
+                        },
+                        "required": ["medicines"],
+                        "additionalProperties": False,
+                    },
+                }
+            },
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a senior Indian physician. "
-                        "Always return ONLY valid JSON. No explanation."
-                    )
-                },
                 {
                     "role": "user",
                     "content": f"""
@@ -3130,7 +3152,8 @@ Return JSON format:
         )
 
         # ✅ Direct JSON parsing (no regex)
-        result = json.loads(response.choices[0].message.content)
+        result_text = next(b.text for b in response.content if b.type == "text")
+        result = json.loads(result_text)
 
         # ✅ Validation layer
         validated_medicines = []
