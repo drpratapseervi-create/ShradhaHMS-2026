@@ -1010,6 +1010,19 @@ def ipd_patient_file(request, admission_id):
             if med_id.isdigit():
                 IPDDischargeMedication.objects.filter(id=med_id, admission=admission).delete()
 
+        elif form_type == "discharge_medication_bulk":
+            med_ids = [i for i in request.POST.getlist("medication_ids") if i.isdigit()]
+            source_meds = IPDMedication.objects.filter(id__in=med_ids, admission=admission)
+            for src in source_meds:
+                IPDDischargeMedication.objects.create(
+                    admission=admission,
+                    drug=src.drug,
+                    medicine_name=src.medicine_name,
+                    dose=src.dose,
+                    route=src.route,
+                    frequency=src.frequency,
+                )
+
         elif form_type == "investigations":
             inv_ids = [i for i in request.POST.getlist("investigations") if i.isdigit()]
             if inv_ids:
@@ -1055,7 +1068,7 @@ def ipd_patient_file(request, admission_id):
                 admission.discharge_date = timezone.now()
 
         admission.save()
-        tab = "discharge" if form_type in ("discharge_medication", "discharge_medication_delete") else form_type
+        tab = "discharge" if form_type in ("discharge_medication", "discharge_medication_delete", "discharge_medication_bulk") else form_type
         return redirect(f"/ipd/patient/{admission.id}/?tab={tab}")
 
     vitals     = IPDVital.objects.filter(admission=admission).order_by("-recorded_at")

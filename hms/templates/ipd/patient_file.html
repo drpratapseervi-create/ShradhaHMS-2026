@@ -691,34 +691,28 @@ Discharge Bill
 
 <h4>Medication Chart</h4>
 
+<form method="POST">
+{% csrf_token %}
+<input type="hidden" name="form_type" value="discharge_medication_bulk">
+
 <table>
 
 <tr>
+<th></th>
 <th>Medicine</th>
 <th>Dose</th>
 <th>Route</th>
 <th>Frequency</th>
-<th></th>
 </tr>
 
 {% for m in medications %}
 
 <tr>
+<td><input type="checkbox" name="medication_ids" value="{{ m.id }}"></td>
 <td>{{ m.medicine_name }}</td>
 <td>{{ m.dose }}</td>
 <td>{{ m.route }}</td>
 <td>{{ m.frequency }}</td>
-<td>
-<form method="POST" style="display:inline;">
-{% csrf_token %}
-<input type="hidden" name="form_type" value="discharge_medication">
-<input type="hidden" name="drug_id" value="{{ m.drug_id|default:m.medicine_name }}">
-<input type="hidden" name="dose" value="{{ m.dose }}">
-<input type="hidden" name="route" value="{{ m.route }}">
-<input type="hidden" name="frequency" value="{{ m.frequency }}">
-<button type="submit" class="save-btn" style="padding:2px 8px; font-size:12px;">+ To Discharge List</button>
-</form>
-</td>
 </tr>
 
 {% empty %}
@@ -730,6 +724,12 @@ Discharge Bill
 {% endfor %}
 
 </table>
+
+{% if medications %}
+<button type="submit" class="save-btn">Add Selected to Discharge List</button>
+{% endif %}
+
+</form>
 
 </div>
 
