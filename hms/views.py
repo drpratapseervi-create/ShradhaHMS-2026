@@ -58,6 +58,7 @@ from .forms import (
     AppointmentForm,
     ConsultationForm,
     IPDVitalForm,
+    IPDAdmissionForm,
 )
 
 logger = logging.getLogger(__name__)
@@ -917,7 +918,14 @@ def admit_patient(request):
             return redirect("hms:ipd_dashboard")
     else:
         form = IPDAdmissionForm()
-    return render(request, "ipd/admit_patient.html", {"form": form})
+
+    patients = Patient.objects.all().order_by("full_name")
+    doctors = Doctor.objects.all().order_by("full_name")
+    return render(request, "ipd/admit_form.html", {
+        "form": form,
+        "patients": patients,
+        "doctors": doctors,
+    })
 
 
 # ======================================================
