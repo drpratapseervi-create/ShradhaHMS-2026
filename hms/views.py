@@ -933,11 +933,11 @@ def ipd_patient_file(request, admission_id):
         if form_type == "vitals":
             IPDVital.objects.create(
                 admission=admission,
-                pulse=request.POST.get("pulse"),
-                bp=request.POST.get("bp"),
-                temperature=request.POST.get("temperature"),
-                spo2=request.POST.get("spo2"),
-                rr=request.POST.get("rr")
+                pulse=request.POST.get("pulse") or None,
+                bp=request.POST.get("bp", ""),
+                temperature=request.POST.get("temperature") or None,
+                spo2=request.POST.get("spo2") or None,
+                rr=request.POST.get("rr") or None
             )
             
         elif form_type == "symptoms":
