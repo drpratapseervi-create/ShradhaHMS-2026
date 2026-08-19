@@ -1074,6 +1074,7 @@ def ipd_patient_file(request, admission_id):
     vitals     = IPDVital.objects.filter(admission=admission).order_by("-recorded_at")
     medications = IPDMedication.objects.filter(admission=admission)
     discharge_medications = IPDDischargeMedication.objects.filter(admission=admission).order_by("-created_at")
+    drug_masters = DrugMaster.objects.filter(is_active=True).order_by("sort_order", "category", "name")
     symptom_history = IPDSymptomHistory.objects.filter(admission=admission).order_by("-recorded_at")
     treatment_history = IPDTreatmentHistory.objects.filter(admission=admission).order_by("-recorded_at")
 
@@ -1095,6 +1096,7 @@ def ipd_patient_file(request, admission_id):
         "vitals":                   vitals,
         "medications":              medications,
         "discharge_medications":    discharge_medications,
+        "drug_masters":             drug_masters,
         "saved_symptoms_list":      saved_symptoms_list,
         "symptom_history":          symptom_history,
         "treatment_history":        treatment_history,

@@ -922,18 +922,71 @@ Print Discharge
 </form>
 
 <h4>Discharge Medications</h4>
-<p style="color:#64748b; font-size:12px;">Medicines the patient should continue after discharge. Use "+ To Discharge List" on the Medication tab to copy an entry here, or add one directly below.</p>
+<p style="color:#64748b; font-size:12px;">Medicines the patient should continue after discharge. Select checkboxes on the Medication tab to copy chart entries here, or add one directly below.</p>
 
 <form method="POST">
 {% csrf_token %}
 <input type="hidden" name="form_type" value="discharge_medication">
+<input type="hidden" name="drug_id" id="ipd-discharge-medicine-id">
 
-<select name="drug_id" id="ipd-discharge-medicine-search" class="form-control" style="width:100%"></select>
+<!-- ═══ QUICK SELECT — DISCHARGE MEDICINES ═══ -->
+<div style="margin-bottom:10px;">
+  <div style="font-size:12px;font-weight:700;color:#007676;margin-bottom:6px;">⚡ Quick Select — Medicines (from Drug Master)</div>
+
+  {% if drug_masters %}
+  <div id="discharge-quick-meds-top" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px;">
+    {% for drug in drug_masters|slice:":12" %}
+    <label style="display:flex;align-items:center;gap:4px;background:#f0f9f9;border:1px solid #b2dfdb;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px;">
+      <input type="checkbox" class="discharge-quick-med-cb"
+        data-id="{{ drug.id }}"
+        data-name="{{ drug.name }}"
+        data-dose="{{ drug.default_dose|default:drug.strength }}"
+        data-freq="{{ drug.default_frequency }}"
+        data-dur="{{ drug.default_duration }}"
+        data-inst="{{ drug.default_instructions }}"> {{ drug.name }} <span style="color:#aaa;font-size:10px;">({{ drug.default_dose|default:drug.strength }})</span>
+    </label>
+    {% endfor %}
+  </div>
+
+  <div id="discharge-more-meds-collapse" style="display:none;margin-top:6px;">
+    {% regroup drug_masters|slice:"12:" by category as discharge_drug_groups %}
+    {% for group in discharge_drug_groups %}
+    <div style="margin-bottom:8px;">
+      <div style="font-size:10px;font-weight:700;color:#007676;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;border-bottom:1px solid #e0f2f1;padding-bottom:2px;">{{ group.grouper }}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+        {% for drug in group.list %}
+        <label style="display:flex;align-items:center;gap:4px;background:#f0f9f9;border:1px solid #b2dfdb;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px;">
+          <input type="checkbox" class="discharge-quick-med-cb"
+            data-id="{{ drug.id }}"
+            data-name="{{ drug.name }}"
+            data-dose="{{ drug.default_dose|default:drug.strength }}"
+            data-freq="{{ drug.default_frequency }}"
+            data-dur="{{ drug.default_duration }}"
+            data-inst="{{ drug.default_instructions }}"> {{ drug.name }} <span style="color:#aaa;font-size:10px;">({{ drug.default_dose|default:drug.strength }})</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div style="color:#999;font-size:12px;">No medicines in Drug Master. Add from Admin → Drug Masters.</div>
+  {% endif %}
+
+  <button type="button" id="discharge-toggle-more-meds" onclick="toggleDischargeMoreMeds()"
+    style="margin-top:4px;background:none;border:none;color:#007676;font-size:12px;font-weight:600;cursor:pointer;padding:2px 0;">
+    ▼ Show all medicines by category
+  </button>
+</div>
+
+<div id="discharge-selected-medicine" style="font-size:12px;color:#166534;font-weight:600;margin-bottom:6px;"></div>
+
 <input type="text" name="dose" id="ipd-discharge-medicine-dose" placeholder="Dose" class="form-control">
 <input type="text" name="route" placeholder="Route (PO/IV/IM)" class="form-control">
-<input type="text" name="frequency" placeholder="Frequency (OD/BD/TDS)" class="form-control">
-<input type="text" name="duration" placeholder="Duration (e.g. 5 days)" class="form-control">
-<input type="text" name="instructions" placeholder="Instructions (e.g. after food)" class="form-control">
+<input type="text" name="frequency" id="ipd-discharge-medicine-frequency" placeholder="Frequency (OD/BD/TDS)" class="form-control">
+<input type="text" name="duration" id="ipd-discharge-medicine-duration" placeholder="Duration (e.g. 5 days)" class="form-control">
+<input type="text" name="instructions" id="ipd-discharge-medicine-instructions" placeholder="Instructions (e.g. after food)" class="form-control">
 
 <button class="save-btn">Add to Discharge List</button>
 
@@ -1012,24 +1065,41 @@ $(function () {
         }
     });
 
-    $('#ipd-discharge-medicine-search').select2({
-        placeholder: "Type medicine name…",
-        minimumInputLength: 0,
-        dropdownParent: $('body'),
-        ajax: {
-            url: "{% url 'hms:medicine_search' %}",
-            data: params => ({ q: params.term || '', by_id: 1 }),
-            dataType: "json", delay: 250,
-            processResults: d => ({ results: d })
-        },
-        width: "100%"
-    });
-    $('#ipd-discharge-medicine-search').on('select2:select', function(e) {
-        var drug = e.params.data;
-        if (drug.strength) {
-            $('#ipd-discharge-medicine-dose').val(drug.strength);
-        }
-    });
+});
+
+/* ── Discharge Medications: Quick Select card tiles ── */
+function toggleDischargeMoreMeds() {
+    var el = document.getElementById('discharge-more-meds-collapse');
+    var btn = document.getElementById('discharge-toggle-more-meds');
+    if (!el) return;
+    if (el.style.display === 'none') {
+        el.style.display = 'block';
+        btn.textContent = '▲ Show less';
+    } else {
+        el.style.display = 'none';
+        btn.textContent = '▼ Show all medicines by category';
+    }
+}
+
+document.addEventListener('change', function(e) {
+    if (!e.target.classList.contains('discharge-quick-med-cb')) return;
+    var cb = e.target;
+
+    if (cb.checked) {
+        document.querySelectorAll('.discharge-quick-med-cb').forEach(function(other) {
+            if (other !== cb) other.checked = false;
+        });
+
+        document.getElementById('ipd-discharge-medicine-id').value = cb.dataset.id;
+        document.getElementById('ipd-discharge-medicine-dose').value = cb.dataset.dose || '';
+        document.getElementById('ipd-discharge-medicine-frequency').value = cb.dataset.freq || '';
+        document.getElementById('ipd-discharge-medicine-duration').value = cb.dataset.dur || '';
+        document.getElementById('ipd-discharge-medicine-instructions').value = cb.dataset.inst || '';
+        document.getElementById('discharge-selected-medicine').textContent = '✓ Selected: ' + cb.dataset.name;
+    } else {
+        document.getElementById('ipd-discharge-medicine-id').value = '';
+        document.getElementById('discharge-selected-medicine').textContent = '';
+    }
 });
 
 function openTab(evt, tabName){
