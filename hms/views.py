@@ -894,7 +894,7 @@ def admit_bed(request, bed_id):
 @login_required
 def ipd_discharge(request, admission_id):
     admission = get_object_or_404(IPDAdmission, id=admission_id)
-    admission.discharge_time = timezone.now()
+    admission.discharge_date = timezone.now()
     admission.status = "DISCHARGED"
     admission.save()
     bed = admission.bed
