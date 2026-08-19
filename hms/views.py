@@ -1015,6 +1015,13 @@ def ipd_patient_file(request, admission_id):
                     plan=plan,
                 )
 
+        elif form_type == "discharge":
+            admission.procedure_done         = request.POST.get("procedure_done", "").strip()
+            admission.course_in_hospital     = request.POST.get("course_in_hospital", "").strip()
+            admission.condition_at_discharge = request.POST.get("condition_at_discharge", "").strip()
+            admission.discharge_advice       = request.POST.get("discharge_advice", "").strip()
+            admission.follow_up_date         = request.POST.get("follow_up_date") or None
+
         admission.save()
         return redirect(f"/ipd/patient/{admission.id}/?tab={form_type}")
 
