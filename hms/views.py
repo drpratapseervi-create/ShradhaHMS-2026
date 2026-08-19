@@ -1687,7 +1687,7 @@ from .models import OTBooking, Patient  # remove Doctor — use plain text field
 @login_required
 def ot_dashboard(request):
     today = date.today()
-    ot_list = OTBooking.objects.filter(ot_date=today)
+    ot_list = OTBooking.objects.filter(ot_date=today).order_by("ot_time")
     return render(request, "ot/dashboard.html", {"ot_list": ot_list})
 
 
