@@ -117,8 +117,13 @@ class Patient(models.Model):
     # SAVE LOGIC
     # ==========================
     def save(self, *args, **kwargs):
-        if not self.pk:
+        is_new = not self.pk
+        if is_new:
             super().save(*args, **kwargs)
+            # The first save already inserted the row and assigned self.pk;
+            # force_insert must not carry over or the second save below
+            # will attempt to INSERT the same pk again and collide.
+            kwargs.pop("force_insert", None)
 
         if not self.uhid:
             self.uhid = f"SH{self.id:06d}"
