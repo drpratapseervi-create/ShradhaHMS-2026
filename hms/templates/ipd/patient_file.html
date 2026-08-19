@@ -722,6 +722,80 @@ Discharge Bill
 </div>
 
 
+<!-- INVESTIGATIONS -->
+
+<div id="investigations" class="tab-content">
+
+<h4>Order Investigations</h4>
+
+<form method="POST">
+{% csrf_token %}
+<input type="hidden" name="form_type" value="investigations">
+
+<div class="cb-grid">
+{% for inv in available_investigations %}
+<label class="cb-item">
+    <div style="display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" name="investigations" value="{{ inv.id }}"
+               {% if inv.id in ordered_investigation_ids %}checked disabled{% endif %}>
+        <span>{{ inv.name }}</span>
+    </div>
+    <span style="color:#64748b; font-size:11px;">{{ inv.category.get_dept_code_display }}</span>
+</label>
+{% empty %}
+<p style="color:#8892a4; font-style:italic;">No investigations configured.</p>
+{% endfor %}
+</div>
+
+<button class="save-btn">Order Selected Investigations</button>
+
+</form>
+
+<h4>Investigation Status</h4>
+
+<table>
+
+<tr>
+<th>Investigation</th>
+<th>Category</th>
+<th>Ordered On</th>
+<th>Status</th>
+<th></th>
+</tr>
+
+{% for item in ordered_investigations %}
+
+<tr>
+<td>{{ item.investigation.name }}</td>
+<td>{{ item.investigation.category.get_dept_code_display }}</td>
+<td>{{ item.bill.created_at|date:"d M Y, h:i A" }}</td>
+<td>
+{% if item.results.all %}
+<span class="va-pill va-green">Result Ready</span>
+{% else %}
+<span class="va-pill va-yellow">Pending</span>
+{% endif %}
+</td>
+<td>
+{% if item.results.all %}
+<a href="{% url 'hms:lab_report_print' item.id %}" class="print-btn" target="_blank">View Report</a>
+{% endif %}
+</td>
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="5">No investigations ordered yet.</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+
 <!-- PROGRESS NOTES -->
 
 <div id="progress" class="tab-content">

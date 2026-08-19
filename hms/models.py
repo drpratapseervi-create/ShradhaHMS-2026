@@ -365,6 +365,8 @@ class InvestigationBill(models.Model):
     patient      = models.ForeignKey("Patient",      on_delete=models.CASCADE)
     consultation = models.ForeignKey("Consultation", on_delete=models.SET_NULL,
                                      null=True, blank=True)
+    admission    = models.ForeignKey("IPDAdmission", on_delete=models.SET_NULL,
+                                     null=True, blank=True, related_name="investigation_bills")
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     discount     = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     net_amount   = models.DecimalField(max_digits=10, decimal_places=2, default=0)

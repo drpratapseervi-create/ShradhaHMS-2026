@@ -980,6 +980,26 @@ def ipd_patient_file(request, admission_id):
                     frequency=request.POST.get("frequency", ""),
                 )
 
+        elif form_type == "investigations":
+            inv_ids = [i for i in request.POST.getlist("investigations") if i.isdigit()]
+            if inv_ids:
+                bill, _ = InvestigationBill.objects.get_or_create(
+                    admission=admission,
+                    defaults={"patient": admission.patient, "paid": True, "total_amount": 0},
+                )
+                already_ordered = set(
+                    bill.items.values_list("investigation_id", flat=True)
+                )
+                for inv in Investigation.objects.filter(id__in=inv_ids).exclude(id__in=already_ordered):
+                    InvestigationBillItem.objects.create(
+                        bill=bill,
+                        investigation=inv,
+                        price=inv.price,
+                        added_by="DOCTOR",
+                    )
+                bill.total_amount = sum(bill.items.values_list("price", flat=True))
+                bill.save()
+
         admission.save()
         return redirect(f"/ipd/patient/{admission.id}/?tab={form_type}")
 
@@ -988,16 +1008,29 @@ def ipd_patient_file(request, admission_id):
     symptom_history = IPDSymptomHistory.objects.filter(admission=admission).order_by("-recorded_at")
     treatment_history = IPDTreatmentHistory.objects.filter(admission=admission).order_by("-recorded_at")
 
+    ordered_investigations = (
+        InvestigationBillItem.objects
+        .filter(bill__admission=admission)
+        .select_related("investigation__category", "bill")
+        .prefetch_related("results")
+        .order_by("-id")
+    )
+    ordered_investigation_ids = {item.investigation_id for item in ordered_investigations}
+    available_investigations = Investigation.objects.filter(is_active=True).select_related("category")
+
     # Optional helper: converts text back to a list so boxes stay checked on refresh
     saved_symptoms_list = [s.strip() for s in admission.symptoms.split(",")] if admission.symptoms else []
 
     return render(request, "ipd/patient_file.html", {
-        "admission":           admission,
-        "vitals":              vitals,
-        "medications":         medications,
-        "saved_symptoms_list": saved_symptoms_list,
-        "symptom_history":     symptom_history,
-        "treatment_history":   treatment_history,
+        "admission":                admission,
+        "vitals":                   vitals,
+        "medications":              medications,
+        "saved_symptoms_list":      saved_symptoms_list,
+        "symptom_history":          symptom_history,
+        "treatment_history":        treatment_history,
+        "available_investigations": available_investigations,
+        "ordered_investigations":   ordered_investigations,
+        "ordered_investigation_ids": ordered_investigation_ids,
     })
 
 # ======================================================
