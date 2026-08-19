@@ -848,7 +848,7 @@ Discharge Bill
 {% for note in admission.progress_notes.all %}
 
 <tr>
-<td>{{ note.created_at|date:"M d, Y H:i" }}</td>
+<td>{{ note.date_time|date:"M d, Y H:i" }}</td>
 <td>{{ note.doctor }}</td>
 <td>{{ note.subjective }}</td>
 <td>{{ note.objective }}</td>

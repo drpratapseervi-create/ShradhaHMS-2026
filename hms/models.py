@@ -661,6 +661,9 @@ class IPDProgressNote(models.Model):
     assessment = models.TextField(blank=True)
     plan       = models.TextField(blank=True)
 
+    class Meta:
+        ordering = ["-date_time"]
+
     def __str__(self):
         return f"Progress Note - {self.admission.ipd_no}"
 

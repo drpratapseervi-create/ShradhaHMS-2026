@@ -1000,6 +1000,21 @@ def ipd_patient_file(request, admission_id):
                 bill.total_amount = sum(bill.items.values_list("price", flat=True))
                 bill.save()
 
+        elif form_type == "progress":
+            subjective = request.POST.get("subjective", "").strip()
+            objective  = request.POST.get("objective", "").strip()
+            assessment = request.POST.get("assessment", "").strip()
+            plan       = request.POST.get("plan", "").strip()
+            if subjective or objective or assessment or plan:
+                IPDProgressNote.objects.create(
+                    admission=admission,
+                    doctor=admission.doctor,
+                    subjective=subjective,
+                    objective=objective,
+                    assessment=assessment,
+                    plan=plan,
+                )
+
         admission.save()
         return redirect(f"/ipd/patient/{admission.id}/?tab={form_type}")
 
