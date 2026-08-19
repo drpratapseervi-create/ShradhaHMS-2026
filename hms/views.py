@@ -994,15 +994,22 @@ def ipd_patient_file(request, admission_id):
             medicine_name = drug_obj.name if drug_obj else drug_id
 
             if medicine_name:
+                dose = request.POST.get("dose", "").strip()
+                if not dose and drug_obj:
+                    dose = drug_obj.default_dose or drug_obj.strength
+                frequency = request.POST.get("frequency", "").strip() or (drug_obj.default_frequency if drug_obj else "")
+                duration = request.POST.get("duration", "").strip() or (drug_obj.default_duration if drug_obj else "")
+                instructions = request.POST.get("instructions", "").strip() or (drug_obj.default_instructions if drug_obj else "")
+
                 IPDDischargeMedication.objects.create(
                     admission=admission,
                     drug=drug_obj,
                     medicine_name=medicine_name,
-                    dose=request.POST.get("dose", ""),
+                    dose=dose,
                     route=request.POST.get("route", ""),
-                    frequency=request.POST.get("frequency", ""),
-                    duration=request.POST.get("duration", ""),
-                    instructions=request.POST.get("instructions", ""),
+                    frequency=frequency,
+                    duration=duration,
+                    instructions=instructions,
                 )
 
         elif form_type == "discharge_medication_delete":
