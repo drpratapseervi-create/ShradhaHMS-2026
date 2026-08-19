@@ -206,6 +206,8 @@ DISCHARGE SUMMARY
 <th>Dose</th>
 <th>Route</th>
 <th>Frequency</th>
+<th>Duration</th>
+<th>Instructions</th>
 </tr>
 
 {% for m in medications %}
@@ -215,12 +217,14 @@ DISCHARGE SUMMARY
 <td>{{ m.dose }}</td>
 <td>{{ m.route }}</td>
 <td>{{ m.frequency }}</td>
+<td>{{ m.duration }}</td>
+<td>{{ m.instructions }}</td>
 </tr>
 
 {% empty %}
 
 <tr>
-<td colspan="4">No medicines recorded</td>
+<td colspan="6">No discharge medications recorded</td>
 </tr>
 
 {% endfor %}

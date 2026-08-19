@@ -698,6 +698,7 @@ Discharge Bill
 <th>Dose</th>
 <th>Route</th>
 <th>Frequency</th>
+<th></th>
 </tr>
 
 {% for m in medications %}
@@ -707,12 +708,23 @@ Discharge Bill
 <td>{{ m.dose }}</td>
 <td>{{ m.route }}</td>
 <td>{{ m.frequency }}</td>
+<td>
+<form method="POST" style="display:inline;">
+{% csrf_token %}
+<input type="hidden" name="form_type" value="discharge_medication">
+<input type="hidden" name="drug_id" value="{{ m.drug_id|default:m.medicine_name }}">
+<input type="hidden" name="dose" value="{{ m.dose }}">
+<input type="hidden" name="route" value="{{ m.route }}">
+<input type="hidden" name="frequency" value="{{ m.frequency }}">
+<button type="submit" class="save-btn" style="padding:2px 8px; font-size:12px;">+ To Discharge List</button>
+</form>
+</td>
 </tr>
 
 {% empty %}
 
 <tr>
-<td colspan="4">No medicines added</td>
+<td colspan="5">No medicines added</td>
 </tr>
 
 {% endfor %}
@@ -909,6 +921,65 @@ Print Discharge
 
 </form>
 
+<h4>Discharge Medications</h4>
+<p style="color:#64748b; font-size:12px;">Medicines the patient should continue after discharge. Use "+ To Discharge List" on the Medication tab to copy an entry here, or add one directly below.</p>
+
+<form method="POST">
+{% csrf_token %}
+<input type="hidden" name="form_type" value="discharge_medication">
+
+<select name="drug_id" id="ipd-discharge-medicine-search" class="form-control" style="width:100%"></select>
+<input type="text" name="dose" id="ipd-discharge-medicine-dose" placeholder="Dose" class="form-control">
+<input type="text" name="route" placeholder="Route (PO/IV/IM)" class="form-control">
+<input type="text" name="frequency" placeholder="Frequency (OD/BD/TDS)" class="form-control">
+<input type="text" name="duration" placeholder="Duration (e.g. 5 days)" class="form-control">
+<input type="text" name="instructions" placeholder="Instructions (e.g. after food)" class="form-control">
+
+<button class="save-btn">Add to Discharge List</button>
+
+</form>
+
+<table>
+
+<tr>
+<th>Medicine</th>
+<th>Dose</th>
+<th>Route</th>
+<th>Frequency</th>
+<th>Duration</th>
+<th>Instructions</th>
+<th></th>
+</tr>
+
+{% for m in discharge_medications %}
+
+<tr>
+<td>{{ m.medicine_name }}</td>
+<td>{{ m.dose }}</td>
+<td>{{ m.route }}</td>
+<td>{{ m.frequency }}</td>
+<td>{{ m.duration }}</td>
+<td>{{ m.instructions }}</td>
+<td>
+<form method="POST" style="display:inline;">
+{% csrf_token %}
+<input type="hidden" name="form_type" value="discharge_medication_delete">
+<input type="hidden" name="discharge_medication_id" value="{{ m.id }}">
+<button type="submit" class="save-btn" style="padding:2px 8px; font-size:12px; background:#dc2626;">Remove</button>
+</form>
+</td>
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="7">No discharge medications added</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
 </div>
 
 
@@ -938,6 +1009,25 @@ $(function () {
         var drug = e.params.data;
         if (drug.strength) {
             $('#ipd-medicine-dose').val(drug.strength);
+        }
+    });
+
+    $('#ipd-discharge-medicine-search').select2({
+        placeholder: "Type medicine name…",
+        minimumInputLength: 0,
+        dropdownParent: $('body'),
+        ajax: {
+            url: "{% url 'hms:medicine_search' %}",
+            data: params => ({ q: params.term || '', by_id: 1 }),
+            dataType: "json", delay: 250,
+            processResults: d => ({ results: d })
+        },
+        width: "100%"
+    });
+    $('#ipd-discharge-medicine-search').on('select2:select', function(e) {
+        var drug = e.params.data;
+        if (drug.strength) {
+            $('#ipd-discharge-medicine-dose').val(drug.strength);
         }
     });
 });

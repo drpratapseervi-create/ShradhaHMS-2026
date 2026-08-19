@@ -654,6 +654,27 @@ class IPDMedication(models.Model):
         return f"{self.medicine_name} - {self.admission.ipd_no}"
 
 
+# ===================== IPD DISCHARGE MEDICATION =====================
+class IPDDischargeMedication(models.Model):
+    admission     = models.ForeignKey(
+        IPDAdmission, on_delete=models.CASCADE, related_name="discharge_medications"
+    )
+    drug          = models.ForeignKey(
+        'DrugMaster', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="ipd_discharge_medications"
+    )
+    medicine_name = models.CharField(max_length=200)
+    dose          = models.CharField(max_length=50, blank=True)
+    route         = models.CharField(max_length=50, blank=True)
+    frequency     = models.CharField(max_length=50, blank=True)
+    duration      = models.CharField(max_length=50, blank=True)
+    instructions  = models.CharField(max_length=200, blank=True)
+    created_at    = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.medicine_name} - {self.admission.ipd_no}"
+
+
 # ===================== IPD PROGRESS NOTES =====================
 class IPDProgressNote(models.Model):
     admission  = models.ForeignKey(

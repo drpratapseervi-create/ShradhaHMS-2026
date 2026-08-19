@@ -32,7 +32,7 @@ from .models import USGReport
 from .forms  import USGReportForm
 from django.utils import timezone
 from .models import (
-    Ward, Bed, IPDAdmission, IPDVital, IPDMedication, IPDProgressNote, IPDSymptomHistory, IPDTreatmentHistory,
+    Ward, Bed, IPDAdmission, IPDVital, IPDMedication, IPDDischargeMedication, IPDProgressNote, IPDSymptomHistory, IPDTreatmentHistory,
     Patient, Doctor, Department, Appointment, Consultation, Prescription,
     Investigation, InvestigationCategory, InvestigationBill, InvestigationBillItem,
     InvestigationResult, InvestigationParameter, ICDCode, DrugMaster,
@@ -988,6 +988,28 @@ def ipd_patient_file(request, admission_id):
                     frequency=request.POST.get("frequency", ""),
                 )
 
+        elif form_type == "discharge_medication":
+            drug_id = request.POST.get("drug_id", "").strip()
+            drug_obj = DrugMaster.objects.filter(id=drug_id, is_active=True).first() if drug_id.isdigit() else None
+            medicine_name = drug_obj.name if drug_obj else drug_id
+
+            if medicine_name:
+                IPDDischargeMedication.objects.create(
+                    admission=admission,
+                    drug=drug_obj,
+                    medicine_name=medicine_name,
+                    dose=request.POST.get("dose", ""),
+                    route=request.POST.get("route", ""),
+                    frequency=request.POST.get("frequency", ""),
+                    duration=request.POST.get("duration", ""),
+                    instructions=request.POST.get("instructions", ""),
+                )
+
+        elif form_type == "discharge_medication_delete":
+            med_id = request.POST.get("discharge_medication_id", "")
+            if med_id.isdigit():
+                IPDDischargeMedication.objects.filter(id=med_id, admission=admission).delete()
+
         elif form_type == "investigations":
             inv_ids = [i for i in request.POST.getlist("investigations") if i.isdigit()]
             if inv_ids:
@@ -1033,10 +1055,12 @@ def ipd_patient_file(request, admission_id):
                 admission.discharge_date = timezone.now()
 
         admission.save()
-        return redirect(f"/ipd/patient/{admission.id}/?tab={form_type}")
+        tab = "discharge" if form_type in ("discharge_medication", "discharge_medication_delete") else form_type
+        return redirect(f"/ipd/patient/{admission.id}/?tab={tab}")
 
     vitals     = IPDVital.objects.filter(admission=admission).order_by("-recorded_at")
     medications = IPDMedication.objects.filter(admission=admission)
+    discharge_medications = IPDDischargeMedication.objects.filter(admission=admission).order_by("-created_at")
     symptom_history = IPDSymptomHistory.objects.filter(admission=admission).order_by("-recorded_at")
     treatment_history = IPDTreatmentHistory.objects.filter(admission=admission).order_by("-recorded_at")
 
@@ -1057,6 +1081,7 @@ def ipd_patient_file(request, admission_id):
         "admission":                admission,
         "vitals":                   vitals,
         "medications":              medications,
+        "discharge_medications":    discharge_medications,
         "saved_symptoms_list":      saved_symptoms_list,
         "symptom_history":          symptom_history,
         "treatment_history":        treatment_history,
@@ -1072,7 +1097,7 @@ def ipd_patient_file(request, admission_id):
 def discharge_pdf(request, admission_id):
     admission   = get_object_or_404(IPDAdmission, id=admission_id)
     vitals      = IPDVital.objects.filter(admission=admission).order_by("-recorded_at")
-    medications = IPDMedication.objects.filter(admission=admission)
+    medications = IPDDischargeMedication.objects.filter(admission=admission).order_by("id")
     return render(request, "ipd/discharge_pdf.html", {
         "admission":   admission,
         "patient":     admission.patient,
