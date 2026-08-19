@@ -203,6 +203,29 @@ display:inline-block;
 background:#155555;
 }
 
+.quick-med-tile{
+display:flex;
+align-items:center;
+gap:4px;
+background:#1a2e2e;
+border:1px solid #00897b;
+color:#00d4c0;
+border-radius:6px;
+padding:4px 12px;
+cursor:pointer;
+font-size:12px;
+font-weight:600;
+transition:background .15s;
+}
+.quick-med-tile:hover{
+background:#155555;
+}
+.quick-med-tile .dose{
+color:#8892a4;
+font-size:10px;
+font-weight:400;
+}
+
 .btn-danger{
 padding:9px 22px;
 background:#3a1418;
@@ -921,7 +944,7 @@ Print Discharge
 
 </form>
 
-<h4>Discharge Medications</h4>
+<h4 id="discharge-medications-section">Discharge Medications</h4>
 <p style="color:#64748b; font-size:12px;">Medicines the patient should continue after discharge. Select checkboxes on the Medication tab to copy chart entries here, or click a medicine below to add it with its Drug Master dose.</p>
 
 <!-- ═══ QUICK SELECT — DISCHARGE MEDICINES ═══ -->
@@ -935,8 +958,8 @@ Print Discharge
     {% csrf_token %}
     <input type="hidden" name="form_type" value="discharge_medication">
     <input type="hidden" name="drug_id" value="{{ drug.id }}">
-    <button type="submit" style="display:flex;align-items:center;gap:4px;background:#f0f9f9;border:1px solid #b2dfdb;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px;">
-      {{ drug.name }} <span style="color:#aaa;font-size:10px;">({{ drug.default_dose|default:drug.strength }})</span>
+    <button type="submit" class="quick-med-tile">
+      {{ drug.name }} <span class="dose">({{ drug.default_dose|default:drug.strength }})</span>
     </button>
     </form>
     {% endfor %}
@@ -953,8 +976,8 @@ Print Discharge
         {% csrf_token %}
         <input type="hidden" name="form_type" value="discharge_medication">
         <input type="hidden" name="drug_id" value="{{ drug.id }}">
-        <button type="submit" style="display:flex;align-items:center;gap:4px;background:#f0f9f9;border:1px solid #b2dfdb;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px;">
-          {{ drug.name }} <span style="color:#aaa;font-size:10px;">({{ drug.default_dose|default:drug.strength }})</span>
+        <button type="submit" class="quick-med-tile">
+          {{ drug.name }} <span class="dose">({{ drug.default_dose|default:drug.strength }})</span>
         </button>
         </form>
         {% endfor %}
@@ -1093,6 +1116,15 @@ window.addEventListener("DOMContentLoaded", function() {
             document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
             targetContent.classList.add("active");
             targetBtn.classList.add("active");
+        }
+    }
+
+    // Re-anchor to the URL hash now that the right tab is visible
+    // (the browser's own scroll-to-hash runs before the tab is shown, so it lands at the top)
+    if (window.location.hash) {
+        var anchor = document.querySelector(window.location.hash);
+        if (anchor) {
+            anchor.scrollIntoView({ block: "start" });
         }
     }
 });

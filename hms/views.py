@@ -1075,8 +1075,10 @@ def ipd_patient_file(request, admission_id):
                 admission.discharge_date = timezone.now()
 
         admission.save()
-        tab = "discharge" if form_type in ("discharge_medication", "discharge_medication_delete", "discharge_medication_bulk") else form_type
-        return redirect(f"/ipd/patient/{admission.id}/?tab={tab}")
+        discharge_med_actions = ("discharge_medication", "discharge_medication_delete", "discharge_medication_bulk")
+        tab = "discharge" if form_type in discharge_med_actions else form_type
+        anchor = "#discharge-medications-section" if form_type in discharge_med_actions else ""
+        return redirect(f"/ipd/patient/{admission.id}/?tab={tab}{anchor}")
 
     vitals     = IPDVital.objects.filter(admission=admission).order_by("-recorded_at")
     medications = IPDMedication.objects.filter(admission=admission)
