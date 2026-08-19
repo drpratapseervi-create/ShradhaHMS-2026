@@ -910,27 +910,59 @@ Discharge Bill
 
 <h3>Discharge Summary</h3>
 
-<form method="POST">
+{{ discharge_templates|json_script:"discharge-templates-data" }}
+
+<label>Load Template</label>
+<select id="discharge-template-select" class="form-control">
+  <option value="">— Select a procedure to prefill —</option>
+  {% for t in discharge_templates %}
+  <option value="{{ t.id }}">{{ t.procedure_name }} ({{ t.gender }})</option>
+  {% endfor %}
+</select>
+<p style="color:#64748b; font-size:12px; margin-top:4px;">Prefills the fields below from a standard procedure template — review and edit before saving.</p>
+
+<form method="POST" id="discharge-summary-form">
 
 {% csrf_token %}
 <input type="hidden" name="form_type" value="discharge">
 
+<label>Diagnosis</label>
+<textarea name="diagnosis" id="discharge-diagnosis" class="form-control">{{ admission.diagnosis }}</textarea>
+
+<label>Chief Complaints</label>
+<textarea name="chief_complaint" id="discharge-chief-complaints" class="form-control">{{ admission.chief_complaint }}</textarea>
+
+<label>General Examination</label>
+<textarea name="general_examination" id="discharge-general-examination" class="form-control">{{ admission.general_examination }}</textarea>
+
+<label>Local Examination</label>
+<textarea name="local_examination" id="discharge-local-examination" class="form-control">{{ admission.local_examination }}</textarea>
+
 <label>Procedure Performed</label>
-<textarea name="procedure_done" class="form-control">{{ admission.procedure_done }}</textarea>
+<textarea name="procedure_done" id="discharge-procedure-done" class="form-control">{{ admission.procedure_done }}</textarea>
 
 <label>Course in Hospital</label>
-<textarea name="course_in_hospital" class="form-control">{{ admission.course_in_hospital }}</textarea>
+<textarea name="course_in_hospital" id="discharge-course-in-hospital" class="form-control">{{ admission.course_in_hospital }}</textarea>
 
 <label>Condition at Discharge</label>
 <textarea name="condition_at_discharge" class="form-control">{{ admission.condition_at_discharge }}</textarea>
 
+<label>Treatment on Discharge</label>
+<textarea name="treatment_on_discharge" id="discharge-treatment-on-discharge" class="form-control">{{ admission.treatment_on_discharge }}</textarea>
+
 <label>Discharge Advice</label>
-<textarea name="discharge_advice" class="form-control">{{ admission.discharge_advice }}</textarea>
+<textarea name="discharge_advice" id="discharge-advice" class="form-control">{{ admission.discharge_advice }}</textarea>
 
 <label>Follow Up Date</label>
 
 <input type="date" name="follow_up_date" class="form-control"
 value="{{ admission.follow_up_date|date:'Y-m-d' }}">
+
+<label>Follow Up Instructions</label>
+<textarea name="follow_up_instructions" id="discharge-follow-up-instructions" class="form-control">{{ admission.follow_up_instructions }}</textarea>
+
+<label>Instructions</label>
+<textarea name="discharge_instructions" id="discharge-instructions" class="form-control">{{ admission.discharge_instructions }}</textarea>
 
 <br>
 
@@ -1084,6 +1116,49 @@ function toggleDischargeMoreMeds() {
         btn.textContent = '▼ Show all medicines by category';
     }
 }
+
+/* ── Discharge Summary: Load Template ── */
+document.addEventListener('DOMContentLoaded', function() {
+    var select = document.getElementById('discharge-template-select');
+    var dataEl = document.getElementById('discharge-templates-data');
+    if (!select || !dataEl) return;
+
+    var templates = {};
+    JSON.parse(dataEl.textContent).forEach(function(t) { templates[t.id] = t; });
+
+    var fieldMap = {
+        diagnosis: 'discharge-diagnosis',
+        chief_complaints: 'discharge-chief-complaints',
+        general_examination: 'discharge-general-examination',
+        local_examination: 'discharge-local-examination',
+        operation_notes: 'discharge-procedure-done',
+        course_in_hospital: 'discharge-course-in-hospital',
+        treatment_on_discharge: 'discharge-treatment-on-discharge',
+        advice: 'discharge-advice',
+        follow_up: 'discharge-follow-up-instructions',
+        instructions: 'discharge-instructions'
+    };
+
+    select.addEventListener('change', function() {
+        var t = templates[select.value];
+        if (!t) return;
+
+        var hasExistingText = Object.values(fieldMap).some(function(id) {
+            var el = document.getElementById(id);
+            return el && el.value.trim() !== '';
+        });
+        if (hasExistingText && !confirm('This will overwrite any text already entered in the Discharge fields below. Continue?')) {
+            select.value = '';
+            return;
+        }
+
+        Object.keys(fieldMap).forEach(function(key) {
+            var el = document.getElementById(fieldMap[key]);
+            if (el) el.value = t[key] || '';
+        });
+        select.value = '';
+    });
+});
 
 function openTab(evt, tabName){
 

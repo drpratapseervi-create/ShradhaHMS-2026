@@ -181,6 +181,21 @@ DISCHARGE SUMMARY
 </div>
 
 <div class="section">
+<div class="section-title">Chief Complaints</div>
+{{ admission.chief_complaint }}
+</div>
+
+<div class="section">
+<div class="section-title">General Examination</div>
+{{ admission.general_examination }}
+</div>
+
+<div class="section">
+<div class="section-title">Local Examination</div>
+{{ admission.local_examination }}
+</div>
+
+<div class="section">
 <div class="section-title">Procedure Performed</div>
 {{ admission.procedure_done }}
 </div>
@@ -193,6 +208,11 @@ DISCHARGE SUMMARY
 <div class="section">
 <div class="section-title">Condition at Discharge</div>
 {{ admission.condition_at_discharge }}
+</div>
+
+<div class="section">
+<div class="section-title">Treatment on Discharge</div>
+{{ admission.treatment_on_discharge }}
 </div>
 
 <div class="section">
@@ -244,8 +264,19 @@ DISCHARGE SUMMARY
 <div class="section">
 
 <b>Follow Up Date:</b> {{ admission.follow_up_date }}
+{% if admission.follow_up_instructions %}<br>{{ admission.follow_up_instructions }}{% endif %}
 
 </div>
+
+{% if admission.discharge_instructions %}
+<div class="section">
+
+<div class="section-title">Instructions</div>
+
+{{ admission.discharge_instructions }}
+
+</div>
+{% endif %}
 
 <div class="section">
 

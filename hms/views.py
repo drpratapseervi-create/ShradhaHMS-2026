@@ -32,7 +32,7 @@ from .models import USGReport
 from .forms  import USGReportForm
 from django.utils import timezone
 from .models import (
-    Ward, Bed, IPDAdmission, IPDVital, IPDMedication, IPDDischargeMedication, IPDProgressNote, IPDSymptomHistory, IPDTreatmentHistory,
+    Ward, Bed, IPDAdmission, IPDVital, IPDMedication, IPDDischargeMedication, DischargeTemplate, IPDProgressNote, IPDSymptomHistory, IPDTreatmentHistory,
     Patient, Doctor, Department, Appointment, Consultation, Prescription,
     Investigation, InvestigationCategory, InvestigationBill, InvestigationBillItem,
     InvestigationResult, InvestigationParameter, ICDCode, DrugMaster,
@@ -1066,11 +1066,18 @@ def ipd_patient_file(request, admission_id):
                 )
 
         elif form_type == "discharge":
-            admission.procedure_done         = request.POST.get("procedure_done", "").strip()
-            admission.course_in_hospital     = request.POST.get("course_in_hospital", "").strip()
-            admission.condition_at_discharge = request.POST.get("condition_at_discharge", "").strip()
-            admission.discharge_advice       = request.POST.get("discharge_advice", "").strip()
-            admission.follow_up_date         = request.POST.get("follow_up_date") or None
+            admission.diagnosis               = request.POST.get("diagnosis", "").strip()
+            admission.chief_complaint         = request.POST.get("chief_complaint", "").strip()
+            admission.general_examination     = request.POST.get("general_examination", "").strip()
+            admission.local_examination       = request.POST.get("local_examination", "").strip()
+            admission.procedure_done          = request.POST.get("procedure_done", "").strip()
+            admission.course_in_hospital      = request.POST.get("course_in_hospital", "").strip()
+            admission.condition_at_discharge  = request.POST.get("condition_at_discharge", "").strip()
+            admission.treatment_on_discharge  = request.POST.get("treatment_on_discharge", "").strip()
+            admission.discharge_advice        = request.POST.get("discharge_advice", "").strip()
+            admission.follow_up_date          = request.POST.get("follow_up_date") or None
+            admission.follow_up_instructions  = request.POST.get("follow_up_instructions", "").strip()
+            admission.discharge_instructions  = request.POST.get("discharge_instructions", "").strip()
             if not admission.discharge_date:
                 admission.discharge_date = timezone.now()
 
@@ -1084,6 +1091,14 @@ def ipd_patient_file(request, admission_id):
     medications = IPDMedication.objects.filter(admission=admission)
     discharge_medications = IPDDischargeMedication.objects.filter(admission=admission).order_by("-created_at")
     drug_masters = DrugMaster.objects.filter(is_active=True).order_by("sort_order", "category", "name")
+    discharge_templates = list(
+        DischargeTemplate.objects.filter(is_active=True).values(
+            "id", "procedure_name", "gender",
+            "diagnosis", "chief_complaints", "general_examination", "local_examination",
+            "operation_notes", "course_in_hospital", "treatment_on_discharge",
+            "advice", "follow_up", "instructions",
+        )
+    )
     symptom_history = IPDSymptomHistory.objects.filter(admission=admission).order_by("-recorded_at")
     treatment_history = IPDTreatmentHistory.objects.filter(admission=admission).order_by("-recorded_at")
 
@@ -1106,6 +1121,7 @@ def ipd_patient_file(request, admission_id):
         "medications":              medications,
         "discharge_medications":    discharge_medications,
         "drug_masters":             drug_masters,
+        "discharge_templates":      discharge_templates,
         "saved_symptoms_list":      saved_symptoms_list,
         "symptom_history":          symptom_history,
         "treatment_history":        treatment_history,

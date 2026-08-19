@@ -42,10 +42,21 @@ from .models import (
     Vendor,
     PartnerPayment,
     ExpenseBudget,
+
+    # IPD Discharge Templates
+    DischargeTemplate,
     )
 # ===================== BASIC MODELS =====================
 admin.site.register(Bed)
 admin.site.register(IPDAdmission)
+
+
+# ===================== DISCHARGE TEMPLATES =====================
+@admin.register(DischargeTemplate)
+class DischargeTemplateAdmin(admin.ModelAdmin):
+    list_display = ("procedure_name", "gender", "is_active", "created_at")
+    list_filter = ("gender", "is_active")
+    search_fields = ("procedure_name",)
 
 # ===================== WARD =====================
 @admin.register(Ward)

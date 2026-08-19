@@ -589,15 +589,20 @@ class IPDAdmission(models.Model):
     icd_code        = models.CharField(max_length=10, blank=True)
 
     # -------- PROCEDURE / COURSE --------
-    procedure_done         = models.TextField(blank=True)
-    course_in_hospital     = models.TextField(blank=True)
-    condition_at_discharge = models.TextField(blank=True)
+    general_examination     = models.TextField(blank=True)
+    local_examination       = models.TextField(blank=True)
+    procedure_done          = models.TextField(blank=True)
+    course_in_hospital      = models.TextField(blank=True)
+    condition_at_discharge  = models.TextField(blank=True)
+    treatment_on_discharge  = models.TextField(blank=True)
 
     # -------- DISCHARGE --------
-    discharge_summary = models.TextField(blank=True)
-    discharge_advice  = models.TextField(blank=True)
-    follow_up_date    = models.DateField(null=True, blank=True)
-    discharge_date    = models.DateTimeField(null=True, blank=True)
+    discharge_summary       = models.TextField(blank=True)
+    discharge_advice        = models.TextField(blank=True)
+    follow_up_date          = models.DateField(null=True, blank=True)
+    follow_up_instructions  = models.TextField(blank=True)
+    discharge_instructions  = models.TextField(blank=True)
+    discharge_date          = models.DateTimeField(null=True, blank=True)
 
     # -------- ATTENDANT --------
     attendant_name     = models.CharField(max_length=100, blank=True)
@@ -673,6 +678,33 @@ class IPDDischargeMedication(models.Model):
 
     def __str__(self):
         return f"{self.medicine_name} - {self.admission.ipd_no}"
+
+
+# ===================== DISCHARGE TEMPLATES =====================
+class DischargeTemplate(models.Model):
+    GENDER_CHOICES = [("M", "Male"), ("F", "Female"), ("U", "Any")]
+
+    procedure_name          = models.CharField(max_length=150)
+    gender                  = models.CharField(max_length=1, choices=GENDER_CHOICES, default="U")
+    diagnosis                = models.TextField(blank=True)
+    chief_complaints         = models.TextField(blank=True)
+    general_examination      = models.TextField(blank=True)
+    local_examination        = models.TextField(blank=True)
+    operation_notes           = models.TextField(blank=True)
+    course_in_hospital        = models.TextField(blank=True)
+    treatment_on_discharge    = models.TextField(blank=True)
+    advice                     = models.TextField(blank=True)
+    follow_up                   = models.TextField(blank=True)
+    instructions                 = models.TextField(blank=True)
+    is_active                     = models.BooleanField(default=True)
+    created_at                     = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["procedure_name", "gender"]
+        unique_together = [("procedure_name", "gender")]
+
+    def __str__(self):
+        return f"{self.procedure_name} ({self.get_gender_display()})"
 
 
 # ===================== IPD PROGRESS NOTES =====================
