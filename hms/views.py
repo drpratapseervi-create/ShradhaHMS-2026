@@ -985,7 +985,7 @@ def ipd_patient_file(request, admission_id):
             if inv_ids:
                 bill, _ = InvestigationBill.objects.get_or_create(
                     admission=admission,
-                    defaults={"patient": admission.patient, "paid": True, "total_amount": 0},
+                    defaults={"patient": admission.patient, "paid": False, "total_amount": 0},
                 )
                 already_ordered = set(
                     bill.items.values_list("investigation_id", flat=True)

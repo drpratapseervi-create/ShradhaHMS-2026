@@ -772,6 +772,8 @@ Discharge Bill
 <td>
 {% if item.results.all %}
 <span class="va-pill va-green">Result Ready</span>
+{% elif not item.bill.paid %}
+<span class="va-pill" style="background:#3a1418; color:#fca5a5; border:1px solid #7a2530;">Awaiting Payment</span>
 {% else %}
 <span class="va-pill va-yellow">Pending</span>
 {% endif %}
