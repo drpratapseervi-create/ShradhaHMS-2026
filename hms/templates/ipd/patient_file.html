@@ -983,13 +983,37 @@ function addIpdSymptom() {
     if (!name) return;
 
     var container = document.querySelector(".extra-symptoms-box");
+
     var label = document.createElement("label");
     label.className = "cb-item";
-    label.innerHTML =
-        '<div style="display: flex; align-items: center; gap: 8px;">' +
-        '<input type="checkbox" name="symptoms_list" value="' + name + '" checked>' +
-        '<span>' + name + '</span></div>' +
-        '<span style="color: #64748b; font-size: 11px;" onclick="this.parentElement.remove()">✕</span>';
+
+    var wrap = document.createElement("div");
+    wrap.style.display = "flex";
+    wrap.style.alignItems = "center";
+    wrap.style.gap = "8px";
+
+    var checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.name = "symptoms_list";
+    checkbox.value = name;
+    checkbox.checked = true;
+
+    var span = document.createElement("span");
+    span.textContent = name;
+
+    wrap.appendChild(checkbox);
+    wrap.appendChild(span);
+
+    var removeBtn = document.createElement("span");
+    removeBtn.style.color = "#64748b";
+    removeBtn.style.fontSize = "11px";
+    removeBtn.textContent = "✕";
+    removeBtn.addEventListener("click", function () {
+        label.remove();
+    });
+
+    label.appendChild(wrap);
+    label.appendChild(removeBtn);
     container.appendChild(label);
     input.value = "";
 }
