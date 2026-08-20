@@ -32,6 +32,8 @@ from .models import (
     # Clinical Data
     Symptom,
     Sign,
+    PastHistory,
+    SurgicalHistory,
 
     # Pharmacy
     DrugMaster,
@@ -200,6 +202,22 @@ class SymptomAdmin(admin.ModelAdmin):
 class SignAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "department", "is_active")
     list_filter = ("department", "is_active")
+    search_fields = ("name",)
+
+
+# ===================== PAST HISTORY =====================
+@admin.register(PastHistory)
+class PastHistoryAdmin(admin.ModelAdmin):
+    list_display = ("id", "name", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("name",)
+
+
+# ===================== SURGICAL HISTORY =====================
+@admin.register(SurgicalHistory)
+class SurgicalHistoryAdmin(admin.ModelAdmin):
+    list_display = ("id", "name", "is_active")
+    list_filter = ("is_active",)
     search_fields = ("name",)
 
 

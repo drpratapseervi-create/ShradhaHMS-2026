@@ -266,6 +266,8 @@ class Consultation(models.Model):
     procedures_performed = models.TextField(blank=True)
     symptoms         = models.ManyToManyField("Symptom", blank=True)
     signs            = models.ManyToManyField("Sign", blank=True)
+    past_history     = models.ManyToManyField("PastHistory", blank=True)
+    surgical_history  = models.ManyToManyField("SurgicalHistory", blank=True)
     diagnosis_text   = models.CharField(max_length=255, blank=True)
     diagnosis_icd    = models.ForeignKey(
         ICDCode, on_delete=models.SET_NULL, null=True, blank=True
@@ -499,6 +501,24 @@ class Sign(models.Model):
     department = models.ForeignKey(
         Department, on_delete=models.CASCADE, related_name="signs"
     )
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+
+# ===================== PAST HISTORY =====================
+class PastHistory(models.Model):
+    name      = models.CharField(max_length=200)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+
+# ===================== SURGICAL HISTORY =====================
+class SurgicalHistory(models.Model):
+    name      = models.CharField(max_length=200)
     is_active = models.BooleanField(default=True)
 
     def __str__(self):

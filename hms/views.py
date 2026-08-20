@@ -36,7 +36,7 @@ from .models import (
     Patient, Doctor, Department, Appointment, Consultation, Prescription,
     Investigation, InvestigationCategory, InvestigationBill, InvestigationBillItem,
     InvestigationResult, InvestigationParameter, ICDCode, DrugMaster,
-    Symptom, Sign, MedicalImage, BillItem, PatientService,
+    Symptom, Sign, PastHistory, SurgicalHistory, MedicalImage, BillItem, PatientService,
     DischargeBill, DischargeBillItem, ProcedureItem, ProcedureBill, ProcedureBillItem,
     IPDAdvance, OTBooking, OTNotes,                        # ← OT models here
     InventoryItem, StockIn, StockOut, Supplier,            # ← Inventory models here
@@ -236,6 +236,8 @@ def start_consultation(request, appointment_id):
 
                 obj.symptoms.set(request.POST.getlist("symptoms"))
                 obj.signs.set(request.POST.getlist("signs"))
+                obj.past_history.set(request.POST.getlist("past_history"))
+                obj.surgical_history.set(request.POST.getlist("surgical_history"))
 
                 # ── Save multiple ICD codes ──
                 icd_ids = request.POST.getlist("icd_codes[]")
@@ -315,6 +317,8 @@ def start_consultation(request, appointment_id):
         "signs": Sign.objects.filter(
             department=appointment.department, is_active=True
         ),
+        "past_histories": PastHistory.objects.filter(is_active=True),
+        "surgical_histories": SurgicalHistory.objects.filter(is_active=True),
         "medical_images": MedicalImage.objects.filter(
             consultation=consultation
         ).order_by("-created_at"),
@@ -3107,8 +3111,69 @@ def delete_sign(request, pk):
         return JsonResponse({'success': True})
     except Sign.DoesNotExist:
         return JsonResponse({'error': 'Not found'}, status=404)
-    
-    
+
+
+@login_required
+@role_required("doctor", "admin")
+def add_past_history(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    data = json.loads(request.body)
+    name = data.get('name', '').strip()
+
+    if not name:
+        return JsonResponse({'error': 'Name required'}, status=400)
+
+    item, created = PastHistory.objects.get_or_create(
+        name=name,
+        defaults={'is_active': True}
+    )
+
+    return JsonResponse({'id': item.id, 'name': item.name, 'created': created})
+
+
+@login_required
+@role_required("doctor", "admin")
+def delete_past_history(request, pk):
+    try:
+        PastHistory.objects.get(pk=pk).delete()
+        return JsonResponse({'success': True})
+    except PastHistory.DoesNotExist:
+        return JsonResponse({'error': 'Not found'}, status=404)
+
+
+@login_required
+@role_required("doctor", "admin")
+def add_surgical_history(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    data = json.loads(request.body)
+    name = data.get('name', '').strip()
+
+    if not name:
+        return JsonResponse({'error': 'Name required'}, status=400)
+
+    item, created = SurgicalHistory.objects.get_or_create(
+        name=name,
+        defaults={'is_active': True}
+    )
+
+    return JsonResponse({'id': item.id, 'name': item.name, 'created': created})
+
+
+@login_required
+@role_required("doctor", "admin")
+def delete_surgical_history(request, pk):
+    try:
+        SurgicalHistory.objects.get(pk=pk).delete()
+        return JsonResponse({'success': True})
+    except SurgicalHistory.DoesNotExist:
+        return JsonResponse({'error': 'Not found'}, status=404)
+
+
+
 @login_required
 def add_drug_quick(request):
     if request.method == 'POST':
