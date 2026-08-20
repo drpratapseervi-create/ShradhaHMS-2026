@@ -1035,7 +1035,6 @@
     <div class="sec-head" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;">💬 Advice to Patient</div>
     <div class="sec-body">
         <div class="ch-grid" style="margin-bottom:10px;">
-            <span class="ch-pill" onclick="addAdvice(this)">Rest for 3 days</span>
             <span class="ch-pill" onclick="addAdvice(this)">No heavy lifting</span>
             <span class="ch-pill" onclick="addAdvice(this)">Avoid alcohol</span>
             <span class="ch-pill" onclick="addAdvice(this)">Avoid smoking</span>
@@ -1044,7 +1043,6 @@
             <span class="ch-pill" onclick="addAdvice(this)">Monitor sugar daily</span>
             <span class="ch-pill" onclick="addAdvice(this)">Keep wound dry</span>
             <span class="ch-pill" onclick="addAdvice(this)">Dressing daily</span>
-            <span class="ch-pill" onclick="addAdvice(this)">Complete bed rest</span>
         </div>
         <textarea name="advice" id="id_advice" rows="3" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Type advice or click chips above…">{{ consultation.advice|default:'' }}</textarea>
     </div>
