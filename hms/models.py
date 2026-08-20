@@ -267,7 +267,8 @@ class Consultation(models.Model):
     symptoms         = models.ManyToManyField("Symptom", blank=True)
     signs            = models.ManyToManyField("Sign", blank=True)
     past_history     = models.ManyToManyField("PastHistory", blank=True)
-    surgical_history  = models.ManyToManyField("SurgicalHistory", blank=True, through="ConsultationSurgicalHistory")
+    surgical_history  = models.ManyToManyField("SurgicalHistory", blank=True)
+    surgery_date     = models.DateField(null=True, blank=True)
     diagnosis_text   = models.CharField(max_length=255, blank=True)
     diagnosis_icd    = models.ForeignKey(
         ICDCode, on_delete=models.SET_NULL, null=True, blank=True
@@ -523,19 +524,6 @@ class SurgicalHistory(models.Model):
 
     def __str__(self):
         return self.name
-
-
-# ===================== CONSULTATION SURGICAL HISTORY (through) =====================
-class ConsultationSurgicalHistory(models.Model):
-    consultation     = models.ForeignKey(Consultation, on_delete=models.CASCADE)
-    surgical_history = models.ForeignKey(SurgicalHistory, on_delete=models.CASCADE)
-    surgery_date     = models.DateField(null=True, blank=True)
-
-    class Meta:
-        unique_together = ("consultation", "surgical_history")
-
-    def __str__(self):
-        return f"{self.surgical_history.name} ({self.surgery_date or 'no date'})"
 
 
 # ===================== MEDICAL IMAGE =====================

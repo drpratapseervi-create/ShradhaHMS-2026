@@ -30,6 +30,7 @@ class ConsultationForm(forms.ModelForm):
             "signs",
             "past_history",
             "surgical_history",
+            "surgery_date",
             "investigations",
             "created_at",
             "advice",   
