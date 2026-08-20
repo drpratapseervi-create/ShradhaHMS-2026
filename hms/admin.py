@@ -34,6 +34,8 @@ from .models import (
     Sign,
     PastHistory,
     SurgicalHistory,
+    AdviceOption,
+    DietAdviceOption,
 
     # Pharmacy
     DrugMaster,
@@ -219,6 +221,22 @@ class SurgicalHistoryAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "is_active")
     list_filter = ("is_active",)
     search_fields = ("name",)
+
+
+# ===================== ADVICE OPTION =====================
+@admin.register(AdviceOption)
+class AdviceOptionAdmin(admin.ModelAdmin):
+    list_display = ("id", "text", "is_active", "sort_order")
+    list_filter = ("is_active",)
+    search_fields = ("text",)
+
+
+# ===================== DIET ADVICE OPTION =====================
+@admin.register(DietAdviceOption)
+class DietAdviceOptionAdmin(admin.ModelAdmin):
+    list_display = ("id", "text", "is_active", "sort_order")
+    list_filter = ("is_active",)
+    search_fields = ("text",)
 
 
 # ===================== DRUG MASTER =====================

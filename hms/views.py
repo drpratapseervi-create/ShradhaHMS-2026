@@ -36,7 +36,7 @@ from .models import (
     Patient, Doctor, Department, Appointment, Consultation, Prescription,
     Investigation, InvestigationCategory, InvestigationBill, InvestigationBillItem,
     InvestigationResult, InvestigationParameter, ICDCode, DrugMaster,
-    Symptom, Sign, PastHistory, SurgicalHistory, MedicalImage, BillItem, PatientService,
+    Symptom, Sign, PastHistory, SurgicalHistory, AdviceOption, DietAdviceOption, MedicalImage, BillItem, PatientService,
     DischargeBill, DischargeBillItem, ProcedureItem, ProcedureBill, ProcedureBillItem,
     IPDAdvance, OTBooking, OTNotes,                        # ← OT models here
     InventoryItem, StockIn, StockOut, Supplier,            # ← Inventory models here
@@ -320,6 +320,8 @@ def start_consultation(request, appointment_id):
         ),
         "past_histories": PastHistory.objects.filter(is_active=True),
         "surgical_histories": SurgicalHistory.objects.filter(is_active=True),
+        "advice_options": AdviceOption.objects.filter(is_active=True),
+        "diet_options": DietAdviceOption.objects.filter(is_active=True),
         "medical_images": MedicalImage.objects.filter(
             consultation=consultation
         ).order_by("-created_at"),
@@ -3173,6 +3175,66 @@ def delete_surgical_history(request, pk):
         SurgicalHistory.objects.get(pk=pk).delete()
         return JsonResponse({'success': True})
     except SurgicalHistory.DoesNotExist:
+        return JsonResponse({'error': 'Not found'}, status=404)
+
+
+@login_required
+@role_required("doctor", "admin")
+def add_advice_option(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    data = json.loads(request.body)
+    text = data.get('text', '').strip()
+
+    if not text:
+        return JsonResponse({'error': 'Text required'}, status=400)
+
+    item, created = AdviceOption.objects.get_or_create(
+        text=text,
+        defaults={'is_active': True}
+    )
+
+    return JsonResponse({'id': item.id, 'text': item.text, 'created': created})
+
+
+@login_required
+@role_required("doctor", "admin")
+def delete_advice_option(request, pk):
+    try:
+        AdviceOption.objects.get(pk=pk).delete()
+        return JsonResponse({'success': True})
+    except AdviceOption.DoesNotExist:
+        return JsonResponse({'error': 'Not found'}, status=404)
+
+
+@login_required
+@role_required("doctor", "admin")
+def add_diet_option(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    data = json.loads(request.body)
+    text = data.get('text', '').strip()
+
+    if not text:
+        return JsonResponse({'error': 'Text required'}, status=400)
+
+    item, created = DietAdviceOption.objects.get_or_create(
+        text=text,
+        defaults={'is_active': True}
+    )
+
+    return JsonResponse({'id': item.id, 'text': item.text, 'created': created})
+
+
+@login_required
+@role_required("doctor", "admin")
+def delete_diet_option(request, pk):
+    try:
+        DietAdviceOption.objects.get(pk=pk).delete()
+        return JsonResponse({'success': True})
+    except DietAdviceOption.DoesNotExist:
         return JsonResponse({'error': 'Not found'}, status=404)
 
 

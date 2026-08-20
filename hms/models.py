@@ -526,6 +526,32 @@ class SurgicalHistory(models.Model):
         return self.name
 
 
+# ===================== ADVICE OPTION =====================
+class AdviceOption(models.Model):
+    text       = models.CharField(max_length=200)
+    is_active  = models.BooleanField(default=True)
+    sort_order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return self.text
+
+
+# ===================== DIET ADVICE OPTION =====================
+class DietAdviceOption(models.Model):
+    text       = models.CharField(max_length=200)
+    is_active  = models.BooleanField(default=True)
+    sort_order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return self.text
+
+
 # ===================== MEDICAL IMAGE =====================
 class MedicalImage(models.Model):
 

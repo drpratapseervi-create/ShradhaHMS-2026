@@ -314,6 +314,8 @@
 .ch-grid { display:flex; flex-wrap:wrap; gap:7px; }
 .ch-pill { background:#f5f7fa; border:1px solid #dde; border-radius:20px; padding:5px 13px; cursor:pointer; font-size:12px; font-weight:600; color:#555; user-select:none; transition:.15s; }
 .ch-pill:hover { background:#e6f4f4; border-color:#007676; color:#007676; }
+.chip-del { margin-left:7px; color:#bbb; font-size:10px; font-weight:400; cursor:pointer; }
+.chip-del:hover { color:#dc3545; }
 
 /* ── Action Bar ── */
 .action-bar {
@@ -1032,39 +1034,53 @@
 
 <!-- ═══ ADVICE ═══ -->
 <div class="sec">
-    <div class="sec-head" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;">💬 Advice to Patient</div>
+    <div class="sec-head" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;display:flex;align-items:center;justify-content:space-between;">
+        <span>💬 Advice to Patient</span>
+        <button type="button" onclick="openManage('advice')" style="background:#e0f2fe;border:1px solid #0284c7;color:#0369a1;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;">⚙️ Manage</button>
+    </div>
     <div class="sec-body">
-        <div class="ch-grid" style="margin-bottom:10px;">
-            <span class="ch-pill" onclick="addAdvice(this)">No heavy lifting</span>
-            <span class="ch-pill" onclick="addAdvice(this)">Avoid alcohol</span>
-            <span class="ch-pill" onclick="addAdvice(this)">Avoid smoking</span>
-            <span class="ch-pill" onclick="addAdvice(this)">Walk 30 min daily</span>
-            <span class="ch-pill" onclick="addAdvice(this)">Monitor BP daily</span>
-            <span class="ch-pill" onclick="addAdvice(this)">Monitor sugar daily</span>
-            <span class="ch-pill" onclick="addAdvice(this)">Keep wound dry</span>
-            <span class="ch-pill" onclick="addAdvice(this)">Dressing daily</span>
+        <div class="ch-grid" style="margin-bottom:10px;" id="advice-chip-grid">
+            {% for a in advice_options %}
+            <span class="ch-pill" data-id="{{ a.id }}" onclick="addAdvice(this)"><span class="chip-text">{{ a.text }}</span><span class="chip-del" onclick="event.stopPropagation();deleteChip('advice',{{ a.id }},this)" title="Delete">✕</span></span>
+            {% empty %}
+            <p style="color:#888; font-style:italic;">No advice options configured.</p>
+            {% endfor %}
         </div>
-        <textarea name="advice" id="id_advice" rows="3" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Type advice or click chips above…">{{ consultation.advice|default:'' }}</textarea>
+        <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+            <input type="text" id="new-advice-input" placeholder="➕ Add new advice…"
+                style="flex:1;padding:6px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();addAdviceOption();}">
+            <button type="button" onclick="addAdviceOption()" style="background:#0284c7;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">Add</button>
+        </div>
+        <textarea name="advice" id="id_advice" rows="3" style="width:100%;max-width:360px;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Type advice or click chips above…">{{ consultation.advice|default:'' }}</textarea>
     </div>
 </div>
 
 <!-- ═══ DIET ═══ -->
 <div class="sec">
-    <div class="sec-head" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;">🥗 Diet Advice</div>
+    <div class="sec-head" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;display:flex;align-items:center;justify-content:space-between;">
+        <span>🥗 Diet Advice</span>
+        <button type="button" onclick="openManage('diet')" style="background:#dcfce7;border:1px solid #16a34a;color:#15803d;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;">⚙️ Manage</button>
+    </div>
     <div class="sec-body">
         <div style="margin-bottom:8px;display:flex;align-items:center;gap:10px;">
             <button type="button" id="diet-ai-btn" onclick="generateAIDiet()" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">🤖 Generate Diet Chart</button>
             <span id="diet-loading" style="display:none;font-size:12px;color:#16a34a;font-weight:600;">⏳ Generating...</span>
         </div>
-        <div class="ch-grid" style="margin-bottom:10px;">
-            <span class="ch-pill" onclick="addDiet(this)">Normal diet</span>
-            <span class="ch-pill" onclick="addDiet(this)">Soft diet</span>
-            <span class="ch-pill" onclick="addDiet(this)">Liquid diet</span>
-            <span class="ch-pill" onclick="addDiet(this)">Diabetic diet</span>
-            <span class="ch-pill" onclick="addDiet(this)">Low salt diet</span>
-            <span class="ch-pill" onclick="addDiet(this)">High protein diet</span>
+        <div class="ch-grid" style="margin-bottom:10px;" id="diet-chip-grid">
+            {% for d in diet_options %}
+            <span class="ch-pill" data-id="{{ d.id }}" onclick="addDiet(this)"><span class="chip-text">{{ d.text }}</span><span class="chip-del" onclick="event.stopPropagation();deleteChip('diet',{{ d.id }},this)" title="Delete">✕</span></span>
+            {% empty %}
+            <p style="color:#888; font-style:italic;">No diet options configured.</p>
+            {% endfor %}
         </div>
-        <textarea name="diet_advice" id="id_diet_advice" rows="2" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Type diet advice or click chips above…">{{ consultation.diet_advice|default:'' }}</textarea>
+        <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+            <input type="text" id="new-diet-input" placeholder="➕ Add new diet advice…"
+                style="flex:1;padding:6px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();addDietOption();}">
+            <button type="button" onclick="addDietOption()" style="background:#16a34a;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">Add</button>
+        </div>
+        <textarea name="diet_advice" id="id_diet_advice" rows="2" style="width:100%;max-width:360px;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Type diet advice or click chips above…">{{ consultation.diet_advice|default:'' }}</textarea>
     </div>
 </div>
 
@@ -2051,7 +2067,9 @@ var DELETE_URLS = {
     symptom: '/symptoms/delete/',
     sign: '/signs/delete/',
     pasthistory: '/past-history/delete/',
-    surgicalhistory: '/surgical-history/delete/'
+    surgicalhistory: '/surgical-history/delete/',
+    advice: '/advice-options/delete/',
+    diet: '/diet-options/delete/'
 };
 
 function deleteItem(type, id, el) {
@@ -2070,11 +2088,29 @@ function deleteItem(type, id, el) {
     });
 }
 
+function deleteChip(type, id, el) {
+    if (!confirm('Delete this chip?')) return;
+    var url = DELETE_URLS[type] + id + '/';
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF }
+    })
+    .then(r => r.json())
+    .then(function(d) {
+        if (d.success) {
+            el.closest('.ch-pill').remove();
+            showToast('🗑 Deleted', '#dc3545');
+        }
+    });
+}
+
 var MANAGE_INPUTS = {
     symptom: 'new-symptom-input',
     sign: 'new-sign-input',
     pasthistory: 'new-pasthistory-input',
-    surgicalhistory: 'new-surgicalhistory-input'
+    surgicalhistory: 'new-surgicalhistory-input',
+    advice: 'new-advice-input',
+    diet: 'new-diet-input'
 };
 
 function openManage(type) {
@@ -2084,17 +2120,71 @@ function openManage(type) {
 /* ── Advice chips ── */
 function addAdvice(chip) {
     var ta = document.getElementById('id_advice');
-    var txt = chip.textContent.trim();
+    var txtEl = chip.querySelector('.chip-text');
+    var txt = (txtEl ? txtEl.textContent : chip.textContent).trim();
     ta.value = ta.value.trim() ? ta.value.trim() + '\n' + txt : txt;
     chip.style.background='#007676'; chip.style.color='#fff'; chip.style.borderColor='#007676';
+}
+
+function addAdviceOption() {
+    var inp = document.getElementById('new-advice-input');
+    var text = inp.value.trim();
+    if (!text) return;
+    fetch('/advice-options/add/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ text: text })
+    })
+    .then(r => r.json())
+    .then(function(d) {
+        if (d.id) {
+            var grid = document.getElementById('advice-chip-grid');
+            var chip = document.createElement('span');
+            chip.className = 'ch-pill';
+            chip.dataset.id = d.id;
+            chip.setAttribute('onclick', 'addAdvice(this)');
+            chip.innerHTML = '<span class="chip-text">' + d.text + '</span>' +
+                '<span class="chip-del" onclick="event.stopPropagation();deleteChip(\'advice\',' + d.id + ',this)" title="Delete">✕</span>';
+            grid.appendChild(chip);
+            inp.value = '';
+            showToast('✅ "' + d.text + '" added', '#0284c7');
+        }
+    });
 }
 
 /* ── Diet chips ── */
 function addDiet(chip) {
     var ta = document.getElementById('id_diet_advice');
-    var txt = chip.textContent.trim();
+    var txtEl = chip.querySelector('.chip-text');
+    var txt = (txtEl ? txtEl.textContent : chip.textContent).trim();
     ta.value = ta.value.trim() ? ta.value.trim() + '\n' + txt : txt;
     chip.style.background='#16a34a'; chip.style.color='#fff'; chip.style.borderColor='#16a34a';
+}
+
+function addDietOption() {
+    var inp = document.getElementById('new-diet-input');
+    var text = inp.value.trim();
+    if (!text) return;
+    fetch('/diet-options/add/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ text: text })
+    })
+    .then(r => r.json())
+    .then(function(d) {
+        if (d.id) {
+            var grid = document.getElementById('diet-chip-grid');
+            var chip = document.createElement('span');
+            chip.className = 'ch-pill';
+            chip.dataset.id = d.id;
+            chip.setAttribute('onclick', 'addDiet(this)');
+            chip.innerHTML = '<span class="chip-text">' + d.text + '</span>' +
+                '<span class="chip-del" onclick="event.stopPropagation();deleteChip(\'diet\',' + d.id + ',this)" title="Delete">✕</span>';
+            grid.appendChild(chip);
+            inp.value = '';
+            showToast('✅ "' + d.text + '" added', '#16a34a');
+        }
+    });
 }
 
 /* ── Procedure chips ── */
