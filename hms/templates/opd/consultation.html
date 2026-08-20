@@ -724,13 +724,18 @@
         <button type="button" onclick="openManage('surgicalhistory')" style="background:#ecfeff;border:1px solid #0891b2;color:#0e7490;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;">⚙️ Manage</button>
     </div>
     <div class="sec-body">
-        <div class="cb-grid" id="surgicalhistory-grid">
+        <div class="cb-grid" id="surgicalhistory-grid" style="grid-template-columns:1fr;">
             {% for h in surgical_histories %}
             <label class="cb-item" data-id="{{ h.id }}">
                 <input type="checkbox" name="surgical_history" value="{{ h.id }}"
-                       {% if h in consultation.surgical_history.all %}checked{% endif %}>
-                {{ h.name }}
-                <span onclick="deleteItem('surgicalhistory',{{ h.id }},this)" title="Delete" style="margin-left:auto;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color='#dc3545'" onmouseout="this.style.color='#ccc'">✕</span>
+                       onchange="toggleSurgeryDate(this)"
+                       {% if h.checked %}checked{% endif %}>
+                <span>{{ h.name }}</span>
+                <input type="date" name="surgical_history_date_{{ h.id }}"
+                       class="surgery-date-input" value="{{ h.date }}"
+                       onclick="event.stopPropagation()"
+                       style="margin-left:auto;padding:3px 6px;border:1px solid #ccc;border-radius:5px;font-size:11px;display:{% if h.checked %}inline-block{% else %}none{% endif %};">
+                <span onclick="deleteItem('surgicalhistory',{{ h.id }},this)" title="Delete" style="color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color='#dc3545'" onmouseout="this.style.color='#ccc'">✕</span>
             </label>
             {% empty %}
             <p style="color:#888; font-style:italic;">No surgical history items configured.</p>
@@ -2036,13 +2041,20 @@ function addSurgicalHistory() {
             var label = document.createElement('label');
             label.className = 'cb-item';
             label.dataset.id = d.id;
-            label.innerHTML = '<input type="checkbox" name="surgical_history" value="' + d.id + '" checked> ' + d.name +
-                ' <span onclick="deleteItem(\'surgicalhistory\',' + d.id + ',this)" title="Delete" style="margin-left:auto;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color=\'#dc3545\'" onmouseout="this.style.color=\'#ccc\'">✕</span>';
+            label.innerHTML = '<input type="checkbox" name="surgical_history" value="' + d.id + '" checked onchange="toggleSurgeryDate(this)"> <span>' + d.name + '</span>' +
+                '<input type="date" name="surgical_history_date_' + d.id + '" class="surgery-date-input" onclick="event.stopPropagation()" style="margin-left:auto;padding:3px 6px;border:1px solid #ccc;border-radius:5px;font-size:11px;display:inline-block;">' +
+                '<span onclick="deleteItem(\'surgicalhistory\',' + d.id + ',this)" title="Delete" style="color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color=\'#dc3545\'" onmouseout="this.style.color=\'#ccc\'">✕</span>';
             grid.appendChild(label);
             inp.value = '';
             showToast('✅ "' + d.name + '" added', '#007676');
         }
     });
+}
+
+function toggleSurgeryDate(checkbox) {
+    var dateInput = checkbox.closest('label').querySelector('.surgery-date-input');
+    if (!dateInput) return;
+    dateInput.style.display = checkbox.checked ? 'inline-block' : 'none';
 }
 
 var DELETE_URLS = {

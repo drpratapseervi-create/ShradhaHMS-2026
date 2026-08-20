@@ -34,6 +34,7 @@ from .models import (
     Sign,
     PastHistory,
     SurgicalHistory,
+    ConsultationSurgicalHistory,
 
     # Pharmacy
     DrugMaster,
@@ -219,6 +220,12 @@ class SurgicalHistoryAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "is_active")
     list_filter = ("is_active",)
     search_fields = ("name",)
+
+
+@admin.register(ConsultationSurgicalHistory)
+class ConsultationSurgicalHistoryAdmin(admin.ModelAdmin):
+    list_display = ("id", "consultation", "surgical_history", "surgery_date")
+    list_filter = ("surgical_history",)
 
 
 # ===================== DRUG MASTER =====================

@@ -36,7 +36,7 @@ from .models import (
     Patient, Doctor, Department, Appointment, Consultation, Prescription,
     Investigation, InvestigationCategory, InvestigationBill, InvestigationBillItem,
     InvestigationResult, InvestigationParameter, ICDCode, DrugMaster,
-    Symptom, Sign, PastHistory, SurgicalHistory, MedicalImage, BillItem, PatientService,
+    Symptom, Sign, PastHistory, SurgicalHistory, ConsultationSurgicalHistory, MedicalImage, BillItem, PatientService,
     DischargeBill, DischargeBillItem, ProcedureItem, ProcedureBill, ProcedureBillItem,
     IPDAdvance, OTBooking, OTNotes,                        # ← OT models here
     InventoryItem, StockIn, StockOut, Supplier,            # ← Inventory models here
@@ -237,7 +237,18 @@ def start_consultation(request, appointment_id):
                 obj.symptoms.set(request.POST.getlist("symptoms"))
                 obj.signs.set(request.POST.getlist("signs"))
                 obj.past_history.set(request.POST.getlist("past_history"))
-                obj.surgical_history.set(request.POST.getlist("surgical_history"))
+
+                surgical_ids = request.POST.getlist("surgical_history")
+                ConsultationSurgicalHistory.objects.filter(consultation=obj).exclude(
+                    surgical_history_id__in=surgical_ids
+                ).delete()
+                for sh_id in surgical_ids:
+                    surgery_date = request.POST.get(f"surgical_history_date_{sh_id}") or None
+                    ConsultationSurgicalHistory.objects.update_or_create(
+                        consultation=obj,
+                        surgical_history_id=sh_id,
+                        defaults={"surgery_date": surgery_date},
+                    )
 
                 # ── Save multiple ICD codes ──
                 icd_ids = request.POST.getlist("icd_codes[]")
@@ -305,6 +316,20 @@ def start_consultation(request, appointment_id):
     else:
         form = ConsultationForm(instance=consultation)
 
+    sh_dates = {
+        r.surgical_history_id: r.surgery_date
+        for r in ConsultationSurgicalHistory.objects.filter(consultation=consultation)
+    }
+    surgical_histories = [
+        {
+            "id": sh.id,
+            "name": sh.name,
+            "checked": sh.id in sh_dates,
+            "date": sh_dates[sh.id].isoformat() if sh_dates.get(sh.id) else "",
+        }
+        for sh in SurgicalHistory.objects.filter(is_active=True)
+    ]
+
     return render(request, "opd/consultation.html", {
         "appointment":  appointment,
         "consultation": consultation,
@@ -318,7 +343,7 @@ def start_consultation(request, appointment_id):
             department=appointment.department, is_active=True
         ),
         "past_histories": PastHistory.objects.filter(is_active=True),
-        "surgical_histories": SurgicalHistory.objects.filter(is_active=True),
+        "surgical_histories": surgical_histories,
         "medical_images": MedicalImage.objects.filter(
             consultation=consultation
         ).order_by("-created_at"),
