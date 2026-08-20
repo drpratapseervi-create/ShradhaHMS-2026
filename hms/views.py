@@ -342,6 +342,8 @@ def consultation_pdf(request, appointment_id):
         "consultation":          consultation,
         "chief_complaints_list": consultation.symptoms.all(),
         "examination_list":      consultation.signs.all(),
+        "past_history_list":     consultation.past_history.all(),
+        "surgical_history_list": consultation.surgical_history.all(),
         "investigations":        consultation.investigations.all(),
         "prescriptions":         Prescription.objects.filter(consultation=consultation),
     })
