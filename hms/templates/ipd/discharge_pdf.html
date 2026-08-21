@@ -9,75 +9,87 @@
 <style>
 
 body{
-font-family: Arial, Helvetica, sans-serif;
+font-family: Arial, sans-serif;
+font-size:11px;
 margin:40px;
-line-height:1.5;
+line-height:1.25;
 }
 
 .header{
 text-align:center;
-margin-bottom:10px;
+margin-bottom:6px;
 }
 
 .hospital-name{
-font-size:22px;
-font-weight:bold;
+font-size:20px;
+font-weight:900;
 }
 
 .hospital-address{
-font-size:14px;
+font-size:11px;
 }
 
 .title{
 text-align:center;
-font-size:18px;
-font-weight:bold;
-margin-top:10px;
-margin-bottom:10px;
+font-size:13px;
+font-weight:700;
+margin-top:4px;
+margin-bottom:4px;
 }
 
 .info-table{
 width:100%;
 border-collapse:collapse;
-margin-top:10px;
+margin-top:6px;
 }
 
 .info-table td{
 border:1px solid #000;
-padding:6px;
-font-size:14px;
+padding:3px 6px;
+font-size:11px;
 }
 
 .section{
-margin-top:20px;
+margin-top:8px;
 }
 
 .section-title{
-font-size:16px;
-font-weight:bold;
-margin-bottom:5px;
+font-size:11px;
+font-weight:700;
+margin-bottom:2px;
 }
 
 table{
 width:100%;
 border-collapse:collapse;
-margin-top:10px;
+margin-top:4px;
 }
 
 th,td{
 border:1px solid #ccc;
-padding:6px;
+padding:3px 6px;
 text-align:left;
-font-size:14px;
+font-size:11px;
 }
 
 th{
 background:#f2f2f2;
+font-weight:700;
+}
+
+hr{
+margin:6px 0;
+}
+
+p{
+margin:2px 0;
 }
 
 .signature{
-margin-top:40px;
+margin-top:15px;
 text-align:right;
+font-size:10px;
+font-weight:700;
 page-break-inside:avoid;
 }
 
@@ -100,8 +112,13 @@ display:none;
 }
 
 body{
-margin:20px;
-font-size:12px;
+margin:15px;
+font-size:11px;
+line-height:1.2;
+}
+
+.section{
+margin-top:6px;
 }
 
 table{
@@ -196,6 +213,36 @@ DISCHARGE SUMMARY
 </div>
 
 <div class="section">
+
+<div class="section-title">Investigations</div>
+
+<table>
+
+<tr>
+<th>Hb</th>
+<th>TLC</th>
+<th>Platelet Count</th>
+<th>RBS (mg/dl)</th>
+<th>HIV</th>
+<th>HbsAg</th>
+<th>USG</th>
+</tr>
+
+<tr>
+<td>{{ admission.inv_hb|default:"-" }}</td>
+<td>{{ admission.inv_tlc|default:"-" }}</td>
+<td>{{ admission.inv_platelet_count|default:"-" }}</td>
+<td>{{ admission.inv_rbs|default:"-" }}</td>
+<td>{{ admission.inv_hiv|default:"-" }}</td>
+<td>{{ admission.inv_hbsag|default:"-" }}</td>
+<td>{{ admission.inv_usg|default:"-" }}</td>
+</tr>
+
+</table>
+
+</div>
+
+<div class="section">
 <div class="section-title">Procedure Performed</div>
 {{ admission.procedure_done }}
 </div>
@@ -277,44 +324,6 @@ DISCHARGE SUMMARY
 
 </div>
 {% endif %}
-
-<div class="section">
-
-<div class="section-title">Vitals During Admission</div>
-
-<table>
-
-<tr>
-<th>Date</th>
-<th>Pulse</th>
-<th>BP</th>
-<th>Temperature</th>
-<th>SpO2</th>
-<th>RR</th>
-</tr>
-
-{% for v in vitals %}
-
-<tr>
-<td>{{ v.recorded_at }}</td>
-<td>{{ v.pulse }}</td>
-<td>{{ v.bp }}</td>
-<td>{{ v.temperature }}</td>
-<td>{{ v.spo2 }}</td>
-<td>{{ v.rr }}</td>
-</tr>
-
-{% empty %}
-
-<tr>
-<td colspan="6">No vitals recorded</td>
-</tr>
-
-{% endfor %}
-
-</table>
-
-</div>
 
 <div class="signature">
 

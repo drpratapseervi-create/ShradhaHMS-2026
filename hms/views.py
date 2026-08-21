@@ -1079,6 +1079,13 @@ def ipd_patient_file(request, admission_id):
             admission.chief_complaint         = request.POST.get("chief_complaint", "").strip()
             admission.general_examination     = request.POST.get("general_examination", "").strip()
             admission.local_examination       = request.POST.get("local_examination", "").strip()
+            admission.inv_hb                  = request.POST.get("inv_hb", "").strip()
+            admission.inv_tlc                 = request.POST.get("inv_tlc", "").strip()
+            admission.inv_platelet_count      = request.POST.get("inv_platelet_count", "").strip()
+            admission.inv_rbs                 = request.POST.get("inv_rbs", "").strip()
+            admission.inv_hiv                 = request.POST.get("inv_hiv", "").strip()
+            admission.inv_hbsag               = request.POST.get("inv_hbsag", "").strip()
+            admission.inv_usg                 = request.POST.get("inv_usg", "").strip()
             admission.procedure_done          = request.POST.get("procedure_done", "").strip()
             admission.course_in_hospital      = request.POST.get("course_in_hospital", "").strip()
             admission.condition_at_discharge  = request.POST.get("condition_at_discharge", "").strip()
@@ -1145,7 +1152,6 @@ def ipd_patient_file(request, admission_id):
 @login_required
 def discharge_pdf(request, admission_id):
     admission   = get_object_or_404(IPDAdmission, id=admission_id)
-    vitals      = IPDVital.objects.filter(admission=admission).order_by("-recorded_at")
     medications = IPDDischargeMedication.objects.filter(admission=admission).order_by("id")
     return render(request, "ipd/discharge_pdf.html", {
         "admission":   admission,
@@ -1153,7 +1159,6 @@ def discharge_pdf(request, admission_id):
         "doctor":      admission.doctor,
         "ward":        admission.ward,
         "bed":         admission.bed,
-        "vitals":      vitals,
         "medications": medications,
     })
 

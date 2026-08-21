@@ -938,6 +938,17 @@ Discharge Bill
 <label>Local Examination</label>
 <textarea name="local_examination" id="discharge-local-examination" class="form-control">{{ admission.local_examination }}</textarea>
 
+<label>Investigations</label>
+<div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+  <div><label style="font-size:11px;">Hb</label><input type="text" name="inv_hb" class="form-control" value="{{ admission.inv_hb }}"></div>
+  <div><label style="font-size:11px;">TLC</label><input type="text" name="inv_tlc" class="form-control" value="{{ admission.inv_tlc }}"></div>
+  <div><label style="font-size:11px;">Platelet Count</label><input type="text" name="inv_platelet_count" class="form-control" value="{{ admission.inv_platelet_count }}"></div>
+  <div><label style="font-size:11px;">RBS (mg/dl)</label><input type="text" name="inv_rbs" class="form-control" value="{{ admission.inv_rbs }}"></div>
+  <div><label style="font-size:11px;">HIV</label><input type="text" name="inv_hiv" class="form-control" value="{{ admission.inv_hiv }}"></div>
+  <div><label style="font-size:11px;">HbsAg</label><input type="text" name="inv_hbsag" class="form-control" value="{{ admission.inv_hbsag }}"></div>
+  <div><label style="font-size:11px;">USG</label><input type="text" name="inv_usg" class="form-control" value="{{ admission.inv_usg }}"></div>
+</div>
+
 <label>Procedure Performed</label>
 <textarea name="procedure_done" id="discharge-procedure-done" class="form-control">{{ admission.procedure_done }}</textarea>
 

@@ -643,6 +643,15 @@ class IPDAdmission(models.Model):
     condition_at_discharge  = models.TextField(blank=True)
     treatment_on_discharge  = models.TextField(blank=True)
 
+    # -------- INVESTIGATIONS (DISCHARGE SUMMARY) --------
+    inv_hb              = models.CharField("Hb", max_length=30, blank=True)
+    inv_tlc             = models.CharField("TLC", max_length=30, blank=True)
+    inv_platelet_count  = models.CharField("Platelet Count", max_length=30, blank=True)
+    inv_rbs             = models.CharField("RBS (mg/dl)", max_length=30, blank=True)
+    inv_hiv             = models.CharField("HIV", max_length=30, blank=True)
+    inv_hbsag           = models.CharField("HbsAg", max_length=30, blank=True)
+    inv_usg             = models.CharField("USG", max_length=100, blank=True)
+
     # -------- DISCHARGE --------
     discharge_summary       = models.TextField(blank=True)
     discharge_advice        = models.TextField(blank=True)
