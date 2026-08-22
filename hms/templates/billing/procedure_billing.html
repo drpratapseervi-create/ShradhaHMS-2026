@@ -61,7 +61,10 @@ tbody tr:hover { background:#f2f9ff; }
 
   {% if messages %}
     {% for msg in messages %}
-    <div style="margin:6px 0;padding:5px 10px;background:#d1e7dd;border:1px solid #badbcc;border-radius:4px;font-size:13px">{{ msg }}</div>
+    <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show" role="alert">
+      {{ msg }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
     {% endfor %}
   {% endif %}
 
