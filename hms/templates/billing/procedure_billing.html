@@ -25,14 +25,14 @@ h4 { margin-bottom: 4px; font-size: 18px; }
 
 .section-title { font-size:13px; font-weight:bold; color:#e2e8f0; background:#252a40; border:1px solid #2d3148; border-bottom:none; padding:5px 8px; }
 
-table { border-collapse:collapse; width:100%; background:#fff; margin-bottom:0; }
-th, td { border:1px solid #000; padding:5px 8px; font-size:13px; }
+table { border-collapse:collapse; width:100%; background:#1e2235; margin-bottom:0; }
+th, td { border:1px solid #2d3148; padding:5px 8px; font-size:13px; }
 th { background:#252a40; color:#e2e8f0; text-align:center; }
 td.center { text-align:center; }
-tbody tr:hover { background:#f2f9ff; }
+tbody tr:hover { background:#252a40; }
 
 .billing-bar {
-  background:#fff; border:1px solid #ccc; border-top:none;
+  background:#1e2235; border:1px solid #2d3148; border-top:none;
   padding:7px 12px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;
   margin-bottom:10px;
 }
@@ -45,7 +45,7 @@ tbody tr:hover { background:#f2f9ff; }
 .total-display .big { color:#0d6efd; font-size:20px; }
 .net-display { color:#198754; font-weight:bold; font-size:13px; }
 
-.submit-bar { border-top:1px solid #ccc; padding:8px 0; text-align:right; }
+.submit-bar { border-top:1px solid #2d3148; padding:8px 0; text-align:right; }
 .btn-submit {
   background:#198754; color:white; border:none;
   padding:7px 28px; font-size:14px; font-family:Cambria,Georgia,serif;
@@ -124,7 +124,7 @@ tbody tr:hover { background:#f2f9ff; }
           </tr>
           {% endfor %}
         {% else %}
-          <tr><td colspan="3" style="text-align:center;color:#888">No procedures. <a href="/admin/hms/procedureitem/add/" target="_blank">Add from Admin</a></td></tr>
+          <tr><td colspan="3" style="text-align:center;color:#8892a4">No procedures. <a href="/admin/hms/procedureitem/add/" target="_blank">Add from Admin</a></td></tr>
         {% endif %}
       </tbody>
     </table>
