@@ -1468,11 +1468,11 @@ def procedure_billing(request):
 
     if request.method == "POST":
         patient_id    = request.POST.get("patient_id")
-        department_id = request.POST.get("department_id")
-        doctor_id     = request.POST.get("doctor_id")
+        department_id = request.POST.get("department_id") or None
+        doctor_id     = request.POST.get("doctor_id") or None
         payment_mode  = request.POST.get("payment_mode", "CASH")
         discount      = request.POST.get("discount", "0") or "0"
-        procedure_ids = request.POST.getlist("procedures")
+        procedure_ids = [pid for pid in request.POST.getlist("procedures") if pid.isdigit()]
 
         errors = []
         if not patient_id:
@@ -1485,8 +1485,8 @@ def procedure_billing(request):
                 messages.error(request, e)
         else:
             patient    = get_object_or_404(Patient, id=patient_id)
-            department = Department.objects.filter(id=department_id).first()
-            doctor     = Doctor.objects.filter(id=doctor_id).first()
+            department = Department.objects.filter(id=department_id).first() if department_id else None
+            doctor     = Doctor.objects.filter(id=doctor_id).first() if doctor_id else None
             discount   = Decimal(discount)
             selected   = ProcedureItem.objects.filter(id__in=procedure_ids)
             total      = sum((p.price for p in selected), Decimal("0"))

@@ -30,6 +30,7 @@ th, td { border:1px solid #2d3148; padding:5px 8px; font-size:13px; }
 th { background:#252a40; color:#e2e8f0; text-align:center; }
 td.center { text-align:center; }
 tbody tr:hover { background:#252a40; }
+tbody tr.row-selected td { background:#2d3148; color:#e2e8f0; font-weight:bold; }
 
 .billing-bar {
   background:#1e2235; border:1px solid #2d3148; border-top:none;
@@ -177,8 +178,7 @@ function updateTotal() {
 
 function toggleRow(cb) {
   const row = cb.closest('tr');
-  row.style.background = cb.checked ? '#eef5ff' : '';
-  row.style.fontWeight = cb.checked ? 'bold' : '';
+  row.classList.toggle('row-selected', cb.checked);
 }
 
 document.getElementById('discount').addEventListener('input', updateTotal);
