@@ -545,10 +545,12 @@ def lab_report_print(request, bill_item_id):
 def lab_bill_print(request, bill_id):
     bill  = get_object_or_404(InvestigationBill, id=bill_id)
     items = InvestigationBillItem.objects.filter(bill=bill)
+    net_amount_display = bill.net_amount if bill.net_amount else (bill.total_amount - bill.discount)
     return render(request, "lab/lab_bill_print.html", {
-        "bill":            bill,
-        "items":           items,
-        "amount_in_words": amount_in_words(bill.total_amount),
+        "bill":                bill,
+        "items":               items,
+        "amount_in_words":     amount_in_words(bill.total_amount),
+        "net_amount_display":  net_amount_display,
     })
 
 

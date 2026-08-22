@@ -1,208 +1,126 @@
-Here is the full code:
+{% extends "billing/_receipt_base.html" %}
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Lab Bill #{{ bill.id }}</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #111; background: #f4f4f4; }
+{% block title %}Lab Bill – {{ bill.patient.full_name }}{% endblock %}
+{% block receipt_type %}LAB BILL RECEIPT{% endblock %}
+{% block receipt_no %}LB-{{ bill.id }}{% endblock %}
+{% block receipt_date %}{{ bill.created_at|date:"d-m-Y H:i" }}{% endblock %}
 
-    .bill-paper {
-      background: #fff; max-width: 720px; margin: 24px auto;
-      padding: 32px 36px; border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-    }
-    .header { text-align: center; margin-bottom: 4px; }
-    .hospital-name { font-size: 21px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #0d3b66; }
-    .hospital-sub { font-size: 12px; color: #555; margin-top: 2px; }
-    .divider-thick { border: none; border-top: 3px solid #0d3b66; margin: 10px 0 4px; }
-    .divider-thin { border: none; border-top: 1px solid #ccc; margin: 4px 0 14px; }
-    .bill-title {
-      text-align: center; font-size: 15px; font-weight: 700;
-      letter-spacing: 2px; text-transform: uppercase; color: #0d3b66; margin-bottom: 16px;
-    }
-    .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-    .info-table td { border: 1px solid #ccc; padding: 6px 10px; font-size: 12.5px; }
-    .info-table td.lbl { background: #f0f4ff; font-weight: 700; width: 18%; color: #333; white-space: nowrap; }
-    .info-table td.val { width: 32%; }
-    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
-    .items-table th { background: #0d3b66; color: #fff; padding: 9px 12px; font-size: 13px; text-align: left; }
-    .items-table th.r { text-align: right; }
-    .items-table td { padding: 8px 12px; border-bottom: 1px solid #e5e5e5; font-size: 13px; }
-    .items-table tr:nth-child(even) td { background: #f8f9fc; }
-    .items-table td.r { text-align: right; font-weight: 600; }
-    .items-table .sno { color: #888; width: 40px; }
-    .total-section { display: flex; justify-content: flex-end; margin-bottom: 14px; }
-    .total-box { border: 2px solid #0d3b66; border-radius: 6px; overflow: hidden; min-width: 260px; }
-    .total-box .tot-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 9px 16px; background: #0d3b66; color: #fff; font-size: 16px; font-weight: 700;
-    }
-    .words-box {
-      background: #f0f4ff; border: 1px solid #c5d6f8;
-      border-radius: 6px; padding: 8px 14px; font-size: 12.5px; margin-bottom: 20px;
-    }
-    .words-box strong { color: #0d3b66; }
-    .bill-footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid #ddd; font-size: 12px; color: #555; }
-    .no-print { text-align: center; margin: 20px 0; }
-    .btn-print {
-      background: #0d3b66; color: #fff; border: none;
-      padding: 12px 36px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
-    }
-    .btn-print:hover { background: #093060; }
-    .mark-paid-bar {
-      background: #fff3cd; border: 1px solid #ffc107;
-      border-radius: 8px; padding: 14px 20px; margin: 0 auto 20px;
-      max-width: 720px; display: flex; align-items: center;
-      justify-content: space-between; gap: 12px;
-    }
-    .mark-paid-bar .warn-text { font-size: 14px; color: #856404; font-weight: 600; }
-    .mark-paid-form { display: flex; gap: 8px; align-items: center; }
-    .select-mode { padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 13px; cursor: pointer; }
-    .btn-mark-paid {
-      background: #16a34a; color: #fff; border: none;
-      padding: 9px 20px; border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer;
-    }
-    .btn-mark-paid:hover { background: #15803d; }
-    @media print {
-      body { background: #fff; -webkit-print-color-adjust: exact; }
-      .bill-paper { box-shadow: none; margin: 0; padding: 20px; max-width: 100%; }
-      .no-print { display: none !important; }
-      .mark-paid-bar { display: none !important; }
-    }
-  </style>
-</head>
-<body oncontextmenu="return false;">
-
+{% block pre_content %}
 {% if not bill.paid %}
-<div class="mark-paid-bar no-print">
-  <div class="warn-text">⚠️ Payment not collected yet. Collect payment then mark as paid.</div>
-  <form class="mark-paid-form" method="POST" action="{% url 'hms:lab_mark_paid' bill.id %}">
-    {% csrf_token %}
-    <select name="payment_mode" class="select-mode">
-      <option value="CASH">💵 Cash</option>
-      <option value="UPI">📱 UPI</option>
-      <option value="CARD">💳 Card</option>
-      <option value="CREDIT">📋 Credit</option>
-    </select>
-    <button type="submit" class="btn-mark-paid"
-      onclick="return confirm('Confirm payment of ₹{{ bill.total_amount }} received from {{ bill.patient.full_name }}?')">
-      ✅ Mark Paid
-    </button>
-  </form>
+<div class="no-print" style="background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:10px 16px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:12px; font-family:Arial,sans-serif;">
+    <div style="font-size:13px; color:#856404; font-weight:600;">⚠️ Payment not collected yet. Collect payment then mark as paid.</div>
+    <form method="POST" action="{% url 'hms:lab_mark_paid' bill.id %}" style="display:flex; gap:8px; align-items:center;">
+        {% csrf_token %}
+        <select name="payment_mode" style="padding:6px 10px; border-radius:6px; border:1px solid #ccc; font-size:13px;">
+            <option value="CASH">💵 Cash</option>
+            <option value="UPI">📱 UPI</option>
+            <option value="CARD">💳 Card</option>
+            <option value="CREDIT">📋 Credit</option>
+        </select>
+        <button type="submit" style="background:#16a34a; color:#fff; border:none; padding:7px 16px; border-radius:6px; font-size:13px; font-weight:700; cursor:pointer;"
+            onclick="return confirm('Confirm payment of ₹{{ bill.total_amount }} received from {{ bill.patient.full_name }}?')">
+            ✅ Mark Paid
+        </button>
+    </form>
 </div>
 {% endif %}
+{% endblock %}
 
-<div class="no-print">
-  <button class="btn-print" onclick="window.print()">🖨️ Print Bill</button>
-  &nbsp;&nbsp;
-  <a href="javascript:history.back()" style="font-size:13px; color:#0d6efd;">← Back</a>
-</div>
-
-<div class="bill-paper">
-  <div class="header">
-    <div class="hospital-name">Shradha Hospital &amp; Multispeciality Centre</div>
-    <div class="hospital-sub">
-      Pani Ki Do Tanki, Surajpole, Pali (Rajasthan) – 306401 &nbsp;|&nbsp; 📞 9414122542
-    </div>
-  </div>
-  <hr class="divider-thick">
-  <hr class="divider-thin">
-  <div class="bill-title">Laboratory Investigation Bill</div>
-
-  <table class="info-table">
-    <tr>
-      <td class="lbl">Patient Name</td>
-      <td class="val">{{ bill.patient.full_name|title }}</td>
-      <td class="lbl">UHID</td>
-      <td class="val">{{ bill.patient.uhid }}</td>
-    </tr>
-    <tr>
-      <td class="lbl">Age / Sex</td>
-      <td class="val">{{ bill.patient.age }} / {{ bill.patient.gender }}</td>
-      <td class="lbl">Mobile</td>
-      <td class="val">{{ bill.patient.mobile_no }}</td>
-    </tr>
-    <tr>
-      <td class="lbl">Bill No</td>
-      <td class="val">#{{ bill.id }}</td>
-      <td class="lbl">Date &amp; Time</td>
-      <td class="val">{{ bill.created_at|date:"d-m-Y H:i" }}</td>
-    </tr>
-    <tr>
-      <td class="lbl">Payment</td>
-      <td class="val">
-        {% if bill.paid %}
-          <span style="color:#16a34a; font-weight:700;">✔ PAID – {{ bill.get_payment_mode_display }}</span>
-        {% else %}
-          <span style="color:#dc2626; font-weight:700;">✘ UNPAID</span>
-        {% endif %}
-      </td>
-      <td class="lbl">Referred By</td>
-      <td class="val">
+{% block patient_rows %}
+<tr>
+    <td class="lbl">Patient Name</td>
+    <td><strong>{{ bill.patient.full_name|title }}</strong></td>
+    <td class="lbl">Age / Sex</td>
+    <td>{% if bill.patient.age %}{{ bill.patient.age }} Yrs{% else %}-{% endif %} / {{ bill.patient.gender }}</td>
+</tr>
+<tr>
+    <td class="lbl">UHID</td>
+    <td>{{ bill.patient.uhid }}</td>
+    <td class="lbl">Mobile</td>
+    <td>{{ bill.patient.mobile_no|default:"-" }}</td>
+</tr>
+<tr>
+    <td class="lbl">Address</td>
+    <td>{{ bill.patient.address|title|default:"-" }}</td>
+    <td class="lbl">Referred By</td>
+    <td>
         {% if bill.consultation and bill.consultation.appointment.doctor %}
-          Dr. {{ bill.consultation.appointment.doctor.full_name }}
-        {% else %}–{% endif %}
-      </td>
+            Dr. {{ bill.consultation.appointment.doctor.full_name }}
+        {% else %}-{% endif %}
+    </td>
+</tr>
+<tr>
+    <td class="lbl">Payment Status</td>
+    <td colspan="3">
+        {% if bill.paid %}
+            <strong style="color:#1b5e20;">✔ PAID — {{ bill.get_payment_mode_display }}</strong>
+        {% else %}
+            <strong style="color:#b71c1c;">✘ UNPAID</strong>
+        {% endif %}
+    </td>
+</tr>
+{% endblock %}
+
+{% block line_items_title %}INVESTIGATIONS BILLED{% endblock %}
+{% block line_items_head %}
+<th style="width:40px">#</th>
+<th>Investigation Name</th>
+<th class="amt" style="width:120px">Amount (₹)</th>
+{% endblock %}
+{% block line_items_rows %}
+{% for item in items %}
+<tr>
+    <td style="text-align:center;">{{ forloop.counter }}</td>
+    <td>{{ item.investigation.name }}</td>
+    <td class="amt">₹ {{ item.price|floatformat:2 }}</td>
+</tr>
+{% empty %}
+<tr><td colspan="3" style="text-align:center;color:#999;">No investigations billed</td></tr>
+{% endfor %}
+{% endblock %}
+
+{% block totals %}
+<table class="totals-table">
+    <tr>
+        <td class="t-label">Total Amount</td>
+        <td class="t-value">₹ {{ bill.total_amount|floatformat:2 }}</td>
     </tr>
-  </table>
+    <tr>
+        <td class="t-label">Discount</td>
+        <td class="t-value">₹ {{ bill.discount|floatformat:2 }}</td>
+    </tr>
+    <tr class="net-row">
+        <td class="t-label">Net Amount</td>
+        <td class="t-value">₹ {{ net_amount_display|floatformat:2 }}</td>
+    </tr>
+</table>
+<div class="payment-mode-line"><strong>Payment Mode:</strong> {{ bill.get_payment_mode_display }}</div>
+<p style="text-align:right; font-size:11px;"><strong>Amount in Words:</strong> {{ amount_in_words }}</p>
+{% endblock %}
 
-  <table class="items-table">
-    <thead>
-      <tr>
-        <th style="width:40px;">#</th>
-        <th>Investigation Name</th>
-        <th class="r" style="width:140px;">Amount (₹)</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in items %}
-      <tr>
-        <td class="sno">{{ forloop.counter }}</td>
-        <td>{{ item.investigation.name }}</td>
-        <td class="r">{{ item.price }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
-  <div class="total-section">
-    <div class="total-box">
-      <div class="tot-row">
-        <span>TOTAL AMOUNT</span>
-        <span>₹ {{ bill.total_amount }}</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="words-box">
-    <strong>Amount in Words:</strong> {{ amount_in_words }}
-  </div>
-
-  <div class="bill-footer" style="display:flex; justify-content:space-between; align-items:flex-end;">
+{% block footer_signature %}
+<div class="footer">
     <div>
-      <div>Collected By: <strong>Reception / Lab Counter</strong></div>
-      <div style="font-size:11px; color:#888; margin-top:4px;">Computer-generated bill. No signature required.</div>
+        Collected By: <strong>Reception / Lab Counter</strong><br>
+        <span style="font-size:9px;">Computer-generated bill. No signature required.</span>
     </div>
-    <div style="text-align:center;">
-      <div style="border-top:1px solid #333; width:180px; margin-bottom:4px;"></div>
-      <div>Authorized Signature</div>
+    <div class="sign-box">
+        Authorized Signature
     </div>
-  </div>
 </div>
+{% endblock %}
 
-<div class="no-print" style="margin-bottom:40px;">
-  <button class="btn-print" onclick="window.print()">🖨️ Print Bill</button>
-</div>
+{% block extra_actions %}
+<a href="javascript:history.back()" style="
+    display:inline-block; margin-left:10px; padding:10px 24px; border-radius:8px;
+    background:#e5e7eb; color:#111; font-size:13px; font-weight:600; letter-spacing:0.5px;
+">← Back</a>
+{% endblock %}
 
+{% block extra_scripts %}
 <script>
-  {% if bill.paid %}
-  window.addEventListener("load", function() { window.print(); });
-  {% endif %}
+{% if bill.paid %}
+window.addEventListener("load", function() { window.print(); });
+{% endif %}
 </script>
-</body>
-</html>
-```
+{% endblock %}
