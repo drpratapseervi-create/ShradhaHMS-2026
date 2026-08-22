@@ -4,20 +4,12 @@
 {% block content %}
 <style>
 /* ── Investigation tiles (matches OPD Consultation's cb-grid/cb-item style) ── */
-.inv-cat-heading {
-    font-size: 12px;
-    font-weight: 700;
-    color: #86efac;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    margin: 16px 0 6px;
-}
-.inv-cat-heading:first-child { margin-top: 0; }
 .cb-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 5px;
 }
+.cb-grid-8 { grid-template-columns: repeat(8, 1fr); }
 .cb-item {
     display: flex;
     align-items: center;
@@ -88,28 +80,23 @@
     <div class="card mb-4">
       <div class="card-header fw-bold">Select Investigations</div>
       <div class="card-body">
-        {% for category in categories %}
-          <div class="inv-cat-heading">{{ category.name }}</div>
-          <div class="cb-grid">
-            {% for inv in investigations %}
-              {% if inv.category == category %}
-              <label class="cb-item">
-                <span class="cb-item-label">
-                  <input
-                    class="inv-check"
-                    type="checkbox"
-                    name="investigations"
-                    value="{{ inv.id }}"
-                    data-price="{{ inv.price }}"
-                    {% if inv.id in ordered_investigations %}checked{% endif %}
-                  >
-                  <span class="cb-item-name">{{ inv.name }}</span>
-                </span>
-              </label>
-              {% endif %}
-            {% endfor %}
-          </div>
-        {% endfor %}
+        <div class="cb-grid cb-grid-8">
+          {% for inv in investigations %}
+          <label class="cb-item">
+            <span class="cb-item-label">
+              <input
+                class="inv-check"
+                type="checkbox"
+                name="investigations"
+                value="{{ inv.id }}"
+                data-price="{{ inv.price }}"
+                {% if inv.id in ordered_investigations %}checked{% endif %}
+              >
+              <span class="cb-item-name">{{ inv.name }}</span>
+            </span>
+          </label>
+          {% endfor %}
+        </div>
       </div>
     </div>
 
