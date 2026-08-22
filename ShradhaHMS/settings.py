@@ -20,6 +20,14 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'change-me-in-dev')
 DEBUG      = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes')
 ALLOWED_HOSTS = ["*"]
 
+# Jazzmin's "add related" (+) popups load the target admin page inside a
+# same-origin iframe modal. Django's own default is X_FRAME_OPTIONS='DENY',
+# which blocks that iframe entirely (Chrome renders it as a plain
+# "refused to connect" page) on every admin page, in both dev and prod.
+# SAMEORIGIN still blocks cross-origin framing (the actual clickjacking
+# protection) while allowing the same-origin popups to load.
+X_FRAME_OPTIONS = "SAMEORIGIN"
+
 # ── APPS ───────────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
     'jazzmin',                              # ← must be FIRST before admin
@@ -154,7 +162,6 @@ if not DEBUG:
     SECURE_HSTS_SECONDS          = int(os.getenv('SECURE_HSTS_SECONDS', '2592000'))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD          = True
-    X_FRAME_OPTIONS              = 'DENY'
 
 # ── LOGGING ────────────────────────────────────────────────────────────────
 LOG_LEVEL = os.getenv('DJANGO_LOG_LEVEL', 'INFO')
