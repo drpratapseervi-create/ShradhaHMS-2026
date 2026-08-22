@@ -15,7 +15,7 @@
 .inv-cat-heading:first-child { margin-top: 0; }
 .cb-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 5px;
 }
 .cb-item {
@@ -37,7 +37,6 @@
 .cb-item:has(input:checked) { background: #f7f7f7; border-color: #ddd; color: #1a1a1a; font-weight: 500; }
 .cb-item-label { display: flex; align-items: center; gap: 7px; overflow: hidden; }
 .cb-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cb-item-price { color: #8892a4; font-size: 11px; white-space: nowrap; flex-shrink: 0; }
 </style>
 <div class="container py-4" style="max-width:900px">
 
@@ -58,26 +57,30 @@
     {% csrf_token %}
 
     <!-- Patient Selection -->
-    <div class="card mb-4">
-      <div class="card-header fw-bold">Patient</div>
-      <div class="card-body">
-        {% if patient %}
-          <input type="hidden" name="patient_id" value="{{ patient.id }}">
-          <p class="mb-0">
-            <strong>{{ patient.full_name }}</strong>
-            <span class="text-muted ms-2">{{ patient.uhid }}</span>
-            {% if patient.age %} | {{ patient.age }} yrs{% endif %}
-            | {{ patient.gender }}
-          </p>
-        {% else %}
-          <label class="form-label fw-bold">Select Patient</label>
-          <select name="patient_id" class="form-select" required>
-            <option value="">-- Select Patient --</option>
-            {% for p in patients %}
-              <option value="{{ p.id }}">{{ p.uhid }} – {{ p.full_name }}</option>
-            {% endfor %}
-          </select>
-        {% endif %}
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card mb-4">
+          <div class="card-header fw-bold">Patient</div>
+          <div class="card-body">
+            {% if patient %}
+              <input type="hidden" name="patient_id" value="{{ patient.id }}">
+              <p class="mb-0">
+                <strong>{{ patient.full_name }}</strong>
+                <span class="text-muted ms-2">{{ patient.uhid }}</span>
+                {% if patient.age %} | {{ patient.age }} yrs{% endif %}
+                | {{ patient.gender }}
+              </p>
+            {% else %}
+              <label class="form-label fw-bold">Select Patient</label>
+              <select name="patient_id" class="form-select" required>
+                <option value="">-- Select Patient --</option>
+                {% for p in patients %}
+                  <option value="{{ p.id }}">{{ p.uhid }} – {{ p.full_name }}</option>
+                {% endfor %}
+              </select>
+            {% endif %}
+          </div>
+        </div>
       </div>
     </div>
 
@@ -102,7 +105,6 @@
                   >
                   <span class="cb-item-name">{{ inv.name }}</span>
                 </span>
-                <span class="cb-item-price">₹{{ inv.price }}</span>
               </label>
               {% endif %}
             {% endfor %}
