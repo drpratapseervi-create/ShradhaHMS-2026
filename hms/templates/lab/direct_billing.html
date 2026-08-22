@@ -2,6 +2,43 @@
 {% block title %}Walk-in Lab Billing{% endblock %}
 
 {% block content %}
+<style>
+/* ── Investigation tiles (matches OPD Consultation's cb-grid/cb-item style) ── */
+.inv-cat-heading {
+    font-size: 12px;
+    font-weight: 700;
+    color: #86efac;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin: 16px 0 6px;
+}
+.inv-cat-heading:first-child { margin-top: 0; }
+.cb-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+}
+.cb-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 7px;
+    padding: 6px 9px;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    background: #fafafa;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.15s;
+    user-select: none;
+}
+.cb-item:hover { background: #fff; border-color: #ececec; }
+.cb-item input[type=checkbox] { accent-color: #1a1a1a; width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+.cb-item:has(input:checked) { background: #f7f7f7; border-color: #ddd; color: #1a1a1a; font-weight: 500; }
+.cb-item-label { display: flex; align-items: center; gap: 7px; overflow: hidden; }
+.cb-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cb-item-price { color: #8892a4; font-size: 11px; white-space: nowrap; flex-shrink: 0; }
+</style>
 <div class="container py-4" style="max-width:900px">
 
   <div class="d-flex justify-content-between align-items-center mb-4">
@@ -49,27 +86,24 @@
       <div class="card-header fw-bold">Select Investigations</div>
       <div class="card-body">
         {% for category in categories %}
-          <h6 class="text-primary mt-3 mb-2">{{ category.name }}</h6>
-          <div class="row">
+          <div class="inv-cat-heading">{{ category.name }}</div>
+          <div class="cb-grid">
             {% for inv in investigations %}
               {% if inv.category == category %}
-              <div class="col-md-4 mb-1">
-                <div class="form-check">
+              <label class="cb-item">
+                <span class="cb-item-label">
                   <input
-                    class="form-check-input inv-check"
+                    class="inv-check"
                     type="checkbox"
                     name="investigations"
                     value="{{ inv.id }}"
-                    id="inv_{{ inv.id }}"
                     data-price="{{ inv.price }}"
                     {% if inv.id in ordered_investigations %}checked{% endif %}
                   >
-                  <label class="form-check-label" for="inv_{{ inv.id }}">
-                    {{ inv.name }}
-                    <small class="text-muted">₹{{ inv.price }}</small>
-                  </label>
-                </div>
-              </div>
+                  <span class="cb-item-name">{{ inv.name }}</span>
+                </span>
+                <span class="cb-item-price">₹{{ inv.price }}</span>
+              </label>
               {% endif %}
             {% endfor %}
           </div>
