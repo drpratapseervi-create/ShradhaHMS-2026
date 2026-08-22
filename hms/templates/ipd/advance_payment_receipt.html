@@ -1,167 +1,88 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Advance Payment Receipt - {{ patient.full_name }}</title>
-<style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #111; background: #f4f4f4; }
+{% extends "billing/_receipt_base.html" %}
 
-    .bill-paper {
-        background: #fff; max-width: 720px; margin: 24px auto;
-        padding: 32px 36px; border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-    }
-    .header { text-align: center; margin-bottom: 4px; }
-    .hospital-name { font-size: 21px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #0d3b66; }
-    .hospital-sub { font-size: 12px; color: #555; margin-top: 2px; }
-    .divider-thick { border: none; border-top: 3px solid #0d3b66; margin: 10px 0 4px; }
-    .divider-thin { border: none; border-top: 1px solid #ccc; margin: 4px 0 14px; }
-    .bill-title {
-        text-align: center; font-size: 15px; font-weight: 700;
-        letter-spacing: 2px; text-transform: uppercase; color: #0d3b66; margin-bottom: 16px;
-    }
-    .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-    .info-table td { border: 1px solid #ccc; padding: 6px 10px; font-size: 12.5px; }
-    .info-table td.lbl { background: #f0f4ff; font-weight: 700; width: 18%; color: #333; white-space: nowrap; }
-    .info-table td.val { width: 32%; }
+{% block title %}Advance Payment Receipt – {{ patient.full_name }}{% endblock %}
+{% block receipt_type %}ADVANCE PAYMENT RECEIPT{% endblock %}
+{% block receipt_no %}{{ receipt_no }}{% endblock %}
+{% block receipt_date %}{{ now|date:"d-m-Y H:i" }}{% endblock %}
 
-    .total-section { margin-bottom: 14px; }
-    .total-box { border: 2px solid #0d3b66; border-radius: 6px; overflow: hidden; width: 100%; }
-    .total-box .tot-row {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 9px 16px; font-size: 14px;
-        border-bottom: 1px solid #c5d6f8;
-    }
-    .total-box .tot-row:last-child { border-bottom: none; }
-    .total-box .tot-row.highlight {
-        background: #0d3b66; color: #fff; font-size: 16px; font-weight: 700;
-    }
-    .total-box .tot-row.sub { background: #f8f9fc; }
+{% block patient_rows %}
+<tr>
+    <td class="lbl">Patient Name</td>
+    <td><strong>{{ patient.full_name }}</strong></td>
+    <td class="lbl">UHID</td>
+    <td>{{ patient.uhid }}</td>
+</tr>
+<tr>
+    <td class="lbl">Father / Husband</td>
+    <td>{{ patient.father_or_husband_name|default:"-" }}</td>
+    <td class="lbl">Mobile No</td>
+    <td>{{ patient.mobile_no|default:"-" }}</td>
+</tr>
+{% include "ipd/_admission_info_rows.html" %}
+{% endblock %}
 
-    .words-box {
-        background: #f0f4ff; border: 1px solid #c5d6f8;
-        border-radius: 6px; padding: 8px 14px; font-size: 12.5px; margin-bottom: 20px;
-    }
-    .words-box strong { color: #0d3b66; }
+{% block line_items_title %}ADVANCE PAYMENTS RECEIVED{% endblock %}
+{% block line_items_head %}
+<th>Date &amp; Time</th>
+<th>Mode</th>
+<th class="amt" style="width:120px">Amount (₹)</th>
+{% endblock %}
+{% block line_items_rows %}
+{% for adv in advances %}
+<tr>
+    <td>{{ adv.date|date:"d-m-Y H:i" }}</td>
+    <td>{{ adv.get_payment_mode_display }}</td>
+    <td class="amt">₹ {{ adv.amount|floatformat:2 }}</td>
+</tr>
+{% empty %}
+<tr><td colspan="3" style="text-align:center;color:#999;">No advance payments recorded</td></tr>
+{% endfor %}
+{% endblock %}
 
-    .bill-footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid #ddd; font-size: 12px; color: #555; }
-
-    .no-print { text-align: center; margin: 20px 0; }
-    .btn-print {
-        background: #0d3b66; color: #fff; border: none;
-        padding: 12px 36px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
-    }
-    .btn-print:hover { background: #093060; }
-
-    @media print {
-        body { background: #fff; -webkit-print-color-adjust: exact; }
-        .bill-paper { box-shadow: none; margin: 0; padding: 20px; max-width: 100%; }
-        .no-print { display: none !important; }
-    }
-</style>
-</head>
-<body>
-
-<div class="no-print">
-    <button class="btn-print" onclick="window.print()">🖨️ Print Receipt</button>
-    &nbsp;&nbsp;
-    <a href="javascript:history.back()" style="font-size:13px; color:#0d6efd;">← Back</a>
-</div>
-
-<div class="bill-paper">
-
-    <div class="header">
-        <div class="hospital-name">Shradha Hospital &amp; Multispeciality Centre</div>
-        <div class="hospital-sub">
-            Pani Ki Do Tanki, Surajpole, Pali (Rajasthan) – 306401 &nbsp;|&nbsp; 📞 9414122542
-        </div>
-    </div>
-    <hr class="divider-thick">
-    <hr class="divider-thin">
-    <div class="bill-title">Advance Payment Receipt</div>
-
-    <table class="info-table">
-        <tr>
-            <td class="lbl">Patient Name</td>
-            <td class="val">{{ patient.full_name }}</td>
-            <td class="lbl">UHID</td>
-            <td class="val">{{ patient.uhid }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">Father / Husband</td>
-            <td class="val">{{ patient.father_or_husband_name|default:"-" }}</td>
-            <td class="lbl">Mobile No</td>
-            <td class="val">{{ patient.mobile_no|default:"-" }}</td>
-        </tr>
-        {% if admission %}
-        <tr>
-            <td class="lbl">Ward / Bed</td>
-            <td class="val">{{ admission.ward.name }} / {{ admission.bed.bed_number }}</td>
-            <td class="lbl">IPD No</td>
-            <td class="val">{{ admission.ipd_no }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">Doctor</td>
-            <td class="val">{{ admission.doctor.full_name }}</td>
-            <td class="lbl">Department</td>
-            <td class="val">{{ admission.department.name }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">Admission Date</td>
-            <td class="val">{{ admission.admission_date|date:"d-m-Y H:i" }}</td>
-            <td class="lbl">Diagnosis</td>
-            <td class="val">{{ admission.diagnosis|default:"-" }}</td>
-        </tr>
+{% block totals %}
+<table class="totals-table">
+    <tr>
+        <td class="t-label">Gross Bill Amount (Estimated)</td>
+        <td class="t-value">₹ {{ gross_total|floatformat:2 }}</td>
+    </tr>
+    {% if bill.discount %}
+    <tr>
+        <td class="t-label">Discount</td>
+        <td class="t-value">₹ {{ bill.discount|floatformat:2 }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+        <td class="t-label">Advance Paid</td>
+        <td class="t-value">₹ {{ total_advance|floatformat:2 }}</td>
+    </tr>
+    <tr class="net-row">
+        {% if refund_amount %}
+        <td class="t-label">Refund at Discharge</td>
+        <td class="t-value">₹ {{ refund_amount|floatformat:2 }}</td>
+        {% else %}
+        <td class="t-label">Balance at Discharge</td>
+        <td class="t-value">₹ {{ net_amount|floatformat:2 }}</td>
         {% endif %}
-        <tr>
-            <td class="lbl">Receipt No</td>
-            <td class="val">{{ receipt_no }}</td>
-            <td class="lbl">Date &amp; Time</td>
-            <td class="val">{{ now|date:"d-m-Y H:i" }}</td>
-        </tr>
-    </table>
+    </tr>
+</table>
+{% endblock %}
 
-    <div class="total-section">
-        <div class="total-box">
-            <div class="tot-row sub"><span>Gross Bill Amount (Estimated)</span><span>₹ {{ gross_total }}</span></div>
-            {% if bill.discount %}<div class="tot-row sub"><span>Discount</span><span>₹ {{ bill.discount }}</span></div>{% endif %}
-            <div class="tot-row sub"><span>Advance Paid</span><span>₹ {{ bill.advance_paid }}</span></div>
-            {% if refund_amount %}
-            <div class="tot-row" style="background:#16a34a;color:#fff;font-size:16px;font-weight:700;">
-                <span>🔄 REFUND AT DISCHARGE</span><span>₹ {{ refund_amount }}</span>
-            </div>
-            {% else %}
-            <div class="tot-row highlight"><span>BALANCE AT DISCHARGE</span><span>₹ {{ net_amount }}</span></div>
-            {% endif %}
-        </div>
+{% block footer_signature %}
+<div class="footer">
+    <div>
+        Collected By: <strong>Reception / Cashier</strong><br>
+        <span style="font-size:9px;">* This is an advance receipt only. Final bill at discharge.</span><br>
+        <span style="font-size:9px;">Printed on: {{ now|date:"d-m-Y" }} {{ now|time:"h:i A" }}</span>
     </div>
-
-    <div class="words-box">
-        <strong>Advance Received:</strong> ₹ {{ bill.advance_paid }}
+    <div class="sign-box">
+        Authorized Signature
     </div>
-
-    <div class="bill-footer" style="display:flex; justify-content:space-between; align-items:flex-end;">
-        <div>
-            <div>Collected By: <strong>Reception / Cashier</strong></div>
-            <div style="font-size:11px; color:#888; margin-top:4px;">
-                * This is an advance receipt only. Final bill at discharge.
-            </div>
-            <div style="font-size:11px; color:#888; margin-top:2px;">
-                Printed on: {{ now|date:"d-m-Y" }} {{ now|time:"h:i A" }}
-            </div>
-        </div>
-        <div style="text-align:center;">
-            <div style="border-top:1px solid #333; width:180px; margin-bottom:4px;"></div>
-            <div>Authorized Signature</div>
-        </div>
-    </div>
-
 </div>
+{% endblock %}
 
-<div class="no-print" style="margin-bottom:40px;">
-    <button class="btn-print" onclick="window.print()">🖨️ Print Receipt</button>
-</div>
-
-</body>
-</html>
+{% block extra_actions %}
+<a href="javascript:history.back()" style="
+    display:inline-block; margin-left:10px; padding:10px 24px; border-radius:8px;
+    background:#e5e7eb; color:#111; font-size:13px; font-weight:600; letter-spacing:0.5px;
+">← Back</a>
+{% endblock %}

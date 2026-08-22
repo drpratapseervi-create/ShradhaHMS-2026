@@ -1,0 +1,20 @@
+{% if admission %}
+<tr>
+    <td class="lbl">Ward / Bed</td>
+    <td>{{ admission.ward.name }} / {{ admission.bed.bed_number }}</td>
+    <td class="lbl">IPD No</td>
+    <td>{{ admission.ipd_no }}</td>
+</tr>
+<tr>
+    <td class="lbl">Doctor</td>
+    <td>{{ admission.doctor.full_name }}</td>
+    <td class="lbl">Department</td>
+    <td>{{ admission.department.name }}</td>
+</tr>
+<tr>
+    <td class="lbl">Admission Date</td>
+    <td>{{ admission.admission_date|date:"d-m-Y H:i" }}</td>
+    <td class="lbl">Diagnosis</td>
+    <td>{{ admission.diagnosis|default:"-" }}</td>
+</tr>
+{% endif %}
