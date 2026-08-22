@@ -1,0 +1,75 @@
+<div class="receipt-box">
+    <div class="center">
+        <h3>Shradha Hospital &amp; Multispeciality Centre</h3>
+        <div>Pani Ki Do Tanki, Surajpole, Pali (Raj.) — 306401</div>
+        <div>📞 9414122542</div>
+    </div>
+
+    <table>
+        <tr>
+            <td class="label">Patient Name</td>
+            <td class="value">{{ appointment.patient.full_name }}</td>
+        </tr>
+        <tr>
+            <td class="label">Age / Sex</td>
+            <td class="value">
+                {% if appointment.patient.date_of_birth %}
+                    {% now "Y" as current_year %}
+                    {{ appointment.patient.date_of_birth|timesince|truncatewords:1 }} /
+                    {{ appointment.patient.gender }}
+                {% elif appointment.patient.age %}
+                    {{ appointment.patient.age }} Yrs / {{ appointment.patient.gender }}
+                {% else %}
+                    - / {{ appointment.patient.gender }}
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td class="label">UHID</td>
+            <td class="value">{{ appointment.patient.uhid }}</td>
+        </tr>
+        <tr>
+            <td class="label">Mobile No</td>
+            <td class="value">{{ appointment.patient.mobile_no|default:"-" }}</td>
+        </tr>
+        <tr>
+            <td class="label">Address</td>
+            <td class="value">
+                {{ appointment.patient.address }}{% if appointment.patient.city %}, {{ appointment.patient.city }}{% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td class="label">Consultant</td>
+            <td class="value">{{ appointment.doctor.full_name }}</td>
+        </tr>
+        <tr>
+            <td class="label">Date</td>
+            <td class="value">{{ appointment.date|date:"d-m-Y" }}</td>
+        </tr>
+        <tr>
+            <td class="label">Time</td>
+            <td class="value">{{ appointment.time|time:"H:i" }}</td>
+        </tr>
+        <tr>
+            <td class="label">Fees</td>
+            <td class="value">
+                {% if appointment.doctor.op_fee and appointment.doctor.op_fee != 0 %}
+                    ₹ {{ appointment.doctor.op_fee }}
+                {% else %}
+                    Free / OPD
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td class="label">Receipt No</td>
+            <td class="value">OPD-{{ appointment.date|date:"Y" }}-{{ appointment.id|stringformat:"04d" }}</td>
+        </tr>
+    </table>
+
+    <div class="printed-on">
+        <strong>Printed on:</strong>
+        {{ appointment.created_at|date:"d-m-Y" }}
+        {{ appointment.created_at|time:"h:i A" }}
+        {% if copy_label %}&nbsp;&nbsp;<em>({{ copy_label }})</em>{% endif %}
+    </div>
+</div>
