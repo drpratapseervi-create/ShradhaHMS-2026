@@ -376,6 +376,7 @@ def lab_billing_direct(request, consultation_id=None):
 
         inv_ids      = request.POST.getlist("investigations")
         payment_mode = request.POST.get("payment_mode", "CASH")
+        discount     = Decimal(request.POST.get("discount", "0") or "0")
 
         with transaction.atomic():
             if bill:
@@ -400,6 +401,8 @@ def lab_billing_direct(request, consultation_id=None):
                 total += inv.price
 
             bill.total_amount = total
+            bill.discount     = discount
+            bill.net_amount   = max(total - discount, Decimal("0"))
             bill.payment_mode = payment_mode
             bill.paid = True
             bill.save()

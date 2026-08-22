@@ -110,9 +110,15 @@
             <option value="UPI">UPI</option>
           </select>
         </div>
+        <div>
+          <label class="form-label fw-bold mb-1">Discount (₹)</label>
+          <input type="number" id="discount" name="discount" class="form-control" value="0" min="0" style="width:140px">
+        </div>
         <div class="ms-auto text-end">
           <div class="text-muted small">Total Amount</div>
-          <div class="fw-bold fs-4 text-success">₹<span id="total">0.00</span></div>
+          <div class="fw-bold fs-5">₹<span id="total">0.00</span></div>
+          <div class="text-muted small mt-1">Net Payable</div>
+          <div class="fw-bold fs-4 text-success">₹<span id="net">0.00</span></div>
         </div>
       </div>
     </div>
@@ -127,11 +133,15 @@
     document.querySelectorAll('.inv-check:checked').forEach(cb => {
       total += parseFloat(cb.dataset.price || 0);
     });
+    const discount = parseFloat(document.getElementById('discount').value || 0);
+    const net = Math.max(total - discount, 0);
     document.getElementById('total').textContent = total.toFixed(2);
+    document.getElementById('net').textContent = net.toFixed(2);
   }
   document.querySelectorAll('.inv-check').forEach(cb => {
     cb.addEventListener('change', updateTotal);
   });
+  document.getElementById('discount').addEventListener('input', updateTotal);
   updateTotal();
 </script>
 {% endblock %}
