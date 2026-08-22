@@ -2,8 +2,7 @@
 
 {% block title %}Procedure Bill – {{ bill.patient.full_name }}{% endblock %}
 {% block receipt_type %}PROCEDURE BILL RECEIPT{% endblock %}
-{% block receipt_no %}PB-{{ bill.id }}{% endblock %}
-{% block receipt_date %}{{ bill.created_at|date:"d-m-Y H:i" }}{% endblock %}
+{% block receipt_meta_bar %}{% endblock %}
 
 {% block patient_rows %}
 <tr>
@@ -23,6 +22,18 @@
     <td>{{ bill.patient.address|title|default:"-" }}</td>
     <td class="lbl">Consultant</td>
     <td>{% if bill.consultant %}Dr. {{ bill.consultant.full_name }}{% else %}-{% endif %}</td>
+</tr>
+<tr>
+    <td class="lbl">Date</td>
+    <td>{{ bill.created_at|date:"d-m-Y" }}</td>
+    <td class="lbl">Time</td>
+    <td>{{ bill.created_at|time:"H:i" }}</td>
+</tr>
+<tr>
+    <td class="lbl">Receipt No</td>
+    <td>PB-{{ bill.id }}</td>
+    <td class="lbl">Payment Mode</td>
+    <td>{{ bill.get_payment_mode_display }}</td>
 </tr>
 {% endblock %}
 

@@ -172,10 +172,12 @@ table.print-shell > thead > tr > td {
 
 <!-- ── Receipt Title ── -->
 <div class="receipt-title-bar">{% block receipt_type %}RECEIPT{% endblock %}</div>
+{% block receipt_meta_bar %}
 <div class="receipt-meta">
     <div>Receipt No: <strong>{% block receipt_no %}{{ receipt_no|default:"-" }}{% endblock %}</strong></div>
     <div>Date/Time: <strong>{% block receipt_date %}{{ receipt_datetime|date:"d-m-Y H:i"|default:"-" }}{% endblock %}</strong></div>
 </div>
+{% endblock %}
 
 {% block pre_content %}{% endblock %}
 
