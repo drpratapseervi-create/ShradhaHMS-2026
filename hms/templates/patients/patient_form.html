@@ -405,6 +405,30 @@ function exitAgeInput(){
     var saved=hidAge.value; if(saved){ setAgeBadge(saved+' yrs'); ageEditHint.style.display=''; }
 }
 
+var genderSel=document.getElementById('id_gender'),fullNameInput=document.getElementById('id_full_name');
+var GENDER_TITLES={'Male':'Mr. ','Female':'Mrs. ','Other':''};
+var MANAGED_PREFIXES=['Mr. ','Mrs. ','Ms. '];
+var ANY_PREFIX_RE=/^(Mr|Mrs|Ms|Miss|Dr|Prof|Shri|Smt|Kumari)\.?\s+/i;
+function applyGenderTitle(){
+    if(!genderSel||!fullNameInput) return;
+    var newTitle=GENDER_TITLES[genderSel.value];
+    if(newTitle===undefined) return;
+    var current=fullNameInput.value;
+    var matchedManaged=null;
+    for(var i=0;i<MANAGED_PREFIXES.length;i++){
+        if(current.indexOf(MANAGED_PREFIXES[i])===0){ matchedManaged=MANAGED_PREFIXES[i]; break; }
+    }
+    if(matchedManaged!==null){
+        fullNameInput.value=newTitle+current.slice(matchedManaged.length);
+    } else if(ANY_PREFIX_RE.test(current)){
+        // user typed their own title (e.g. Dr., Shri, Smt.) — leave it alone
+        return;
+    } else {
+        fullNameInput.value=newTitle+current;
+    }
+}
+if(genderSel) genderSel.addEventListener('change',applyGenderTitle);
+
 var selDx=[],knownDx=['HTN','DM','COPD','Asthma','IHD','CKD','Thyroid','Epilepsy'];
 function togglePill(p){
     var v=p.getAttribute('data-val'); p.classList.toggle('active');
