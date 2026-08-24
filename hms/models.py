@@ -240,9 +240,10 @@ class ICDCode(models.Model):
         max_length=255, blank=True, null=True,
         help_text="SNOMED CT preferred term e.g. 'Diabetes mellitus'"
     )
+    sort_order = models.IntegerField(default=9999, null=True, blank=True)
 
     class Meta:
-        ordering = ["code"]
+        ordering = ["sort_order", "code"]
 
     def __str__(self):
         return f"{self.code} - {self.description}"
