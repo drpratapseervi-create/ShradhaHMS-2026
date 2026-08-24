@@ -781,30 +781,11 @@
         <div style="margin-bottom:10px;">
             <div style="font-size:11px;font-weight:700;color:#0891b2;margin-bottom:6px;letter-spacing:0.3px;">⚡ Quick Select — Common Diagnoses</div>
             <div id="icd-pill-container" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;min-height:32px;padding:4px;border:1px dashed #e0f2fe;border-radius:8px;">
-                <button type="button" class="icd-pill-static" data-code="J069" data-desc="Upper respiratory tract infection, unspecified">URTI</button>
-                <button type="button" class="icd-pill-static" data-code="J22" data-desc="Unspecified acute lower respiratory tract infection">LRTI</button>
-                <button type="button" class="icd-pill-static" data-code="N390" data-desc="Urinary tract infection, site not specified">UTI</button>
-                <button type="button" class="icd-pill-static" data-code="N200" data-desc="Calculus of kidney">Nephrolithiasis</button>
-                <button type="button" class="icd-pill-static" data-code="N201" data-desc="Calculus of ureter">Ureterolithiasis</button>
-                <button type="button" class="icd-pill-static" data-code="N210" data-desc="Calculus in bladder">Bladder Stone</button>
-                <button type="button" class="icd-pill-static" data-code="N401" data-desc="Benign prostatic hyperplasia with lower urinary tract symptoms">BPH-II</button>
-                <button type="button" class="icd-pill-static" data-code="K2970" data-desc="Gastritis, unspecified, without bleeding">Gastritis</button>
-                <button type="button" class="icd-pill-static" data-code="K529" data-desc="Noninfective gastroenteritis and colitis, unspecified">Colitis</button>
-                <button type="button" class="icd-pill-static" data-code="K589" data-desc="Irritable bowel syndrome without diarrhea">IBS</button>
-                <button type="button" class="icd-pill-static" data-code="K5900" data-desc="Constipation, unspecified">Constipation</button>
-                <button type="button" class="icd-pill-static" data-code="K602" data-desc="Anal fissure, unspecified">Fissure</button>
-                <button type="button" class="icd-pill-static" data-code="K641" data-desc="Second degree hemorrhoids">Piles-II</button>
-                <button type="button" class="icd-pill-static" data-code="K4090" data-desc="Unilateral inguinal hernia, without obstruction or gangrene">Ing. Hernia</button>
-                <button type="button" class="icd-pill-static" data-code="K429" data-desc="Umbilical hernia without obstruction or gangrene">Umb. Hernia</button>
-                <button type="button" class="icd-pill-static" data-code="K3580" data-desc="Other and unspecified acute appendicitis">Appendicitis</button>
-                <button type="button" class="icd-pill-static" data-code="K8020" data-desc="Calculus of gallbladder without cholecystitis">Cholelithiasis</button>
-                <button type="button" class="icd-pill-static" data-code="N739" data-desc="Female pelvic inflammatory disease, unspecified">PID</button>
-                <button type="button" class="icd-pill-static" data-code="G43909" data-desc="Migraine, unspecified, not intractable">Migraine</button>
-                <button type="button" class="icd-pill-static" data-code="F419" data-desc="Anxiety disorder, unspecified">Anxiety</button>
-                <button type="button" class="icd-pill-static" data-code="Z8709" data-desc="Personal history of appendectomy and cholecystectomy">Post-App/Chole</button>
-                <button type="button" class="icd-pill-static" data-code="Z8739" data-desc="Personal history of hernia repair URSL PCNL">Post-URSL/PCNL</button>
-                <button type="button" class="icd-pill-static" data-code="K760" data-desc="Fatty (change of) liver, not elsewhere classified">Fatty Liver</button>
-                <button type="button" class="icd-pill-static" data-code="K439" data-desc="Epigastric hernia without obstruction or gangrene">Epigastric Hernia</button>
+                {% for icd in icd_quick_codes %}
+                <button type="button" class="icd-pill-static" data-code="{{ icd.code }}" data-desc="{{ icd.description }}" title="{{ icd.description }}">{{ icd.description|truncatechars:26 }}</button>
+                {% empty %}
+                <span style="font-size:11px;color:#94a3b8;font-style:italic;">No quick-select codes configured — set Sort Order on ICD codes in the admin.</span>
+                {% endfor %}
             </div>
             <div id="icd-selected-display" style="display:none;margin-bottom:8px;padding:6px 12px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:7px;font-size:12px;font-weight:600;color:#065f46;">
     ✅ Selected: <span id="icd-selected-text"></span>

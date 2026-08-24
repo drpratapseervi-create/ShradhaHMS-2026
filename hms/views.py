@@ -326,6 +326,7 @@ def start_consultation(request, appointment_id):
             consultation=consultation
         ).order_by("-created_at"),
         "drug_masters": DrugMaster.objects.filter(is_active=True).order_by("sort_order", "category", "name"),
+        "icd_quick_codes": ICDCode.objects.filter(sort_order__lt=9999),
         "ai_enabled": settings.AI_FEATURES_ENABLED,
     })
 
