@@ -1333,7 +1333,7 @@ function addCurrentICDToPills() {
 
 document.addEventListener('DOMContentLoaded', function() {
     initStaticPills();
-    makeStaticPillsDeletable();
+    try { localStorage.removeItem('shradha_icd_removed'); } catch(e) {}
     appendExtraPills();
 });
 
@@ -1398,39 +1398,6 @@ function initStaticPills() {
             dragSrcIdx = null;
             showToast('✅ Order saved!', '#0891b2');
         });
-    });
-}
-
-function makeStaticPillsDeletable() {
-    var container = document.getElementById('icd-pill-container');
-    if (!container) return;
-    var removed = [];
-    try { removed = JSON.parse(localStorage.getItem('shradha_icd_removed') || '[]'); } catch(e) {}
-
-    container.querySelectorAll('.icd-pill-static').forEach(function(btn) {
-        var code = btn.dataset.code;
-        if (removed.includes(code)) {
-            btn.remove();
-            return;
-        }
-        if (btn.querySelector('.pill-delete-x')) return;
-        var x = document.createElement('span');
-        x.className = 'pill-delete-x';
-        x.textContent = ' ✕';
-        x.style.cssText = 'margin-left:6px;color:#aaa;font-weight:900;cursor:pointer;';
-        x.onmouseover = function(){ x.style.color = '#dc2626'; };
-        x.onmouseout  = function(){ x.style.color = '#aaa'; };
-        x.onclick = function(e) {
-            e.stopPropagation();
-            if (!confirm('Remove "' + btn.textContent.replace('✕','').trim() + '" from quick pills?')) return;
-            try {
-                var r = JSON.parse(localStorage.getItem('shradha_icd_removed') || '[]');
-                if (!r.includes(code)) { r.push(code); localStorage.setItem('shradha_icd_removed', JSON.stringify(r)); }
-            } catch(err) {}
-            btn.remove();
-            showToast('🗑 Removed from quick pills', '#dc3545');
-        };
-        btn.appendChild(x);
     });
 }
 
