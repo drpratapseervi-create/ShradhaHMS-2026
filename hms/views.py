@@ -35,7 +35,7 @@ from .models import (
     Ward, Bed, IPDAdmission, IPDVital, IPDMedication, IPDDischargeMedication, DischargeTemplate, IPDProgressNote, IPDSymptomHistory, IPDTreatmentHistory,
     Patient, Doctor, Department, Appointment, Consultation, Prescription,
     Investigation, InvestigationCategory, InvestigationBill, InvestigationBillItem,
-    InvestigationResult, InvestigationParameter, ICDCode, DrugMaster,
+    InvestigationResult, InvestigationParameter, ICDCode, DrugMaster, VillageMaster,
     Symptom, Sign, PastHistory, SurgicalHistory, AdviceOption, DietAdviceOption, MedicalImage, BillItem, PatientService,
     DischargeBill, DischargeBillItem, ProcedureItem, ProcedureBill, ProcedureBillItem,
     IPDAdvance, OTBooking, OTNotes,                        # ← OT models here
@@ -156,7 +156,10 @@ def patient_create(request):
     else:
         form = PatientForm()
 
-    return render(request, "patients/patient_form.html", {"form": form})
+    return render(request, "patients/patient_form.html", {
+        "form": form,
+        "villages": VillageMaster.objects.all(),
+    })
 # APPOINTMENT
 # ======================================================
 @login_required
@@ -1772,7 +1775,10 @@ def patient_update(request, pk):
     else:
         form = PatientForm(instance=patient)
 
-    return render(request, "patients/patient_form.html", {"form": form})
+    return render(request, "patients/patient_form.html", {
+        "form": form,
+        "villages": VillageMaster.objects.all(),
+    })
 
 # All imports at the TOP — never inside or between functions
 from django.shortcuts import render, redirect, get_object_or_404
@@ -3188,6 +3194,23 @@ def delete_surgical_history(request, pk):
         return JsonResponse({'success': True})
     except SurgicalHistory.DoesNotExist:
         return JsonResponse({'error': 'Not found'}, status=404)
+
+
+@login_required
+@role_required("reception", "admin", "doctor", "nursing")
+def add_village(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    data = json.loads(request.body)
+    name = data.get('name', '').strip()
+
+    if not name:
+        return JsonResponse({'error': 'Name required'}, status=400)
+
+    village, created = VillageMaster.objects.get_or_create(name=name)
+
+    return JsonResponse({'id': village.id, 'name': village.name, 'created': created})
 
 
 @login_required

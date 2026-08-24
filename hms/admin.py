@@ -41,6 +41,7 @@ from .models import (
     DrugMaster,
     Expense,
     ICDCode,
+    VillageMaster,
     UserProfile,
     ConstructionExpense,
     Vendor,
@@ -379,6 +380,13 @@ class ICDCodeAdmin(admin.ModelAdmin):
         'snomed_code', 'snomed_description',
         'sort_order', 'category',
     ]
+
+
+@admin.register(VillageMaster)
+class VillageMasterAdmin(admin.ModelAdmin):
+    list_display  = ['name']
+    search_fields = ['name']
+    ordering = ('name',)
 
 
 # ===================== USER PROFILE =====================

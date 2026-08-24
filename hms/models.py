@@ -2000,6 +2000,16 @@ class PrescriptionTemplateItem(models.Model):
     order        = models.PositiveSmallIntegerField(default=0)
     class Meta: ordering = ['order']
 
+class VillageMaster(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
 class DrugMaster(models.Model):
     name         = models.CharField(max_length=150)
     generic_name = models.CharField(max_length=150, blank=True, default="")

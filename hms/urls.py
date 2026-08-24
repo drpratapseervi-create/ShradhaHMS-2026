@@ -17,6 +17,7 @@ urlpatterns = [
     path("patients/new/", views.patient_create, name="patient_create"),
     path("opd-register/", views.opd_register, name="opd_register"),
     path("patients/<int:pk>/edit/", views.patient_update, name="patient_update"),
+    path("villages/add/", views.add_village, name="add_village"),
     
     # ── APPOINTMENT ────────────────────────────────────
     path("appointments/new/", views.appointment_create, name="appointment_create"),

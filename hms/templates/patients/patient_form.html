@@ -260,6 +260,22 @@ footer{ text-align:center; padding:10px 0 20px; font-size:13px; color:#444; }
         {% if form.address.errors %}<div class="field-error">{{ form.address.errors|join:", " }}</div>{% endif %}
     </div>
     <div><label>City</label>{{ form.city }}</div>
+    <div class="full">
+        <label style="font-size:11px;color:#8892a4;font-weight:600;display:block;margin-bottom:6px;">Quick Select — Village</label>
+        <div id="village-pill-container" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+            {% for v in villages %}
+            <div class="ch-pill" data-name="{{ v.name }}" onclick="selectVillage(this)">{{ v.name }}</div>
+            {% empty %}
+            <span style="font-size:12px;color:#8892a4;font-style:italic;">No villages configured yet.</span>
+            {% endfor %}
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="new-village-input" placeholder="➕ Add new village…"
+                style="flex:1;max-width:280px;padding:7px 10px;background:#1a1a1a;border:1px dashed #2a2a2a;border-radius:20px;font-size:12px;color:#e2e8f0;outline:none;"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();addVillage();}">
+            <button type="button" onclick="addVillage()" style="background:#00b8a9;color:#000;border:none;border-radius:20px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;">Add</button>
+        </div>
+    </div>
     <div>
         <label>District</label>
         <input type="text" name="district" id="id_district" value="{{ form.district.value|default:'Pali' }}">
@@ -438,6 +454,37 @@ function togglePill(p){
 function syncChronic(){
     var other=document.getElementById('chronicOther').value.trim(),all=selDx.slice(); if(other) all.push(other);
     document.getElementById('id_chronic_illness').value=all.join(', ');
+}
+
+function selectVillage(el){
+    document.querySelectorAll('#village-pill-container .ch-pill').forEach(function(p){ p.classList.remove('active'); });
+    el.classList.add('active');
+    document.getElementById('id_city').value = el.getAttribute('data-name');
+}
+function addVillage(){
+    var inp=document.getElementById('new-village-input'), name=inp.value.trim();
+    if(!name) return;
+    var csrf=document.querySelector('[name=csrfmiddlewaretoken]').value;
+    fetch('/villages/add/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+        body: JSON.stringify({ name: name })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if(d.id){
+            var container=document.getElementById('village-pill-container');
+            var placeholder=container.querySelector('span');
+            if(placeholder) placeholder.remove();
+            var pill=document.createElement('div');
+            pill.className='ch-pill';
+            pill.setAttribute('data-name', d.name);
+            pill.setAttribute('onclick', 'selectVillage(this)');
+            pill.textContent=d.name;
+            container.appendChild(pill);
+            inp.value='';
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded',function(){
