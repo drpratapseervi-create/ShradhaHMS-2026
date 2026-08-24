@@ -230,6 +230,18 @@ class Appointment(models.Model):
 
 # ===================== ICD CODE =====================
 class ICDCode(models.Model):
+    CATEGORY_CHOICES = [
+        ("post_op", "Post-op"),
+        ("medical", "Medical"),
+        ("surgical", "Surgical"),
+        ("gynecology", "Gynecology"),
+        ("orthopedics", "Orthopedics"),
+        ("chest", "Chest"),
+        ("cardiology", "Cardiology"),
+        ("neurology", "Neurology"),
+        ("urology", "Urology"),
+    ]
+
     code        = models.CharField(max_length=10, unique=True)
     description = models.CharField(max_length=255)
     snomed_code = models.CharField(
@@ -241,6 +253,9 @@ class ICDCode(models.Model):
         help_text="SNOMED CT preferred term e.g. 'Diabetes mellitus'"
     )
     sort_order = models.IntegerField(default=9999, null=True, blank=True)
+    category = models.CharField(
+        max_length=20, choices=CATEGORY_CHOICES, blank=True, default=""
+    )
 
     class Meta:
         ordering = ["sort_order", "code"]

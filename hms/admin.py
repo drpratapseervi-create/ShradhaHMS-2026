@@ -369,14 +369,15 @@ admin.site.register(Expense)
 
 @admin.register(ICDCode)
 class ICDCodeAdmin(admin.ModelAdmin):
-    list_display  = ['code', 'description', 'snomed_code', 'snomed_description', 'sort_order']
-    list_editable = ['sort_order']
+    list_display  = ['code', 'description', 'snomed_code', 'snomed_description', 'sort_order', 'category']
+    list_editable = ['sort_order', 'category']
+    list_filter   = ['category']
     search_fields = ['code', 'description', 'snomed_code']
     ordering = ('sort_order', 'code')
     fields = [
         'code', 'description',
         'snomed_code', 'snomed_description',
-        'sort_order',
+        'sort_order', 'category',
     ]
 
 

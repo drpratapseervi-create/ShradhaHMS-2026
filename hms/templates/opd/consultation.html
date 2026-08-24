@@ -233,6 +233,20 @@
     background: #fff !important;
     border-color: #16a34a !important;
 }
+.icd-cat-tab {
+    flex: 0 0 auto;
+    background: #fafafa;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.icd-cat-tab:hover { background: #fff; border-color: #0891b2; }
+.icd-cat-tab.active { background: #0891b2; border-color: #0891b2; color: #fff; }
 .cb-item input[type=checkbox] { accent-color: #1a1a1a; width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
 .cb-item:has(input:checked) { background: #f7f7f7; border-color: #ddd; color: #1a1a1a; font-weight: 500; }
 
@@ -780,9 +794,15 @@
     <div class="sec-body">
         <div style="margin-bottom:10px;">
             <div style="font-size:11px;font-weight:700;color:#0891b2;margin-bottom:6px;letter-spacing:0.3px;">⚡ Quick Select — Common Diagnoses</div>
+            <div id="icd-category-tabs" style="display:flex;flex-wrap:nowrap;overflow-x:auto;white-space:nowrap;gap:4px;margin-bottom:6px;padding-bottom:2px;">
+                <button type="button" class="icd-cat-tab active" data-category="all" onclick="filterICDQuickTiles(this)">All</button>
+                {% for value, label in icd_categories %}
+                <button type="button" class="icd-cat-tab" data-category="{{ value }}" onclick="filterICDQuickTiles(this)">{{ label }}</button>
+                {% endfor %}
+            </div>
             <div id="icd-pill-container" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;min-height:32px;padding:4px;border:1px dashed #e0f2fe;border-radius:8px;">
                 {% for icd in icd_quick_codes %}
-                <button type="button" class="icd-pill-static" data-code="{{ icd.code }}" data-desc="{{ icd.description }}" title="{{ icd.description }}">{{ icd.description|truncatechars:26 }}</button>
+                <button type="button" class="icd-pill-static" data-code="{{ icd.code }}" data-desc="{{ icd.description }}" data-category="{{ icd.category }}" title="{{ icd.description }}">{{ icd.description|truncatechars:26 }}</button>
                 {% empty %}
                 <span style="font-size:11px;color:#94a3b8;font-style:italic;">No quick-select codes configured — set Sort Order on ICD codes in the admin.</span>
                 {% endfor %}
@@ -1316,6 +1336,21 @@ document.addEventListener('DOMContentLoaded', function() {
     makeStaticPillsDeletable();
     appendExtraPills();
 });
+
+function filterICDQuickTiles(tabBtn) {
+    document.querySelectorAll('#icd-category-tabs .icd-cat-tab').forEach(function(t) {
+        t.classList.remove('active');
+    });
+    tabBtn.classList.add('active');
+
+    var category = tabBtn.dataset.category;
+    var container = document.getElementById('icd-pill-container');
+    if (!container) return;
+    container.querySelectorAll('.icd-pill-static').forEach(function(pill) {
+        var show = (category === 'all') || (pill.dataset.category === category);
+        pill.style.display = show ? '' : 'none';
+    });
+}
 
 function initStaticPills() {
     var container = document.getElementById('icd-pill-container');
