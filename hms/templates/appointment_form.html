@@ -252,18 +252,26 @@ $(function(){
     $('#id_department').select2({ placeholder:'Select department...', allowClear:true, width:'100%' });
     $('#id_doctor').select2({ placeholder:'Select doctor...', allowClear:true, width:'100%' });
 
+    var pendingDoctorId = null;
+
     $('#id_department').on('change', function(){
     var d=$(this).val();
     $('#id_doctor').empty().append('<option value="">Select doctor...</option>').trigger('change');
     if(!d) return;
     $.getJSON('/appointments/get-doctors/?department_id='+d, function(r){
-        $.each(r.doctors,function(i,doc){ $('#id_doctor').append(new Option(doc.full_name,doc.id)); });
+        $.each(r.doctors,function(i,doc){
+            var selected = pendingDoctorId !== null && String(doc.id) === String(pendingDoctorId);
+            $('#id_doctor').append(new Option(doc.full_name, doc.id, selected, selected));
+        });
         $('#id_doctor').trigger('change.select2');
+        pendingDoctorId = null;
     });
 });
 
-// NEW: populate doctors immediately if department is already pre-selected on page load
+// NEW: populate doctors immediately if department is already pre-selected on page load,
+// preserving the server-rendered default doctor selection (if any)
 if ($('#id_department').val()) {
+    pendingDoctorId = $('#id_doctor').val();
     $('#id_department').trigger('change');
 }
 

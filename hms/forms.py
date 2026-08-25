@@ -5,6 +5,7 @@ from .models import USGReport
 from .models import (
     Patient,
     Doctor,
+    Department,
     Appointment,
     Consultation,
     ICDCode,
@@ -116,6 +117,21 @@ class AppointmentForm(forms.ModelForm):
             self.fields["doctor"].queryset = Doctor.objects.filter(
                 department=self.instance.department
             )
+        elif not self.is_bound and not self.instance.pk:
+            # Default a fresh booking form to General Surgery / Dr. Pratap
+            # Senecha, since that's the most common combination — still
+            # freely changeable by staff.
+            default_dept = Department.objects.filter(name="General Surgery").first()
+            if default_dept:
+                self.fields["department"].initial = default_dept.pk
+                self.fields["doctor"].queryset = Doctor.objects.filter(department=default_dept)
+                default_doctor = Doctor.objects.filter(
+                    department=default_dept, full_name__icontains="Pratap Senecha"
+                ).first()
+                if default_doctor:
+                    self.fields["doctor"].initial = default_doctor.pk
+            else:
+                self.fields["doctor"].queryset = Doctor.objects.none()
         else:
             self.fields["doctor"].queryset = Doctor.objects.none()
 
