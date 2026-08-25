@@ -259,7 +259,6 @@ footer{ text-align:center; padding:10px 0 20px; font-size:13px; color:#444; }
         {{ form.address }}
         {% if form.address.errors %}<div class="field-error">{{ form.address.errors|join:", " }}</div>{% endif %}
     </div>
-    <div><label>City</label>{{ form.city }}</div>
     <div class="full">
         <label style="font-size:11px;color:#8892a4;font-weight:600;display:block;margin-bottom:6px;">Quick Select — Village</label>
         <div id="village-pill-container" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
@@ -276,6 +275,7 @@ footer{ text-align:center; padding:10px 0 20px; font-size:13px; color:#444; }
             <button type="button" onclick="addVillage()" style="background:#00b8a9;color:#000;border:none;border-radius:20px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;">Add</button>
         </div>
     </div>
+    <div><label>City</label>{{ form.city }}</div>
     <div>
         <label>District</label>
         <input type="text" name="district" id="id_district" value="{{ form.district.value|default:'Pali' }}">
@@ -459,7 +459,7 @@ function syncChronic(){
 function selectVillage(el){
     document.querySelectorAll('#village-pill-container .ch-pill').forEach(function(p){ p.classList.remove('active'); });
     el.classList.add('active');
-    document.getElementById('id_city').value = el.getAttribute('data-name');
+    document.getElementById('id_address').value = el.getAttribute('data-name');
 }
 function addVillage(){
     var inp=document.getElementById('new-village-input'), name=inp.value.trim();
