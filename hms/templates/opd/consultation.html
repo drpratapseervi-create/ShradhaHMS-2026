@@ -1267,6 +1267,95 @@
     </div>
 </div>
 
+<!-- ═══ REFUSAL OF ADMISSION / LAMA CONSENT ═══ -->
+<div class="sec">
+    <div class="sec-head" style="background:linear-gradient(135deg,#b91c1c,#991b1b);color:#fff;">⚠️ Refusal of Admission / LAMA Consent</div>
+    <div class="sec-body">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#333;cursor:pointer;">
+            <input type="checkbox" name="lama_declined" id="id_lama_declined" {% if consultation.lama_declined %}checked{% endif %} onchange="toggleLamaSection()" style="width:16px;height:16px;">
+            Patient advised admission but declined
+        </label>
+
+        <div id="lama-section-body" style="display:{% if consultation.lama_declined %}block{% else %}none{% endif %};margin-top:14px;">
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:220px;">
+                    <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Diagnosis</label>
+                    <input type="text" name="lama_diagnosis" id="id_lama_diagnosis" value="{{ consultation.lama_diagnosis|default:'' }}" placeholder="e.g. Acute appendicitis" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 12px;font-size:13px;">
+                </div>
+                <div style="flex:1;min-width:220px;">
+                    <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Plan / Advice Given</label>
+                    <input type="text" name="lama_plan" id="id_lama_plan" value="{{ consultation.lama_plan|default:'' }}" placeholder="e.g. Emergency surgery advised, patient refused" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 12px;font-size:13px;">
+                </div>
+            </div>
+
+            <div style="margin-top:12px;display:flex;align-items:center;gap:10px;">
+                {% if ai_enabled %}
+                <button type="button" id="lama-generate-btn" onclick="generateLamaConsent()" style="background:#b91c1c;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;">🤖 Generate Consent Text</button>
+                {% else %}
+                <span title="AI features not configured" style="color:#94a3b8;border:1px dashed #cbd5e1;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;">🤖 Generate Consent Text (not configured)</span>
+                {% endif %}
+                <span id="lama-loading" style="display:none;font-size:12px;color:#888;">⏳ Generating…</span>
+            </div>
+            <div id="lama-error" style="display:none;margin-top:6px;font-size:12px;color:#dc2626;"></div>
+
+            <div style="margin-top:12px;">
+                <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Consent Text (English)</label>
+                <textarea name="lama_consent_en" id="id_lama_consent_en" rows="4" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Generated consent paragraph will appear here — editable before saving.">{{ consultation.lama_consent_en|default:'' }}</textarea>
+            </div>
+            <div style="margin-top:12px;">
+                <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">सहमति पाठ (Consent Text — Hindi)</label>
+                <textarea name="lama_consent_hi" id="id_lama_consent_hi" rows="4" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="हिंदी अनुवाद यहाँ दिखेगा — सहेजने से पहले संपादन योग्य।">{{ consultation.lama_consent_hi|default:'' }}</textarea>
+            </div>
+
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;">
+                <div style="flex:1;min-width:200px;">
+                    <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Patient/Attendant Name</label>
+                    <input type="text" name="lama_attendant_name" id="id_lama_attendant_name" value="{{ consultation.lama_attendant_name|default:'' }}" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 12px;font-size:13px;">
+                </div>
+                <div style="flex:1;min-width:160px;">
+                    <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Relationship</label>
+                    <select name="lama_attendant_relation" id="id_lama_attendant_relation" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 10px;font-size:13px;">
+                        <option value="">Select…</option>
+                        <option value="self"    {% if consultation.lama_attendant_relation == "self" %}selected{% endif %}>Self</option>
+                        <option value="spouse"  {% if consultation.lama_attendant_relation == "spouse" %}selected{% endif %}>Spouse</option>
+                        <option value="parent"  {% if consultation.lama_attendant_relation == "parent" %}selected{% endif %}>Parent</option>
+                        <option value="child"   {% if consultation.lama_attendant_relation == "child" %}selected{% endif %}>Child</option>
+                        <option value="sibling" {% if consultation.lama_attendant_relation == "sibling" %}selected{% endif %}>Sibling</option>
+                        <option value="other"   {% if consultation.lama_attendant_relation == "other" %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+                <div style="flex:1;min-width:160px;">
+                    <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Date &amp; Time</label>
+                    <input type="text" id="lama-datetime-display" readonly style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 12px;font-size:13px;background:#f3f4f6;color:#555;">
+                </div>
+            </div>
+
+            <div style="margin-top:14px;">
+                <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Signature</label>
+                <div style="border:1px solid #ccc;border-radius:7px;overflow:hidden;">
+                    <canvas id="lama-sig-canvas" width="700" height="160" style="width:100%;height:160px;display:block;background:#fff;touch-action:none;cursor:crosshair;"></canvas>
+                </div>
+                <div style="margin-top:6px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+                    <button type="button" onclick="clearLamaSignature()" style="background:#f1f1f1;color:#333;border:1px solid #ccc;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">Clear Signature</button>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#555;cursor:pointer;">
+                        <input type="checkbox" id="lama-sig-fallback-toggle" onchange="toggleLamaSigFallback()" {% if consultation.lama_signed_name %}checked{% endif %}> Can't sign here — use typed name instead
+                    </label>
+                </div>
+                <div id="lama-sig-fallback" style="display:{% if consultation.lama_signed_name %}block{% else %}none{% endif %};margin-top:8px;max-width:320px;">
+                    <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Typed Name (in lieu of signature)</label>
+                    <input type="text" name="lama_signed_name" id="id_lama_signed_name" value="{{ consultation.lama_signed_name|default:'' }}" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 12px;font-size:13px;">
+                </div>
+                <input type="hidden" name="lama_signature_data" id="id_lama_signature_data" value="{{ consultation.lama_signature_data|default:'' }}">
+            </div>
+
+            <div style="margin-top:14px;">
+                <a href="{% url 'hms:lama_consent_print' appointment.id %}" target="_blank" style="background:#1e293b;color:#fff;text-decoration:none;border-radius:6px;padding:8px 16px;font-size:12px;font-weight:600;">🖨️ Print LAMA Consent Sheet</a>
+                <span style="font-size:11px;color:#888;margin-left:8px;">Save the consultation first so the print sheet reflects the latest text.</span>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ═══ ACTION BAR ═══ -->
 <div class="action-bar">
     <button type="submit" class="btn-save">💾 Save Consultation</button>
@@ -2718,6 +2807,117 @@ function generateAIMedicines() {
         btn.disabled = false;
         btn.innerHTML = '\U0001f916 AI Suggest Medicines';
     });
+}
+
+/* ── Refusal of Admission / LAMA Consent ── */
+function toggleLamaSection() {
+    var checked = document.getElementById('id_lama_declined').checked;
+    document.getElementById('lama-section-body').style.display = checked ? 'block' : 'none';
+}
+
+function toggleLamaSigFallback() {
+    var checked = document.getElementById('lama-sig-fallback-toggle').checked;
+    document.getElementById('lama-sig-fallback').style.display = checked ? 'block' : 'none';
+}
+
+function updateLamaDatetime() {
+    var el = document.getElementById('lama-datetime-display');
+    if (!el) return;
+    var now = new Date();
+    var pad = function(n) { return String(n).padStart(2, '0'); };
+    el.value = pad(now.getDate()) + '-' + pad(now.getMonth() + 1) + '-' + now.getFullYear()
+             + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+}
+document.addEventListener('DOMContentLoaded', updateLamaDatetime);
+
+function generateLamaConsent() {
+    var diagnosis = document.getElementById('id_lama_diagnosis').value.trim();
+    var plan = document.getElementById('id_lama_plan').value.trim();
+    if (!diagnosis || !plan) {
+        alert('Please fill in Diagnosis and Plan/Advice Given first.');
+        return;
+    }
+    var btn = document.getElementById('lama-generate-btn');
+    var loading = document.getElementById('lama-loading');
+    var errBox = document.getElementById('lama-error');
+    btn.disabled = true;
+    loading.style.display = 'inline';
+    errBox.style.display = 'none';
+
+    fetch('/generate-lama-consent/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ diagnosis: diagnosis, plan: plan })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.error) { throw new Error(data.error); }
+        document.getElementById('id_lama_consent_en').value = data.consent_en || '';
+        document.getElementById('id_lama_consent_hi').value = data.consent_hi || '';
+    })
+    .catch(function(err) {
+        errBox.textContent = '⚠️ ' + err.message;
+        errBox.style.display = 'block';
+    })
+    .finally(function() {
+        btn.disabled = false;
+        loading.style.display = 'none';
+    });
+}
+
+/* ── LAMA signature pad ── */
+(function() {
+    var canvas = document.getElementById('lama-sig-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#111';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    var drawing = false, lastX = 0, lastY = 0;
+
+    function pointFromEvent(e) {
+        var rect = canvas.getBoundingClientRect();
+        var scaleX = canvas.width / rect.width;
+        var scaleY = canvas.height / rect.height;
+        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+    }
+    function start(e) {
+        drawing = true;
+        var p = pointFromEvent(e);
+        lastX = p.x; lastY = p.y;
+        e.preventDefault();
+    }
+    function move(e) {
+        if (!drawing) return;
+        var p = pointFromEvent(e);
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        lastX = p.x; lastY = p.y;
+        e.preventDefault();
+    }
+    function end() {
+        if (!drawing) return;
+        drawing = false;
+        document.getElementById('id_lama_signature_data').value = canvas.toDataURL('image/png');
+    }
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', end);
+    canvas.addEventListener('touchstart', start, { passive: false });
+    canvas.addEventListener('touchmove', move, { passive: false });
+    canvas.addEventListener('touchend', end);
+})();
+
+function clearLamaSignature() {
+    var canvas = document.getElementById('lama-sig-canvas');
+    if (!canvas) return;
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    document.getElementById('id_lama_signature_data').value = '';
 }
 </script>
 

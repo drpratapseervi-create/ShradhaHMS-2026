@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Refusal of Admission / LAMA Consent</title>
+<style>
+@page {
+    size: A4;
+    margin-top: 1.5cm;
+    margin-bottom: 2cm;
+    margin-left: 2cm;
+    margin-right: 1.5cm;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    color: #000;
+    text-align: left;
+}
+
+/* ── Hospital Header ── */
+.hosp-header {
+    text-align: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+}
+.hosp-name {
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #000;
+}
+.hosp-sub {
+    font-size: 11px;
+    color: #333;
+    margin-top: 2px;
+}
+.hosp-contact {
+    font-size: 10px;
+    color: #333;
+    margin-top: 3px;
+}
+
+/* ── Document Title Bar ── */
+.doc-title-bar {
+    background: #b91c1c;
+    color: #fff;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 7px;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    border-radius: 3px;
+}
+
+/* ── Section heading ── */
+.sec-title {
+    background: #e8e8e8;
+    color: #000;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 7px;
+    margin: 14px 0 4px 0;
+    letter-spacing: 0.5px;
+}
+
+/* ── Tables ── */
+table.details { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top; font-size: 11px; }
+.lbl { font-weight: 700; background: #f5f5f5; width: 20%; white-space: nowrap; }
+
+.consent-block {
+    border: 1px solid #999;
+    border-radius: 3px;
+    padding: 10px 12px;
+    margin: 6px 0 4px 0;
+    font-size: 11.5px;
+    line-height: 1.6;
+    text-align: justify;
+}
+.consent-hi {
+    font-family: 'Nirmala UI', 'Mangal', Arial, sans-serif;
+}
+
+.ack-line {
+    margin: 10px 0 6px 0;
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+/* ── Footer / signatures ── */
+.sign-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 26px;
+}
+.sign-box {
+    text-align: center;
+    width: 220px;
+}
+.sign-box .sig-line {
+    border-top: 1px solid #000;
+    padding-top: 3px;
+    font-size: 10px;
+    font-weight: 700;
+}
+.sig-img {
+    height: 60px;
+    max-width: 220px;
+    display: block;
+    margin: 0 auto 4px auto;
+}
+
+@media print {
+    .no-print { display: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Hospital Header ── -->
+<div class="hosp-header">
+    <div class="hosp-name">Shradha Hospital &amp; Multispeciality Centre</div>
+    <div class="hosp-sub">Pani Ki Do Tanki, Surajpole, Pali (Raj.) — 306401</div>
+    <div class="hosp-contact">📞 9414122542 &nbsp;|&nbsp; Emergency: 9414122542</div>
+</div>
+
+<div class="doc-title-bar">REFUSAL OF ADMISSION / LEAVE AGAINST MEDICAL ADVICE (LAMA) CONSENT</div>
+
+<!-- ── Patient Details ── -->
+<div class="sec-title">PATIENT DETAILS</div>
+<table class="details">
+    <tr>
+        <td class="lbl">Patient Name</td>
+        <td><strong>{{ appointment.patient.full_name|title }}</strong></td>
+        <td class="lbl">Age / Sex</td>
+        <td>{% if appointment.patient.age_years %}{{ appointment.patient.age_years }} Yrs{% else %}-{% endif %} / {{ appointment.patient.gender }}</td>
+    </tr>
+    <tr>
+        <td class="lbl">UHID</td>
+        <td>{{ appointment.patient.uhid }}</td>
+        <td class="lbl">Mobile</td>
+        <td>{{ appointment.patient.mobile_no }}</td>
+    </tr>
+    <tr>
+        <td class="lbl">Consultant</td>
+        <td>{{ appointment.doctor.full_name }}</td>
+        <td class="lbl">Date / Time</td>
+        <td>{% if consultation.lama_signed_at %}{{ consultation.lama_signed_at|date:"d-m-Y" }} / {{ consultation.lama_signed_at|time:"H:i" }}{% else %}{{ appointment.date|date:"d-m-Y" }} / {{ appointment.time|time:"H:i" }}{% endif %}</td>
+    </tr>
+</table>
+
+<!-- ── Diagnosis & Plan ── -->
+<div class="sec-title">DIAGNOSIS &amp; RECOMMENDED TREATMENT</div>
+<table class="details">
+    <tr>
+        <td class="lbl">Diagnosis</td>
+        <td>{{ consultation.lama_diagnosis|default:"-" }}</td>
+    </tr>
+    <tr>
+        <td class="lbl">Plan / Advice Given</td>
+        <td>{{ consultation.lama_plan|default:"-" }}</td>
+    </tr>
+</table>
+
+<!-- ── Consent Text ── -->
+<div class="sec-title">CONSENT / REFUSAL STATEMENT (ENGLISH)</div>
+<div class="consent-block">{{ consultation.lama_consent_en|default:"—" }}</div>
+
+<div class="sec-title">सहमति / अस्वीकृति कथन (हिंदी)</div>
+<div class="consent-block consent-hi">{{ consultation.lama_consent_hi|default:"—" }}</div>
+
+<!-- ── Attendant & Acknowledgment ── -->
+<div class="sec-title">ATTENDANT DETAILS &amp; ACKNOWLEDGMENT</div>
+<table class="details">
+    <tr>
+        <td class="lbl">Patient/Attendant Name</td>
+        <td>{{ consultation.lama_attendant_name|default:"-" }}</td>
+        <td class="lbl">Relationship</td>
+        <td>{{ consultation.get_lama_attendant_relation_display|default:"-" }}</td>
+    </tr>
+</table>
+<p class="ack-line">
+    I/We acknowledge that the diagnosis, recommended treatment, and the risks of declining
+    the same have been explained to me/us in a language I/we understand, and I/we have
+    voluntarily chosen to decline this treatment / leave the hospital against medical advice.
+</p>
+
+<!-- ── Signatures ── -->
+<div class="sign-row">
+    <div class="sign-box">
+        {% if consultation.lama_signature_data %}
+            <img class="sig-img" src="{{ consultation.lama_signature_data }}" alt="Signature">
+        {% elif consultation.lama_signed_name %}
+            <div style="height:60px;display:flex;align-items:center;justify-content:center;font-style:italic;">{{ consultation.lama_signed_name }}</div>
+        {% else %}
+            <div style="height:60px;"></div>
+        {% endif %}
+        <div class="sig-line">Patient / Attendant Signature</div>
+    </div>
+    <div class="sign-box">
+        <div style="height:60px;"></div>
+        <div class="sig-line">{{ appointment.doctor.full_name }}<br>Doctor's Signature &amp; Stamp</div>
+    </div>
+</div>
+
+<!-- ── Print Button (hidden when printing) ── -->
+<div style="text-align:center; margin: 20px 0 8px 0;" class="no-print">
+    <button onclick="printAndClose()" style="
+        background: #374151;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 32px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        letter-spacing: 0.5px;
+    ">🖨️ Print Consent Sheet</button>
+</div>
+<script>
+function printAndClose() {
+    window.onafterprint = function () {
+        if (window.opener) {
+            window.close();
+        } else {
+            window.location.href = "{% url 'hms:start_consultation' appointment.id %}";
+        }
+    };
+    window.print();
+}
+</script>
+
+</body>
+</html>

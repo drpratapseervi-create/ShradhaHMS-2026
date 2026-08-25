@@ -314,6 +314,29 @@ class Consultation(models.Model):
     )
     follow_up_notes = models.TextField(blank=True)
 
+    # ===== REFUSAL OF ADMISSION / LAMA CONSENT =====
+    lama_declined = models.BooleanField(default=False)
+    lama_diagnosis = models.CharField(max_length=255, blank=True)
+    lama_plan = models.TextField(blank=True)
+    lama_consent_en = models.TextField(blank=True)
+    lama_consent_hi = models.TextField(blank=True)
+    lama_attendant_name = models.CharField(max_length=150, blank=True)
+    lama_attendant_relation = models.CharField(
+        max_length=20,
+        choices=[
+            ("self",   "Self"),
+            ("spouse", "Spouse"),
+            ("parent", "Parent"),
+            ("child",  "Child"),
+            ("sibling", "Sibling"),
+            ("other",  "Other"),
+        ],
+        blank=True,
+    )
+    lama_signed_name = models.CharField(max_length=150, blank=True)
+    lama_signature_data = models.TextField(blank=True, null=True)
+    lama_signed_at = models.DateTimeField(null=True, blank=True)
+
     # ===== METADATA =====
     custom_investigations = models.TextField(blank=True, null=True)
     last_modified_by = models.CharField(max_length=100, blank=True, null=True)

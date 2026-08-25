@@ -236,6 +236,21 @@ def start_consultation(request, appointment_id):
                 obj.custom_investigations = request.POST.get("custom_investigations", "")
                 obj.surgery_date    = request.POST.get("surgery_date") or None
 
+                # ── Refusal of Admission / LAMA Consent ──
+                obj.lama_declined = bool(request.POST.get("lama_declined"))
+                obj.lama_diagnosis = request.POST.get("lama_diagnosis", "").strip()
+                obj.lama_plan = request.POST.get("lama_plan", "").strip()
+                obj.lama_consent_en = request.POST.get("lama_consent_en", "").strip()
+                obj.lama_consent_hi = request.POST.get("lama_consent_hi", "").strip()
+                obj.lama_attendant_name = request.POST.get("lama_attendant_name", "").strip()
+                obj.lama_attendant_relation = request.POST.get("lama_attendant_relation", "").strip()
+                obj.lama_signed_name = request.POST.get("lama_signed_name", "").strip()
+                lama_signature_data = request.POST.get("lama_signature_data", "").strip()
+                if lama_signature_data:
+                    obj.lama_signature_data = lama_signature_data
+                if obj.lama_declined and not obj.lama_signed_at:
+                    obj.lama_signed_at = timezone.now()
+
                 obj.save()
 
                 obj.symptoms.set(request.POST.getlist("symptoms"))
@@ -395,6 +410,18 @@ def consultation_pdf(request, appointment_id):
         "surgical_history_list": consultation.surgical_history.all(),
         "investigations":        consultation.investigations.all(),
         "prescriptions":         Prescription.objects.filter(consultation=consultation),
+    })
+
+
+def lama_consent_print(request, appointment_id):
+    appointment = get_object_or_404(
+        Appointment.objects.select_related("patient", "doctor"),
+        id=appointment_id,
+    )
+    consultation = get_object_or_404(Consultation, appointment=appointment)
+    return render(request, "opd/lama_consent_print.html", {
+        "appointment":   appointment,
+        "consultation":  consultation,
     })
 
 
@@ -3388,6 +3415,78 @@ def generate_diet(request):
         )
         diet = next((b.text for b in response.content if b.type == "text"), "").strip()
         return JsonResponse({'diet': diet})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def generate_lama_consent(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+    if not settings.AI_FEATURES_ENABLED:
+        return JsonResponse({'error': 'AI features are not configured on this system.'})
+    import json
+    data = json.loads(request.body)
+    diagnosis = data.get('diagnosis', '').strip()
+    plan = data.get('plan', '').strip()
+    if not diagnosis or not plan:
+        return JsonResponse({'error': 'Diagnosis and Plan/Advice are both required'}, status=400)
+    try:
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        response = client.messages.create(
+            model='claude-opus-5',
+            max_tokens=900,
+            system=(
+                "You are a senior Indian surgeon drafting a formal LAMA "
+                "(Leave Against Medical Advice) consent note for a hospital "
+                "record. Always return ONLY valid JSON. No explanation."
+            ),
+            output_config={
+                "format": {
+                    "type": "json_schema",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "consent_en": {"type": "string"},
+                            "consent_hi": {"type": "string"},
+                        },
+                        "required": ["consent_en", "consent_hi"],
+                        "additionalProperties": False,
+                    },
+                }
+            },
+            messages=[{
+                'role': 'user',
+                'content': f"""
+Diagnosis: {diagnosis}
+Recommended treatment / plan advised: {plan}
+
+Write "consent_en": a formal 4-5 line consent/refusal paragraph in English,
+first person plural ("We, the patient/attendant..."), covering:
+- the diagnosis
+- the treatment/admission that was recommended
+- the risks of declining this treatment, specific to this diagnosis
+  (e.g. perforation, sepsis, worsening of the condition, or other
+  clinically relevant complications)
+- a statement that the patient/attendant was informed of these risks in
+  a language they understand, and voluntarily chose to decline/leave
+  against medical advice, releasing the hospital and treating doctor
+  from responsibility for adverse outcomes resulting from this decision.
+
+Then write "consent_hi": a faithful Hindi translation of that exact
+paragraph (Devanagari script), same meaning and structure.
+
+Plain paragraph text only in each field, no headings, no markdown, no
+bullet points.
+"""
+            }]
+        )
+        raw = next((b.text for b in response.content if b.type == "text"), "{}")
+        parsed = json.loads(raw)
+        return JsonResponse({
+            'consent_en': parsed.get('consent_en', '').strip(),
+            'consent_hi': parsed.get('consent_hi', '').strip(),
+        })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 

@@ -34,10 +34,20 @@ class ConsultationForm(forms.ModelForm):
             "surgery_date",
             "investigations",
             "created_at",
-            "advice",   
+            "advice",
             "diet_advice",
             "follow_up_date",
             "follow_up_notes",
+            "lama_declined",
+            "lama_diagnosis",
+            "lama_plan",
+            "lama_consent_en",
+            "lama_consent_hi",
+            "lama_attendant_name",
+            "lama_attendant_relation",
+            "lama_signed_name",
+            "lama_signature_data",
+            "lama_signed_at",
         ]
 
 # ===================== PATIENT FORM =====================
