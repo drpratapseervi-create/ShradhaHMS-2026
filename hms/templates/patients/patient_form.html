@@ -112,6 +112,11 @@ select:-webkit-autofill:focus {
 }
 #ageInput:focus{ outline:none; box-shadow:0 0 0 2px rgba(0,184,169,.25) !important; }
 .age-suffix{ position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:11px; color:#00b8a9; font-weight:600; pointer-events:none; }
+
+.mobile-wrap{ position:relative; }
+.mobile-wrap input{ padding-left:46px !important; }
+.mobile-prefix{ position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:13px; color:#8892a4; font-weight:600; pointer-events:none; }
+.mobile-wrap:focus-within .mobile-prefix{ color:#00b8a9; }
 .dob-hint{ margin-top:5px; font-size:11px; color:#555; }
 
 .more-toggle{
@@ -247,7 +252,10 @@ footer{ text-align:center; padding:10px 0 20px; font-size:13px; color:#444; }
     </div>
     <div>
         <label>Mobile *</label>
-        {{ form.mobile_no }}
+        <div class="mobile-wrap">
+            <span class="mobile-prefix">+91</span>
+            {{ form.mobile_no }}
+        </div>
         {% if form.mobile_no.errors %}<div class="field-error">{{ form.mobile_no.errors|join:", " }}</div>{% endif %}
     </div>
 </div>

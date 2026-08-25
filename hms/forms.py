@@ -54,6 +54,11 @@ class PatientForm(forms.ModelForm):
                     "max": date.today().isoformat()
                 }
             ),
+            "mobile_no": forms.TextInput(attrs={
+                "inputmode": "numeric",
+                "placeholder": "10-digit number",
+                "autocomplete": "off",
+            }),
             "address": forms.Textarea(attrs={"rows": 2}),
             "allergy_details": forms.Textarea(attrs={"rows": 2}),
             "chronic_illness": forms.Textarea(attrs={"rows": 2}),
