@@ -309,10 +309,52 @@ def start_consultation(request, appointment_id):
     else:
         form = ConsultationForm(instance=consultation)
 
+    previous_consultations = Consultation.objects.filter(
+        appointment__patient=appointment.patient
+    ).exclude(id=consultation.id).select_related(
+        "appointment", "appointment__doctor", "diagnosis_icd"
+    ).prefetch_related(
+        "symptoms", "signs", "icd_codes", "prescriptions"
+    ).order_by("-appointment__date", "-appointment__time")
+
+    previous_visits = [
+        {
+            "id": c.id,
+            "date_str": c.appointment.date.strftime("%b %d, %Y"),
+            "doctor": c.appointment.doctor.full_name,
+            "pulse": c.pulse,
+            "bp": c.bp,
+            "spo2": c.spo2,
+            "weight": c.weight,
+            "chief_complaints": c.chief_complaints,
+            "symptoms": [s.name for s in c.symptoms.all()],
+            "examination": c.examination,
+            "signs": [s.name for s in c.signs.all()],
+            "diagnosis_text": c.diagnosis_text,
+            "icd_codes": [f"{i.code} — {i.description}" for i in c.icd_codes.all()],
+            "advice": c.advice,
+            "diet_advice": c.diet_advice,
+            "follow_up_date": c.follow_up_date.strftime("%b %d, %Y") if c.follow_up_date else "",
+            "prescriptions": [
+                {
+                    "medicine": p.medicine,
+                    "dose": p.dose,
+                    "frequency": p.frequency,
+                    "duration": p.duration,
+                    "instructions": p.instructions,
+                }
+                for p in c.prescriptions.all()
+            ],
+        }
+        for c in previous_consultations
+    ]
+
     return render(request, "opd/consultation.html", {
         "appointment":  appointment,
         "consultation": consultation,
         "form":         form,
+        "previous_visits": previous_visits,
+        "previous_visits_json": json.dumps(previous_visits).replace("<", "\\u003c"),
         "investigations": Investigation.objects.filter(is_active=True),
         "prescriptions":  prescriptions,
         "symptoms": Symptom.objects.filter(

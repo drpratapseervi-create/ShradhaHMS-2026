@@ -247,6 +247,73 @@
 }
 .icd-cat-tab:hover { background: #fff; border-color: #0891b2; }
 .icd-cat-tab.active { background: #0891b2; border-color: #0891b2; color: #fff; }
+
+/* ── Previous visit date tabs ── */
+.visit-tabs-row {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    margin-bottom: 14px;
+    padding-bottom: 2px;
+}
+.visit-tab {
+    flex: 0 0 auto;
+    background: #fafafa;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.visit-tab:hover { background: #fff; border-color: #2563eb; }
+.visit-tab.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+
+/* ── Past visit read-only panel ── */
+.past-visit-card {
+    background: #fff;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border: 1px solid rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+.past-visit-head {
+    background: linear-gradient(135deg,#64748b,#475569);
+    color: #fff;
+    padding: 8px 14px;
+    font-weight: 600;
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.past-visit-body { padding: 14px; font-size: 12px; color: #1a1a1a; }
+.pv-row { margin-bottom: 10px; }
+.pv-row:last-child { margin-bottom: 0; }
+.pv-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+}
+.pv-value { font-size: 13px; color: #1a1a1a; }
+.pv-rx-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+.pv-rx-table th {
+    background: #f1f5f9;
+    padding: 5px 8px;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: #475569;
+    text-align: left;
+}
+.pv-rx-table td { padding: 5px 8px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+.pv-rx-table tr:last-child td { border-bottom: none; }
 .cb-item input[type=checkbox] { accent-color: #1a1a1a; width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
 .cb-item:has(input:checked) { background: #f7f7f7; border-color: #ddd; color: #1a1a1a; font-weight: 500; }
 
@@ -578,6 +645,84 @@
     </div>
 </div>
 
+{% if previous_visits %}
+<div class="visit-tabs-row" id="visit-tabs-row">
+    <button type="button" class="visit-tab active" data-visit="today" onclick="showVisit('today', this)">{{ appointment.date|date:"M d, Y" }} &nbsp;(Today)</button>
+    {% for v in previous_visits %}
+    <button type="button" class="visit-tab" data-visit="{{ v.id }}" onclick="showVisit('{{ v.id }}', this)">{{ v.date_str }}</button>
+    {% endfor %}
+</div>
+<div id="past-visit-panel" style="display:none;"></div>
+<script type="application/json" id="previous-visits-data">{{ previous_visits_json|safe }}</script>
+<script>
+(function() {
+    const dataEl = document.getElementById('previous-visits-data');
+    const PREVIOUS_VISITS = dataEl ? JSON.parse(dataEl.textContent || '[]') : [];
+
+    function esc(s) {
+        const d = document.createElement('div');
+        d.textContent = (s === null || s === undefined) ? '' : String(s);
+        return d.innerHTML;
+    }
+
+    function renderVisitCard(v) {
+        let rxRows = (v.prescriptions || []).map(function(p) {
+            return '<tr><td>' + esc(p.medicine) + '</td><td>' + esc(p.dose) + '</td><td>' +
+                esc(p.frequency) + '</td><td>' + esc(p.duration) + '</td><td>' +
+                esc(p.instructions) + '</td></tr>';
+        }).join('');
+        if (!rxRows) {
+            rxRows = '<tr><td colspan="5" style="color:#888;font-style:italic;">No medicines prescribed.</td></tr>';
+        }
+
+        const complaints = [(v.symptoms || []).join(', '), v.chief_complaints].filter(Boolean).join(' — ') || '—';
+        const exam = [(v.signs || []).join(', '), v.examination].filter(Boolean).join(' — ') || '—';
+        const diagnosis = [v.diagnosis_text, (v.icd_codes || []).length ? '(' + v.icd_codes.join(', ') + ')' : ''].filter(Boolean).join(' ') || '—';
+
+        let extra = '';
+        if (v.advice) extra += '<div class="pv-row"><div class="pv-label">Advice</div><div class="pv-value">' + esc(v.advice) + '</div></div>';
+        if (v.diet_advice) extra += '<div class="pv-row"><div class="pv-label">Diet Advice</div><div class="pv-value">' + esc(v.diet_advice) + '</div></div>';
+        if (v.follow_up_date) extra += '<div class="pv-row"><div class="pv-label">Follow-up</div><div class="pv-value">' + esc(v.follow_up_date) + '</div></div>';
+
+        return (
+            '<div class="past-visit-card">' +
+                '<div class="past-visit-head">' +
+                    '<span>📅 Visit — ' + esc(v.date_str) + ' · Dr. ' + esc(v.doctor) + '</span>' +
+                    '<span style="font-size:10px;font-weight:400;opacity:0.85;">Read-only</span>' +
+                '</div>' +
+                '<div class="past-visit-body">' +
+                    '<div class="pv-row"><div class="pv-label">Vitals</div><div class="pv-value">Pulse: ' + (esc(v.pulse) || '—') + ' bpm &nbsp;·&nbsp; BP: ' + (esc(v.bp) || '—') + ' mmHg &nbsp;·&nbsp; SpO₂: ' + (esc(v.spo2) || '—') + '% &nbsp;·&nbsp; Weight: ' + (esc(v.weight) || '—') + ' kg</div></div>' +
+                    '<div class="pv-row"><div class="pv-label">Chief Complaints</div><div class="pv-value">' + complaints + '</div></div>' +
+                    '<div class="pv-row"><div class="pv-label">Examination Findings</div><div class="pv-value">' + exam + '</div></div>' +
+                    '<div class="pv-row"><div class="pv-label">Diagnosis</div><div class="pv-value">' + diagnosis + '</div></div>' +
+                    '<div class="pv-row"><div class="pv-label">Prescription</div><table class="pv-rx-table"><thead><tr><th>Medicine</th><th>Dose</th><th>Frequency</th><th>Duration</th><th>Instructions</th></tr></thead><tbody>' + rxRows + '</tbody></table></div>' +
+                    extra +
+                '</div>' +
+            '</div>'
+        );
+    }
+
+    window.showVisit = function(visitId, btn) {
+        document.querySelectorAll('.visit-tab').forEach(function(t) { t.classList.remove('active'); });
+        btn.classList.add('active');
+        const form = document.getElementById('consultation-form');
+        const panel = document.getElementById('past-visit-panel');
+        if (visitId === 'today') {
+            panel.style.display = 'none';
+            panel.innerHTML = '';
+            form.style.display = '';
+            return;
+        }
+        const visit = PREVIOUS_VISITS.find(function(v) { return String(v.id) === String(visitId); });
+        if (!visit) return;
+        form.style.display = 'none';
+        panel.style.display = 'block';
+        panel.innerHTML = renderVisitCard(visit);
+    };
+})();
+</script>
+{% endif %}
+
 {% if messages %}
 {% for msg in messages %}
 <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show" role="alert">
@@ -587,7 +732,7 @@
 {% endfor %}
 {% endif %}
 
-<form method="post">
+<form method="post" id="consultation-form">
 {% csrf_token %}
 
 <!-- ═══ PATIENT DETAILS ═══ -->
