@@ -967,16 +967,16 @@
             {% empty %}
             <p style="color:#888; font-style:italic;">No surgical history items configured.</p>
             {% endfor %}
-        </div>
-        <div style="margin-top:10px;max-width:220px;">
-            <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Date of Surgery</label>
-            <input type="date" name="surgery_date" id="id_surgery_date" value="{{ consultation.surgery_date|date:'Y-m-d'|default:'' }}" style="width:100%;height:36px;border-radius:7px;border:1px solid #ccc;padding:0 10px;font-size:13px;">
-        </div>
-        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
-            <input type="text" id="new-surgicalhistory-input" placeholder="➕ Add new surgical history…"
-                style="flex:1;padding:6px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
-                onkeydown="if(event.key==='Enter'){event.preventDefault();addSurgicalHistory();}">
-            <button type="button" onclick="addSurgicalHistory()" style="background:#0891b2;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">Add</button>
+            <div id="surgical-date-anchor" style="display:flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid #e2e8f0;border-radius:7px;background:#fafafa;">
+                <label for="id_surgery_date" style="font-size:12px;color:#555;font-weight:600;white-space:nowrap;">Date of Surgery</label>
+                <input type="date" name="surgery_date" id="id_surgery_date" value="{{ consultation.surgery_date|date:'Y-m-d'|default:'' }}" style="height:26px;border-radius:5px;border:1px solid #ccc;padding:0 6px;font-size:12px;">
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;">
+                <input type="text" id="new-surgicalhistory-input" placeholder="➕ Add new surgical history…"
+                    style="width:180px;padding:6px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
+                    onkeydown="if(event.key==='Enter'){event.preventDefault();addSurgicalHistory();}">
+                <button type="button" onclick="addSurgicalHistory()" style="background:#0891b2;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">Add</button>
+            </div>
         </div>
     </div>
 </div>
@@ -2478,13 +2478,13 @@ function addSurgicalHistory() {
     .then(r => r.json())
     .then(function(d) {
         if (d.id) {
-            var grid = document.getElementById('surgicalhistory-grid');
+            var anchor = document.getElementById('surgical-date-anchor');
             var label = document.createElement('label');
             label.className = 'cb-item';
             label.dataset.id = d.id;
             label.innerHTML = '<input type="checkbox" name="surgical_history" value="' + d.id + '" checked> ' + d.name +
                 ' <span onclick="deleteItem(\'surgicalhistory\',' + d.id + ',this)" title="Delete" style="margin-left:auto;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color=\'#dc3545\'" onmouseout="this.style.color=\'#ccc\'">✕</span>';
-            grid.appendChild(label);
+            anchor.parentNode.insertBefore(label, anchor);
             inp.value = '';
             showToast('✅ "' + d.name + '" added', '#007676');
         }
