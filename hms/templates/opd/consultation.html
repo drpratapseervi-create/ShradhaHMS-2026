@@ -995,10 +995,10 @@
         <div style="margin-bottom:10px;">
             <div style="font-size:11px;font-weight:700;color:#0891b2;margin-bottom:6px;letter-spacing:0.3px;">⚡ Quick Select — Common Diagnoses</div>
             <div id="icd-category-tabs" style="display:flex;flex-wrap:nowrap;overflow-x:auto;white-space:nowrap;gap:4px;margin-bottom:6px;padding-bottom:2px;">
-                <button type="button" class="icd-cat-tab active" data-category="all" onclick="filterICDQuickTiles(this)">All</button>
                 {% for value, label in icd_categories %}
-                <button type="button" class="icd-cat-tab" data-category="{{ value }}" onclick="filterICDQuickTiles(this)">{{ label }}</button>
+                <button type="button" class="icd-cat-tab{% if value == "surgical" %} active{% endif %}" data-category="{{ value }}" onclick="filterICDQuickTiles(this)">{{ label }}</button>
                 {% endfor %}
+                <button type="button" class="icd-cat-tab" data-category="all" onclick="filterICDQuickTiles(this)">All</button>
             </div>
             <div id="icd-pill-container" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;min-height:32px;padding:4px;border:1px dashed #e0f2fe;border-radius:8px;">
                 {% for icd in icd_quick_codes %}
