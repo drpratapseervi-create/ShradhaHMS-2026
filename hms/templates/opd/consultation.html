@@ -939,12 +939,10 @@
             {% empty %}
             <p style="color:#888; font-style:italic;">No past history items configured.</p>
             {% endfor %}
-        </div>
-        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
-            <input type="text" id="new-pasthistory-input" placeholder="➕ Add new past history…"
-                style="flex:1;padding:6px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
+            <input type="text" id="new-pasthistory-input" placeholder="➕ Add new…"
+                style="width:140px;padding:6px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();addPastHistory();}">
-            <button type="button" onclick="addPastHistory()" style="background:#e11d48;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">Add</button>
+            <button type="button" onclick="addPastHistory()" style="background:#e11d48;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Add</button>
         </div>
     </div>
 </div>
@@ -2451,13 +2449,12 @@ function addPastHistory() {
     .then(r => r.json())
     .then(function(d) {
         if (d.id) {
-            var grid = document.getElementById('pasthistory-grid');
             var label = document.createElement('label');
             label.className = 'cb-item';
             label.dataset.id = d.id;
             label.innerHTML = '<input type="checkbox" name="past_history" value="' + d.id + '" checked> ' + d.name +
                 ' <span onclick="deleteItem(\'pasthistory\',' + d.id + ',this)" title="Delete" style="margin-left:auto;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color=\'#dc3545\'" onmouseout="this.style.color=\'#ccc\'">✕</span>';
-            grid.appendChild(label);
+            inp.parentNode.insertBefore(label, inp);
             inp.value = '';
             showToast('✅ "' + d.name + '" added', '#007676');
         }
