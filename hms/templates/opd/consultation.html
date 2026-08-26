@@ -971,12 +971,10 @@
                 <label for="id_surgery_date" style="font-size:12px;color:#555;font-weight:600;white-space:nowrap;">Date of Surgery</label>
                 <input type="date" name="surgery_date" id="id_surgery_date" value="{{ consultation.surgery_date|date:'Y-m-d'|default:'' }}" style="height:26px;border-radius:5px;border:1px solid #ccc;padding:0 6px;font-size:12px;">
             </div>
-            <div style="display:flex;gap:6px;align-items:center;">
-                <input type="text" id="new-surgicalhistory-input" placeholder="➕ Add new surgical history…"
-                    style="width:180px;padding:6px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
-                    onkeydown="if(event.key==='Enter'){event.preventDefault();addSurgicalHistory();}">
-                <button type="button" onclick="addSurgicalHistory()" style="background:#0891b2;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">Add</button>
-            </div>
+            <input type="text" id="new-surgicalhistory-input" placeholder="➕ Add new…"
+                style="width:140px;padding:6px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();addSurgicalHistory();}">
+            <button type="button" onclick="addSurgicalHistory()" style="background:#0891b2;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Add</button>
         </div>
     </div>
 </div>
