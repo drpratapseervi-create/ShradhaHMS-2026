@@ -374,7 +374,7 @@ table.print-shell > thead > tr > td {
 {% if past_history_list %}
 <div class="sec-title">PAST HISTORY</div>
 <div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
-{% for h in past_history_list %}{{ h.name }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% endfor %}
+{% for h in past_history_list %}• {{ h.name }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
 </div>
 {% endif %}
 
@@ -382,7 +382,7 @@ table.print-shell > thead > tr > td {
 {% if surgical_history_list %}
 <div class="sec-title">SURGICAL HISTORY</div>
 <div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
-{% for h in surgical_history_list %}{{ h.name }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% endfor %}
+{% for h in surgical_history_list %}• {{ h.name }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
 </div>
 {% if consultation.surgery_date %}
 <p style="margin:3px 0; font-size:11px;"><em>Date of Surgery: {{ consultation.surgery_date|date:"d-M-Y" }}</em></p>
