@@ -448,14 +448,11 @@ table.print-shell > thead > tr > td {
 </div>
 {% endif %}
 
-<!-- ── AI Clinical Assist ── -->
-{% if consultation.ai_investigation_input or consultation.ai_probable_diagnosis or consultation.ai_required_investigations %}
-<div class="sec-title">AI CLINICAL ASSIST (For Reference Only)</div>
-<div style="background:#f9f9f9; border:1px solid #e0e0e0; border-radius:4px; padding:8px; font-size:10px; color:#000;">
-    <em>⚠️ AI-generated — reviewed and verified by treating physician</em><br><br>
-    {% if consultation.ai_investigation_input %}<strong>Entered Summary / Investigation Results:</strong> {{ consultation.ai_investigation_input }}<br><br>{% endif %}
-    {% if consultation.ai_probable_diagnosis %}<strong>Probable Diagnosis:</strong> {{ consultation.ai_probable_diagnosis }}<br><br>{% endif %}
-    {% if consultation.ai_required_investigations %}<strong>Required Investigations:</strong> {{ consultation.ai_required_investigations }}{% endif %}
+<!-- ── Investigation Results ── -->
+{% if consultation.ai_investigation_input %}
+<div class="sec-title">INVESTIGATION RESULTS</div>
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
+    {{ consultation.ai_investigation_input }}
 </div>
 {% endif %}
 
