@@ -185,17 +185,17 @@
     gap: 8px;
 }
 .qlv-box {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: #0b2e2a;
+    border: 1px solid #134e4a;
     border-radius: 8px;
     padding: 7px 10px;
     transition: border-color 0.2s;
 }
-.qlv-box:focus-within { border-color: #94a3b8; box-shadow: 0 0 0 3px rgba(148,163,184,0.15); }
+.qlv-box:focus-within { border-color: #2dd4bf; box-shadow: 0 0 0 3px rgba(45,212,191,0.2); }
 .qlv-label {
     font-size: 9.5px;
     font-weight: 700;
-    color: #555;
+    color: #5eead4;
     text-transform: uppercase;
     letter-spacing: 0.4px;
     margin-bottom: 4px;
@@ -207,13 +207,15 @@
     background: transparent;
     font-size: 14px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: #ecfdf5;
     outline: none;
     padding: 0;
     height: auto;
     border-radius: 0;
 }
+.qlv-input::placeholder { color: #5b8f89; }
 .qlv-select { cursor: pointer; }
+.qlv-select option { background: #0b2e2a; color: #ecfdf5; }
 .qlv-box-other {
     grid-column: span 2;
     display: flex;
@@ -1478,6 +1480,10 @@
                 <div class="qlv-label">ESR</div>
                 <input class="qlv-input" type="text" name="qlv_esr" value="{{ consultation.quick_lab_values.esr|default:'' }}" placeholder="mm/hr" oninput="syncQlvToAI()">
             </div>
+            <div class="qlv-box">
+                <div class="qlv-label">🩻 USG Findings</div>
+                <input class="qlv-input" type="text" name="usg_findings" value="{{ consultation.usg_findings|default:'' }}" placeholder="e.g. appendicitis" oninput="syncQlvToAI()">
+            </div>
             <div class="qlv-box qlv-box-other">
                 <div style="flex:1;">
                     <div class="qlv-label">Other — Label</div>
@@ -1488,10 +1494,6 @@
                     <input class="qlv-input" type="text" name="qlv_other_value" value="{{ consultation.quick_lab_values.other_value|default:'' }}" placeholder="value" oninput="syncQlvToAI()">
                 </div>
             </div>
-        </div>
-        <div style="margin-top:12px;">
-            <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">🩻 USG Findings</label>
-            <textarea name="usg_findings" rows="3" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Type ultrasound findings here…">{{ consultation.usg_findings|default:'' }}</textarea>
         </div>
     </div>
 </div>
@@ -2171,6 +2173,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ["qlv_hb", "Hb"], ["qlv_tlc", "TLC"], ["qlv_platelet", "Platelet"], ["qlv_rbs", "RBS"],
         ["qlv_creatinine", "Creat"], ["qlv_urea", "BU"], ["qlv_sgot", "SGOT"], ["qlv_sgpt", "SGPT"],
         ["qlv_tsh", "TSH"], ["qlv_typhoid", "Typhoid"], ["qlv_mp_test", "MP"], ["qlv_esr", "ESR"],
+        ["usg_findings", "USG"],
     ];
     let lastAutoQlv = "";
 
