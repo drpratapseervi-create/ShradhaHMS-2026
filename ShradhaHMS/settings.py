@@ -326,9 +326,10 @@ FIELD_ENCRYPTION_KEY = os.getenv(
     "lYVCcXXT4gu2HtCOJlBOw81SjA783BHHlmyB6qX1TRU="
 )
 
-# ── ANTHROPIC (Claude) ──────────────────────────────────────────────────────
-ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')
-# Explicit on/off switch for the AI Clinical Assist / AI Suggest Medicines /
-# AI diet chart features, independent of whether a key is present — lets you
-# hold a key in .env without the app trying to call a not-yet-funded account.
-AI_FEATURES_ENABLED = os.getenv('AI_FEATURES_ENABLED', 'False').lower() in ('1', 'true', 'yes')
+# ── OPENAI ───────────────────────────────────────────────────────────────────
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
+# Master on/off switch for the AI Clinical Assist / AI Suggest Medicines /
+# AI diet chart / LAMA consent features. Requires both an explicit opt-in via
+# AI_FEATURES_ENABLED and a non-empty OPENAI_API_KEY, so a stray "True" left
+# in .env can't turn AI calls on with no key configured.
+AI_FEATURES_ENABLED = bool(OPENAI_API_KEY) and os.getenv('AI_FEATURES_ENABLED', 'False').lower() in ('1', 'true', 'yes')

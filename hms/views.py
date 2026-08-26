@@ -5,7 +5,7 @@ import json
 from decimal import Decimal
 from datetime import date
 from django.http import JsonResponse
-import anthropic
+from openai import OpenAI
 from django.conf import settings
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -2295,7 +2295,7 @@ def document_types_ajax(request):
     return JsonResponse({'types': [{'value': v, 'label': l} for v, l in types]})
 
 
-client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 def ai_full_opd(request):
     if request.method == "POST":
@@ -2328,12 +2328,12 @@ def ai_full_opd(request):
         Keep short and practical.
         """
 
-        response = client.messages.create(
-            model="claude-opus-5",
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
         )
-        result_text = next((b.text for b in response.content if b.type == "text"), "")
+        result_text = response.choices[0].message.content or ""
 
         return JsonResponse({"result": result_text})
 
@@ -3404,16 +3404,16 @@ def generate_diet(request):
     if not diagnosis:
         return JsonResponse({'error': 'No diagnosis'}, status=400)
     try:
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        response = client.messages.create(
-            model='claude-opus-5',
+        client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model='gpt-4o-mini',
             max_tokens=150,
             messages=[{
                 'role': 'user',
                 'content': f'Patient diagnosis: {diagnosis}.\nWrite Indian diet chart in exactly 6 lines:\nEarly Morning: ...\nBreakfast: ...\nLunch: ...\nEvening: ...\nDinner: ...\nAvoid: ...\nOnly diet chart, no extra text, 25 words max.'
             }]
         )
-        diet = next((b.text for b in response.content if b.type == "text"), "").strip()
+        diet = (response.choices[0].message.content or "").strip()
         return JsonResponse({'diet': diet})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -3432,18 +3432,15 @@ def generate_lama_consent(request):
     if not diagnosis or not plan:
         return JsonResponse({'error': 'Diagnosis and Plan/Advice are both required'}, status=400)
     try:
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        response = client.messages.create(
-            model='claude-opus-5',
+        client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model='gpt-4o-mini',
             max_tokens=900,
-            system=(
-                "You are a senior Indian surgeon drafting a formal LAMA "
-                "(Leave Against Medical Advice) consent note for a hospital "
-                "record. Always return ONLY valid JSON. No explanation."
-            ),
-            output_config={
-                "format": {
-                    "type": "json_schema",
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "lama_consent",
+                    "strict": True,
                     "schema": {
                         "type": "object",
                         "properties": {
@@ -3453,15 +3450,24 @@ def generate_lama_consent(request):
                         "required": ["consent_en", "consent_hi"],
                         "additionalProperties": False,
                     },
-                }
+                },
             },
-            messages=[{
-                'role': 'user',
-                'content': f"""
+            messages=[
+                {
+                    'role': 'system',
+                    'content': (
+                        "You are a senior Indian surgeon drafting a formal LAMA "
+                        "(Leave Against Medical Advice) consent note for a hospital "
+                        "record. Always return ONLY valid JSON. No explanation."
+                    ),
+                },
+                {
+                    'role': 'user',
+                    'content': f"""
 Diagnosis: {diagnosis}
 Recommended treatment / plan advised: {plan}
 
-Write "consent_en": a formal 4-5 line consent/refusal paragraph in English,
+Write "consent_en": a formal 6-7 line consent/refusal paragraph in English,
 first person plural ("We, the patient/attendant..."), covering:
 - the diagnosis
 - the treatment/admission that was recommended
@@ -3478,10 +3484,11 @@ paragraph (Devanagari script), same meaning and structure.
 
 Plain paragraph text only in each field, no headings, no markdown, no
 bullet points.
-"""
-            }]
+""",
+                },
+            ],
         )
-        raw = next((b.text for b in response.content if b.type == "text"), "{}")
+        raw = response.choices[0].message.content or "{}"
         parsed = json.loads(raw)
         return JsonResponse({
             'consent_en': parsed.get('consent_en', '').strip(),
@@ -3515,19 +3522,17 @@ def generate_ai_medicines(request):
         # Convert drug list to string
         drug_str = ', '.join(drug_list) if drug_list else 'No drugs available'
 
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
         # 🔥 Strong Prompt + JSON Enforcement
-        response = client.messages.create(
-            model="claude-opus-5",
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
             max_tokens=600,
-            system=(
-                "You are a senior Indian physician. "
-                "Always return ONLY valid JSON. No explanation."
-            ),
-            output_config={
-                "format": {
-                    "type": "json_schema",
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "ai_medicines",
+                    "strict": True,
                     "schema": {
                         "type": "object",
                         "properties": {
@@ -3550,9 +3555,16 @@ def generate_ai_medicines(request):
                         "required": ["medicines"],
                         "additionalProperties": False,
                     },
-                }
+                },
             },
             messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a senior Indian physician. "
+                        "Always return ONLY valid JSON. No explanation."
+                    ),
+                },
                 {
                     "role": "user",
                     "content": f"""
@@ -3595,7 +3607,7 @@ Return JSON format:
         )
 
         # ✅ Direct JSON parsing (no regex)
-        result_text = next(b.text for b in response.content if b.type == "text")
+        result_text = response.choices[0].message.content
         result = json.loads(result_text)
 
         # ✅ Validation layer
