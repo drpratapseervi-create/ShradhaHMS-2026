@@ -251,6 +251,8 @@
 }
 .cb-grid-3 { grid-template-columns: repeat(3, 1fr); }
 .cb-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cb-chips-sm.cb-chips { gap: 6px; }
+.cb-chips-sm .cb-item { padding: 5px 10px; font-size: 12px; }
 
 .cb-item {
     display: flex;
@@ -872,7 +874,7 @@
         <button type="button" onclick="openManage('symptom')" style="background:#fff3e0;border:1px solid #f0a500;color:#835a00;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;">⚙️ Manage</button>
     </div>
     <div class="sec-body">
-        <div class="cb-grid" id="symptom-grid">
+        <div class="cb-chips cb-chips-sm" id="symptom-grid">
             {% for s in symptoms %}
             <label class="cb-item" data-id="{{ s.id }}">
                 <input type="checkbox" name="symptoms" value="{{ s.id }}"
@@ -883,12 +885,10 @@
             {% empty %}
             <p style="color:#888; font-style:italic;">No symptoms configured.</p>
             {% endfor %}
-        </div>
-        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
-            <input type="text" id="new-symptom-input" placeholder="➕ Add new symptom…"
-                style="flex:1;padding:6px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
+            <input type="text" id="new-symptom-input" placeholder="➕ Add new…"
+                style="width:140px;padding:5px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();addSymptom();}">
-            <button type="button" onclick="addSymptom()" style="background:#f0a500;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">Add</button>
+            <button type="button" onclick="addSymptom()" style="background:#f0a500;color:#fff;border:none;border-radius:7px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Add</button>
         </div>
     </div>
 </div>
@@ -900,7 +900,7 @@
         <button type="button" onclick="openManage('sign')" style="background:#f3f0ff;border:1px solid #7c3aed;color:#7c3aed;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;">⚙️ Manage</button>
     </div>
     <div class="sec-body">
-        <div class="cb-grid cb-grid-3" id="sign-grid">
+        <div class="cb-chips cb-chips-sm" id="sign-grid">
             {% for s in signs %}
             <label class="cb-item" data-id="{{ s.id }}">
                 <input type="checkbox" name="signs" value="{{ s.id }}"
@@ -911,12 +911,10 @@
             {% empty %}
             <p style="color:#888; font-style:italic;">No signs configured.</p>
             {% endfor %}
-        </div>
-        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
-            <input type="text" id="new-sign-input" placeholder="➕ Add new examination finding…"
-                style="flex:1;padding:6px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
+            <input type="text" id="new-sign-input" placeholder="➕ Add new…"
+                style="width:140px;padding:5px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();addSign();}">
-            <button type="button" onclick="addSign()" style="background:#7c3aed;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">Add</button>
+            <button type="button" onclick="addSign()" style="background:#7c3aed;color:#fff;border:none;border-radius:7px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Add</button>
         </div>
     </div>
 </div>
@@ -2399,13 +2397,12 @@ function addSymptom() {
     .then(r => r.json())
     .then(function(d) {
         if (d.id) {
-            var grid = document.getElementById('symptom-grid');
             var label = document.createElement('label');
             label.className = 'cb-item';
             label.dataset.id = d.id;
             label.innerHTML = '<input type="checkbox" name="symptoms" value="' + d.id + '" checked> ' + d.name +
                 ' <span onclick="deleteItem(\'symptom\',' + d.id + ',this)" title="Delete" style="margin-left:auto;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color=\'#dc3545\'" onmouseout="this.style.color=\'#ccc\'">✕</span>';
-            grid.appendChild(label);
+            inp.parentNode.insertBefore(label, inp);
             inp.value = '';
             showToast('✅ "' + d.name + '" added', '#007676');
         }
@@ -2424,13 +2421,12 @@ function addSign() {
     .then(r => r.json())
     .then(function(d) {
         if (d.id) {
-            var grid = document.getElementById('sign-grid');
             var label = document.createElement('label');
             label.className = 'cb-item';
             label.dataset.id = d.id;
             label.innerHTML = '<input type="checkbox" name="signs" value="' + d.id + '" checked> ' + d.name +
                 ' <span onclick="deleteItem(\'sign\',' + d.id + ',this)" title="Delete" style="margin-left:auto;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color=\'#dc3545\'" onmouseout="this.style.color=\'#ccc\'">✕</span>';
-            grid.appendChild(label);
+            inp.parentNode.insertBefore(label, inp);
             inp.value = '';
             showToast('✅ "' + d.name + '" added', '#007676');
         }
