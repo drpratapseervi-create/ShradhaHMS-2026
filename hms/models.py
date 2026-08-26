@@ -276,6 +276,10 @@ class Consultation(models.Model):
     spo2   = models.CharField(max_length=10, blank=True)
     weight = models.CharField(max_length=10, blank=True)
 
+    # ===== QUICK LAB VALUES (manual entry, outside/patient-reported —
+    # not linked to internal Lab Billing/Investigations) =====
+    quick_lab_values = models.JSONField(blank=True, null=True, default=dict)
+
     # ===== CLINICAL =====
     chief_complaints = models.TextField(blank=True)
     examination      = models.TextField(blank=True)

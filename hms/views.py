@@ -251,6 +251,24 @@ def start_consultation(request, appointment_id):
                 if obj.lama_declined and not obj.lama_signed_at:
                     obj.lama_signed_at = timezone.now()
 
+                # ── Quick Lab Values (manual outside/patient-reported entry) ──
+                obj.quick_lab_values = {
+                    "hb":           request.POST.get("qlv_hb", "").strip(),
+                    "tlc":          request.POST.get("qlv_tlc", "").strip(),
+                    "platelet":     request.POST.get("qlv_platelet", "").strip(),
+                    "rbs":          request.POST.get("qlv_rbs", "").strip(),
+                    "creatinine":   request.POST.get("qlv_creatinine", "").strip(),
+                    "urea":         request.POST.get("qlv_urea", "").strip(),
+                    "sgot":         request.POST.get("qlv_sgot", "").strip(),
+                    "sgpt":         request.POST.get("qlv_sgpt", "").strip(),
+                    "tsh":          request.POST.get("qlv_tsh", "").strip(),
+                    "typhoid":      request.POST.get("qlv_typhoid", "").strip(),
+                    "mp_test":      request.POST.get("qlv_mp_test", "").strip(),
+                    "esr":          request.POST.get("qlv_esr", "").strip(),
+                    "other_label":  request.POST.get("qlv_other_label", "").strip(),
+                    "other_value":  request.POST.get("qlv_other_value", "").strip(),
+                }
+
                 obj.save()
 
                 obj.symptoms.set(request.POST.getlist("symptoms"))
@@ -341,6 +359,7 @@ def start_consultation(request, appointment_id):
             "bp": c.bp,
             "spo2": c.spo2,
             "weight": c.weight,
+            "quick_lab_values": c.quick_lab_values or {},
             "chief_complaints": c.chief_complaints,
             "symptoms": [s.name for s in c.symptoms.all()],
             "examination": c.examination,

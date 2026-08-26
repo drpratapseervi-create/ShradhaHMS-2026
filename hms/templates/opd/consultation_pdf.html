@@ -303,6 +303,47 @@ table.print-shell > thead > tr > td {
     </tr>
 </table>
 
+<!-- ── Quick Lab Values ── -->
+<div class="sec-title">QUICK LAB VALUES <span style="font-weight:400;">(manual entry — outside/patient-reported)</span></div>
+<table class="vitals-table">
+    <tr>
+        <td class="vlbl">Hb</td>
+        <td><strong>{{ consultation.quick_lab_values.hb|default:"-" }}</strong></td>
+        <td class="vlbl">TLC</td>
+        <td><strong>{{ consultation.quick_lab_values.tlc|default:"-" }}</strong></td>
+        <td class="vlbl">Platelet</td>
+        <td><strong>{{ consultation.quick_lab_values.platelet|default:"-" }}</strong></td>
+        <td class="vlbl">RBS</td>
+        <td><strong>{{ consultation.quick_lab_values.rbs|default:"-" }}</strong></td>
+    </tr>
+    <tr>
+        <td class="vlbl">S. Creatinine</td>
+        <td><strong>{{ consultation.quick_lab_values.creatinine|default:"-" }}</strong></td>
+        <td class="vlbl">Blood Urea</td>
+        <td><strong>{{ consultation.quick_lab_values.urea|default:"-" }}</strong></td>
+        <td class="vlbl">SGOT</td>
+        <td><strong>{{ consultation.quick_lab_values.sgot|default:"-" }}</strong></td>
+        <td class="vlbl">SGPT</td>
+        <td><strong>{{ consultation.quick_lab_values.sgpt|default:"-" }}</strong></td>
+    </tr>
+    <tr>
+        <td class="vlbl">TSH</td>
+        <td><strong>{{ consultation.quick_lab_values.tsh|default:"-" }}</strong></td>
+        <td class="vlbl">Typhoid</td>
+        <td><strong>{{ consultation.quick_lab_values.typhoid|default:"-" }}</strong></td>
+        <td class="vlbl">MP Test</td>
+        <td><strong>{{ consultation.quick_lab_values.mp_test|default:"-" }}</strong></td>
+        <td class="vlbl">ESR</td>
+        <td><strong>{{ consultation.quick_lab_values.esr|default:"-" }}</strong></td>
+    </tr>
+    {% if consultation.quick_lab_values.other_label and consultation.quick_lab_values.other_value %}
+    <tr>
+        <td class="vlbl">{{ consultation.quick_lab_values.other_label }}</td>
+        <td colspan="7"><strong>{{ consultation.quick_lab_values.other_value }}</strong></td>
+    </tr>
+    {% endif %}
+</table>
+
 <!-- ── Chief Complaints ── -->
 <div class="sec-title">CHIEF COMPLAINTS</div>
 <div class="sec-body-text" style="padding:5px 0 5px 7px; text-align:left; font-size:11px;"></div>

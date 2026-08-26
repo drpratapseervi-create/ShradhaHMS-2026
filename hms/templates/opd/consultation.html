@@ -178,6 +178,49 @@
     white-space: nowrap;
 }
 
+/* ── Quick Lab Values (manual, outside-lab entry) ── */
+.qlv-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+}
+.qlv-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 7px 10px;
+    transition: border-color 0.2s;
+}
+.qlv-box:focus-within { border-color: #94a3b8; box-shadow: 0 0 0 3px rgba(148,163,184,0.15); }
+.qlv-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 4px;
+    white-space: nowrap;
+}
+.qlv-input, .qlv-select {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+    outline: none;
+    padding: 0;
+    height: auto;
+    border-radius: 0;
+}
+.qlv-select { cursor: pointer; }
+.qlv-box-other {
+    grid-column: span 2;
+    display: flex;
+    gap: 8px;
+}
+.qlv-box-other .qlv-input { font-size: 13px; }
+
 /* Vital alert pills */
 .vital-alerts-row {
     display: flex;
@@ -679,7 +722,22 @@
         const exam = [(v.signs || []).join(', '), v.examination].filter(Boolean).join(' — ') || '—';
         const diagnosis = [v.diagnosis_text, (v.icd_codes || []).length ? '(' + v.icd_codes.join(', ') + ')' : ''].filter(Boolean).join(' ') || '—';
 
+        const qlv = v.quick_lab_values || {};
+        const qlvLabels = [
+            ['hb', 'Hb'], ['tlc', 'TLC'], ['platelet', 'Platelet'], ['rbs', 'RBS'],
+            ['creatinine', 'S. Creatinine'], ['urea', 'Blood Urea'], ['sgot', 'SGOT'],
+            ['sgpt', 'SGPT'], ['tsh', 'TSH'], ['typhoid', 'Typhoid'], ['mp_test', 'MP Test'],
+            ['esr', 'ESR'],
+        ];
+        let qlvParts = qlvLabels
+            .filter(function(pair) { return qlv[pair[0]]; })
+            .map(function(pair) { return pair[1] + ': ' + esc(qlv[pair[0]]); });
+        if (qlv.other_label && qlv.other_value) {
+            qlvParts.push(esc(qlv.other_label) + ': ' + esc(qlv.other_value));
+        }
+
         let extra = '';
+        if (qlvParts.length) extra += '<div class="pv-row"><div class="pv-label">Quick Lab Values</div><div class="pv-value">' + qlvParts.join(' &nbsp;·&nbsp; ') + '</div></div>';
         if (v.advice) extra += '<div class="pv-row"><div class="pv-label">Advice</div><div class="pv-value">' + esc(v.advice) + '</div></div>';
         if (v.diet_advice) extra += '<div class="pv-row"><div class="pv-label">Diet Advice</div><div class="pv-value">' + esc(v.diet_advice) + '</div></div>';
         if (v.follow_up_date) extra += '<div class="pv-row"><div class="pv-label">Follow-up</div><div class="pv-value">' + esc(v.follow_up_date) + '</div></div>';
@@ -1351,6 +1409,84 @@
             <div style="margin-top:14px;">
                 <a href="{% url 'hms:lama_consent_print' appointment.id %}" target="_blank" style="background:#1e293b;color:#fff;text-decoration:none;border-radius:6px;padding:8px 16px;font-size:12px;font-weight:600;">🖨️ Print LAMA Consent Sheet</a>
                 <span style="font-size:11px;color:#888;margin-left:8px;">Save the consultation first so the print sheet reflects the latest text.</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ QUICK LAB VALUES ═══ -->
+<div class="sec">
+    <div class="sec-head sh-teal" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>🧪 Quick Lab Values</span>
+        <span style="font-size:10px;font-weight:400;opacity:0.85;">Manual entry — outside/patient-reported, not linked to Lab Billing</span>
+    </div>
+    <div class="sec-body">
+        <div class="qlv-grid">
+            <div class="qlv-box">
+                <div class="qlv-label">Hb</div>
+                <input class="qlv-input" type="text" name="qlv_hb" value="{{ consultation.quick_lab_values.hb|default:'' }}" placeholder="g/dl">
+            </div>
+            <div class="qlv-box">
+                <div class="qlv-label">TLC</div>
+                <input class="qlv-input" type="text" name="qlv_tlc" value="{{ consultation.quick_lab_values.tlc|default:'' }}" placeholder="/cumm">
+            </div>
+            <div class="qlv-box">
+                <div class="qlv-label">Platelet Count</div>
+                <input class="qlv-input" type="text" name="qlv_platelet" value="{{ consultation.quick_lab_values.platelet|default:'' }}" placeholder="/cumm">
+            </div>
+            <div class="qlv-box">
+                <div class="qlv-label">RBS</div>
+                <input class="qlv-input" type="text" name="qlv_rbs" value="{{ consultation.quick_lab_values.rbs|default:'' }}" placeholder="mg/dl">
+            </div>
+            <div class="qlv-box">
+                <div class="qlv-label">S. Creatinine</div>
+                <input class="qlv-input" type="text" name="qlv_creatinine" value="{{ consultation.quick_lab_values.creatinine|default:'' }}" placeholder="mg/dl">
+            </div>
+            <div class="qlv-box">
+                <div class="qlv-label">Blood Urea</div>
+                <input class="qlv-input" type="text" name="qlv_urea" value="{{ consultation.quick_lab_values.urea|default:'' }}" placeholder="mg/dl">
+            </div>
+            <div class="qlv-box">
+                <div class="qlv-label">SGOT</div>
+                <input class="qlv-input" type="text" name="qlv_sgot" value="{{ consultation.quick_lab_values.sgot|default:'' }}" placeholder="U/L">
+            </div>
+            <div class="qlv-box">
+                <div class="qlv-label">SGPT</div>
+                <input class="qlv-input" type="text" name="qlv_sgpt" value="{{ consultation.quick_lab_values.sgpt|default:'' }}" placeholder="U/L">
+            </div>
+            <div class="qlv-box">
+                <div class="qlv-label">TSH</div>
+                <input class="qlv-input" type="text" name="qlv_tsh" value="{{ consultation.quick_lab_values.tsh|default:'' }}" placeholder="mIU/L">
+            </div>
+            <div class="qlv-box">
+                <div class="qlv-label">Typhoid</div>
+                <select class="qlv-select" name="qlv_typhoid">
+                    <option value="" {% if not consultation.quick_lab_values.typhoid %}selected{% endif %}>—</option>
+                    <option value="Positive" {% if consultation.quick_lab_values.typhoid == "Positive" %}selected{% endif %}>Positive</option>
+                    <option value="Negative" {% if consultation.quick_lab_values.typhoid == "Negative" %}selected{% endif %}>Negative</option>
+                </select>
+            </div>
+            <div class="qlv-box">
+                <div class="qlv-label">MP Test</div>
+                <select class="qlv-select" name="qlv_mp_test">
+                    <option value="" {% if not consultation.quick_lab_values.mp_test %}selected{% endif %}>—</option>
+                    <option value="Positive" {% if consultation.quick_lab_values.mp_test == "Positive" %}selected{% endif %}>Positive</option>
+                    <option value="Negative" {% if consultation.quick_lab_values.mp_test == "Negative" %}selected{% endif %}>Negative</option>
+                </select>
+            </div>
+            <div class="qlv-box">
+                <div class="qlv-label">ESR</div>
+                <input class="qlv-input" type="text" name="qlv_esr" value="{{ consultation.quick_lab_values.esr|default:'' }}" placeholder="mm/hr">
+            </div>
+            <div class="qlv-box qlv-box-other">
+                <div style="flex:1;">
+                    <div class="qlv-label">Other — Label</div>
+                    <input class="qlv-input" type="text" name="qlv_other_label" value="{{ consultation.quick_lab_values.other_label|default:'' }}" placeholder="e.g. D-Dimer">
+                </div>
+                <div style="flex:1;">
+                    <div class="qlv-label">Other — Value</div>
+                    <input class="qlv-input" type="text" name="qlv_other_value" value="{{ consultation.quick_lab_values.other_value|default:'' }}" placeholder="value">
+                </div>
             </div>
         </div>
     </div>
