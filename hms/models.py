@@ -279,6 +279,7 @@ class Consultation(models.Model):
     # ===== QUICK LAB VALUES (manual entry, outside/patient-reported —
     # not linked to internal Lab Billing/Investigations) =====
     quick_lab_values = models.JSONField(blank=True, null=True, default=dict)
+    usg_findings = models.TextField(blank=True)
 
     # ===== CLINICAL =====
     chief_complaints = models.TextField(blank=True)
@@ -295,6 +296,9 @@ class Consultation(models.Model):
     )
     icd_codes        = models.ManyToManyField(ICDCode, blank=True, related_name='consultations')
     ai_notes = models.TextField(blank=True, null=True)
+    ai_investigation_input = models.TextField(blank=True)
+    ai_probable_diagnosis = models.TextField(blank=True)
+    ai_required_investigations = models.TextField(blank=True)
 
     # ===== INVESTIGATIONS & LAB STATUS =====
     investigations = models.ManyToManyField("Investigation", blank=True)

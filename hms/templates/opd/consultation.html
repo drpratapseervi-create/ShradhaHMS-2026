@@ -1424,43 +1424,43 @@
         <div class="qlv-grid">
             <div class="qlv-box">
                 <div class="qlv-label">Hb</div>
-                <input class="qlv-input" type="text" name="qlv_hb" value="{{ consultation.quick_lab_values.hb|default:'' }}" placeholder="g/dl">
+                <input class="qlv-input" type="text" name="qlv_hb" value="{{ consultation.quick_lab_values.hb|default:'' }}" placeholder="g/dl" oninput="syncQlvToAI()">
             </div>
             <div class="qlv-box">
                 <div class="qlv-label">TLC</div>
-                <input class="qlv-input" type="text" name="qlv_tlc" value="{{ consultation.quick_lab_values.tlc|default:'' }}" placeholder="/cumm">
+                <input class="qlv-input" type="text" name="qlv_tlc" value="{{ consultation.quick_lab_values.tlc|default:'' }}" placeholder="/cumm" oninput="syncQlvToAI()">
             </div>
             <div class="qlv-box">
                 <div class="qlv-label">Platelet Count</div>
-                <input class="qlv-input" type="text" name="qlv_platelet" value="{{ consultation.quick_lab_values.platelet|default:'' }}" placeholder="/cumm">
+                <input class="qlv-input" type="text" name="qlv_platelet" value="{{ consultation.quick_lab_values.platelet|default:'' }}" placeholder="/cumm" oninput="syncQlvToAI()">
             </div>
             <div class="qlv-box">
                 <div class="qlv-label">RBS</div>
-                <input class="qlv-input" type="text" name="qlv_rbs" value="{{ consultation.quick_lab_values.rbs|default:'' }}" placeholder="mg/dl">
+                <input class="qlv-input" type="text" name="qlv_rbs" value="{{ consultation.quick_lab_values.rbs|default:'' }}" placeholder="mg/dl" oninput="syncQlvToAI()">
             </div>
             <div class="qlv-box">
                 <div class="qlv-label">S. Creatinine</div>
-                <input class="qlv-input" type="text" name="qlv_creatinine" value="{{ consultation.quick_lab_values.creatinine|default:'' }}" placeholder="mg/dl">
+                <input class="qlv-input" type="text" name="qlv_creatinine" value="{{ consultation.quick_lab_values.creatinine|default:'' }}" placeholder="mg/dl" oninput="syncQlvToAI()">
             </div>
             <div class="qlv-box">
                 <div class="qlv-label">Blood Urea</div>
-                <input class="qlv-input" type="text" name="qlv_urea" value="{{ consultation.quick_lab_values.urea|default:'' }}" placeholder="mg/dl">
+                <input class="qlv-input" type="text" name="qlv_urea" value="{{ consultation.quick_lab_values.urea|default:'' }}" placeholder="mg/dl" oninput="syncQlvToAI()">
             </div>
             <div class="qlv-box">
                 <div class="qlv-label">SGOT</div>
-                <input class="qlv-input" type="text" name="qlv_sgot" value="{{ consultation.quick_lab_values.sgot|default:'' }}" placeholder="U/L">
+                <input class="qlv-input" type="text" name="qlv_sgot" value="{{ consultation.quick_lab_values.sgot|default:'' }}" placeholder="U/L" oninput="syncQlvToAI()">
             </div>
             <div class="qlv-box">
                 <div class="qlv-label">SGPT</div>
-                <input class="qlv-input" type="text" name="qlv_sgpt" value="{{ consultation.quick_lab_values.sgpt|default:'' }}" placeholder="U/L">
+                <input class="qlv-input" type="text" name="qlv_sgpt" value="{{ consultation.quick_lab_values.sgpt|default:'' }}" placeholder="U/L" oninput="syncQlvToAI()">
             </div>
             <div class="qlv-box">
                 <div class="qlv-label">TSH</div>
-                <input class="qlv-input" type="text" name="qlv_tsh" value="{{ consultation.quick_lab_values.tsh|default:'' }}" placeholder="mIU/L">
+                <input class="qlv-input" type="text" name="qlv_tsh" value="{{ consultation.quick_lab_values.tsh|default:'' }}" placeholder="mIU/L" oninput="syncQlvToAI()">
             </div>
             <div class="qlv-box">
                 <div class="qlv-label">Typhoid</div>
-                <select class="qlv-select" name="qlv_typhoid">
+                <select class="qlv-select" name="qlv_typhoid" onchange="syncQlvToAI()">
                     <option value="" {% if not consultation.quick_lab_values.typhoid %}selected{% endif %}>—</option>
                     <option value="Positive" {% if consultation.quick_lab_values.typhoid == "Positive" %}selected{% endif %}>Positive</option>
                     <option value="Negative" {% if consultation.quick_lab_values.typhoid == "Negative" %}selected{% endif %}>Negative</option>
@@ -1468,7 +1468,7 @@
             </div>
             <div class="qlv-box">
                 <div class="qlv-label">MP Test</div>
-                <select class="qlv-select" name="qlv_mp_test">
+                <select class="qlv-select" name="qlv_mp_test" onchange="syncQlvToAI()">
                     <option value="" {% if not consultation.quick_lab_values.mp_test %}selected{% endif %}>—</option>
                     <option value="Positive" {% if consultation.quick_lab_values.mp_test == "Positive" %}selected{% endif %}>Positive</option>
                     <option value="Negative" {% if consultation.quick_lab_values.mp_test == "Negative" %}selected{% endif %}>Negative</option>
@@ -1476,18 +1476,22 @@
             </div>
             <div class="qlv-box">
                 <div class="qlv-label">ESR</div>
-                <input class="qlv-input" type="text" name="qlv_esr" value="{{ consultation.quick_lab_values.esr|default:'' }}" placeholder="mm/hr">
+                <input class="qlv-input" type="text" name="qlv_esr" value="{{ consultation.quick_lab_values.esr|default:'' }}" placeholder="mm/hr" oninput="syncQlvToAI()">
             </div>
             <div class="qlv-box qlv-box-other">
                 <div style="flex:1;">
                     <div class="qlv-label">Other — Label</div>
-                    <input class="qlv-input" type="text" name="qlv_other_label" value="{{ consultation.quick_lab_values.other_label|default:'' }}" placeholder="e.g. D-Dimer">
+                    <input class="qlv-input" type="text" name="qlv_other_label" value="{{ consultation.quick_lab_values.other_label|default:'' }}" placeholder="e.g. D-Dimer" oninput="syncQlvToAI()">
                 </div>
                 <div style="flex:1;">
                     <div class="qlv-label">Other — Value</div>
-                    <input class="qlv-input" type="text" name="qlv_other_value" value="{{ consultation.quick_lab_values.other_value|default:'' }}" placeholder="value">
+                    <input class="qlv-input" type="text" name="qlv_other_value" value="{{ consultation.quick_lab_values.other_value|default:'' }}" placeholder="value" oninput="syncQlvToAI()">
                 </div>
             </div>
+        </div>
+        <div style="margin-top:12px;">
+            <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">🩻 USG Findings</label>
+            <textarea name="usg_findings" rows="3" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Type ultrasound findings here…">{{ consultation.usg_findings|default:'' }}</textarea>
         </div>
     </div>
 </div>
@@ -1505,13 +1509,13 @@
 <!-- ═══ AI CLINICAL ASSIST ═══ -->
 {% if ai_enabled %}
 <div class="sec" style="margin-top:14px; border: 2px solid #e0e0e0;">
-    <div class="sec-head" style="background:linear-gradient(135deg,#555,#555); color:#fff; border-bottom:none; padding:10px 16px;">
+    <div class="sec-head sh-teal" style="padding:10px 16px;">
         <span>🧠</span> AI Clinical Assist
-        <span style="margin-left:auto; font-size:10px; font-weight:400; opacity:0.8;">Powered by Claude</span>
+        <span style="margin-left:auto; font-size:10px; font-weight:400; opacity:0.8;">Powered by OpenAI</span>
     </div>
     <div class="sec-body">
-        <textarea class="ai-inv-input" id="investigation_results" rows="2"
-            placeholder="Enter investigation results here (e.g. Hb-6 gm, RBS-400 mg/dl, TLC-11000…)"></textarea>
+        <textarea class="ai-inv-input" id="investigation_results" name="ai_investigation_input" form="consultation-form" rows="2"
+            placeholder="Enter investigation results here (e.g. Hb-6 gm, RBS-400 mg/dl, TLC-11000…)">{{ consultation.ai_investigation_input|default:'' }}</textarea>
         <div style="margin-top:10px;">
             <button class="ai-btn" id="ai-btn" type="button" onclick="runFullAI()">
                 🤖 Generate AI Suggestion
@@ -1553,7 +1557,9 @@
                 <ul id="ai-redflag"></ul>
             </div>
         </div>
-        <textarea id="ai-result" name="ai_notes" style="display:none"></textarea>
+        <textarea id="ai-result" name="ai_notes" form="consultation-form" style="display:none">{{ consultation.ai_notes|default:'' }}</textarea>
+        <input type="hidden" id="ai-probable-field" name="ai_probable_diagnosis" form="consultation-form" value="{{ consultation.ai_probable_diagnosis|default:'' }}">
+        <input type="hidden" id="ai-required-field" name="ai_required_investigations" form="consultation-form" value="{{ consultation.ai_required_investigations|default:'' }}">
     </div>
 </div>
 {% else %}
@@ -2080,6 +2086,11 @@ function parseAndRender(text) {
         el.innerHTML = list ? lines.map(l => `<li>${l}</li>`).join("") : lines.join(" ");
     });
     document.getElementById("ai-panel").style.display = "block";
+
+    const probableField = document.getElementById("ai-probable-field");
+    const requiredField = document.getElementById("ai-required-field");
+    if (probableField) probableField.value = (map["Probable Diagnosis"] || []).join(" ");
+    if (requiredField) requiredField.value = (map["Required Investigations"] || []).join("; ");
 }
 
 function runFullAI() {
@@ -2143,6 +2154,56 @@ function runFullAI() {
         loading.style.display = "none";
     });
 }
+
+/* ── Restore saved AI Clinical Assist output on reload ── */
+document.addEventListener("DOMContentLoaded", function () {
+    const savedNotes = document.getElementById("ai-result");
+    if (savedNotes && savedNotes.value.trim()) {
+        parseAndRender(savedNotes.value);
+        const warning = document.getElementById("ai-draft-warning");
+        if (warning) warning.style.display = "block";
+    }
+});
+
+/* ── Quick Lab Values → AI Clinical Assist auto-link ── */
+(function () {
+    const qlvFields = [
+        ["qlv_hb", "Hb"], ["qlv_tlc", "TLC"], ["qlv_platelet", "Platelet"], ["qlv_rbs", "RBS"],
+        ["qlv_creatinine", "Creat"], ["qlv_urea", "BU"], ["qlv_sgot", "SGOT"], ["qlv_sgpt", "SGPT"],
+        ["qlv_tsh", "TSH"], ["qlv_typhoid", "Typhoid"], ["qlv_mp_test", "MP"], ["qlv_esr", "ESR"],
+    ];
+    let lastAutoQlv = "";
+
+    function buildQlvAutoText() {
+        const parts = [];
+        qlvFields.forEach(function ([fieldName, label]) {
+            const el = document.querySelector('[name="' + fieldName + '"]');
+            const val = el ? el.value.trim() : "";
+            if (val) parts.push(label + "-" + val);
+        });
+        const otherLabel = document.querySelector('[name="qlv_other_label"]');
+        const otherValue = document.querySelector('[name="qlv_other_value"]');
+        if (otherLabel && otherValue && otherLabel.value.trim() && otherValue.value.trim()) {
+            parts.push(otherLabel.value.trim() + "-" + otherValue.value.trim());
+        }
+        return parts.join(", ");
+    }
+
+    window.syncQlvToAI = function () {
+        const box = document.getElementById("investigation_results");
+        if (!box) return;
+        const newAuto = buildQlvAutoText();
+        if (box.value === "" || box.value === lastAutoQlv || box.value.startsWith(lastAutoQlv)) {
+            const suffix = box.value.slice(lastAutoQlv.length);
+            box.value = newAuto + suffix;
+        }
+        lastAutoQlv = newAuto;
+    };
+
+    document.addEventListener("DOMContentLoaded", function () {
+        lastAutoQlv = buildQlvAutoText();
+    });
+})();
 
 /* ── AJAX Save ── */
 document.addEventListener("DOMContentLoaded", function () {

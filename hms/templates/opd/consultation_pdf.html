@@ -344,6 +344,14 @@ table.print-shell > thead > tr > td {
     {% endif %}
 </table>
 
+<!-- ── USG Findings ── -->
+{% if consultation.usg_findings %}
+<div class="sec-title">USG FINDINGS</div>
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
+    {{ consultation.usg_findings|linebreaksbr }}
+</div>
+{% endif %}
+
 <!-- ── Chief Complaints ── -->
 <div class="sec-title">CHIEF COMPLAINTS</div>
 <div class="sec-body-text" style="padding:5px 0 5px 7px; text-align:left; font-size:11px;"></div>
@@ -440,12 +448,14 @@ table.print-shell > thead > tr > td {
 </div>
 {% endif %}
 
-<!-- ── AI Clinical Notes ── -->
-{% if consultation.ai_notes %}
-<div class="sec-title">AI CLINICAL NOTES (For Reference Only)</div>
+<!-- ── AI Clinical Assist ── -->
+{% if consultation.ai_investigation_input or consultation.ai_probable_diagnosis or consultation.ai_required_investigations %}
+<div class="sec-title">AI CLINICAL ASSIST (For Reference Only)</div>
 <div style="background:#f9f9f9; border:1px solid #e0e0e0; border-radius:4px; padding:8px; font-size:10px; color:#000;">
-    <em>⚠️ AI-generated — verified by treating physician</em><br><br>
-    {{ consultation.ai_notes|linebreaksbr }}
+    <em>⚠️ AI-generated — reviewed and verified by treating physician</em><br><br>
+    {% if consultation.ai_investigation_input %}<strong>Entered Summary / Investigation Results:</strong> {{ consultation.ai_investigation_input }}<br><br>{% endif %}
+    {% if consultation.ai_probable_diagnosis %}<strong>Probable Diagnosis:</strong> {{ consultation.ai_probable_diagnosis }}<br><br>{% endif %}
+    {% if consultation.ai_required_investigations %}<strong>Required Investigations:</strong> {{ consultation.ai_required_investigations }}{% endif %}
 </div>
 {% endif %}
 
