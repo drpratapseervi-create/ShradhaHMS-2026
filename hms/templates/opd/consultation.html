@@ -1015,21 +1015,13 @@
         </div>
         <!-- Hidden inputs for selected ICD codes -->
 <div id="icd-selected-list"></div>
-<div style="display:flex;gap:8px;align-items:center;">
-    <div style="flex:1;">
-        <select name="diagnosis_icd" id="icd_search_box" style="width:100%">
-            {% if consultation.diagnosis_icd %}
-            <option value="{{ consultation.diagnosis_icd.id }}" selected>
-                {{ consultation.diagnosis_icd.code }} — {{ consultation.diagnosis_icd.description }}
-            </option>
-            {% endif %}
-        </select>
-    </div>
-    <button type="button" id="icd-add-pill-btn" onclick="addICDToSelection()"
-        style="background:#0891b2;color:#fff;border:none;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
-        ➕ Add
-    </button>
-</div>
+<select name="diagnosis_icd" id="icd_search_box" style="width:100%">
+    {% if consultation.diagnosis_icd %}
+    <option value="{{ consultation.diagnosis_icd.id }}" selected>
+        {{ consultation.diagnosis_icd.code }} — {{ consultation.diagnosis_icd.description }}
+    </option>
+    {% endif %}
+</select>
 
 <!-- Selected ICD codes display -->
 <div id="icd-tags-container" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;min-height:20px;">
@@ -1615,6 +1607,7 @@ $(function () {
         document.getElementById('icd-selected-text').textContent = text;
         document.getElementById('icd-selected-display').style.display = 'block';
         document.querySelectorAll('.icd-pill').forEach(p => p.style.outline = '');
+        addICDToSelection();
     });
 
     setTimeout(function() {
@@ -1663,6 +1656,7 @@ function selectICDByCode(code, desc) {
             $('#icd_search_box').empty().append(option).trigger('change');
             document.getElementById('icd-selected-text').textContent = match.text;
             document.getElementById('icd-selected-display').style.display = 'block';
+            addICDToSelection();
         }
     });
 }
@@ -1708,6 +1702,8 @@ document.addEventListener('DOMContentLoaded', function() {
     initStaticPills();
     try { localStorage.removeItem('shradha_icd_removed'); } catch(e) {}
     appendExtraPills();
+    var defaultTab = document.querySelector('#icd-category-tabs .icd-cat-tab.active');
+    if (defaultTab) filterICDQuickTiles(defaultTab);
 });
 
 function filterICDQuickTiles(tabBtn) {
