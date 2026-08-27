@@ -108,7 +108,9 @@ class AppointmentForm(forms.ModelForm):
             "doctor",
             "date",
             "time",
-            "purpose"
+            "purpose",
+            "fee",
+            "payment_mode",
         ]
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}),

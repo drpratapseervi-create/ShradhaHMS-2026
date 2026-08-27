@@ -96,7 +96,7 @@ tfoot {
 
   <!-- DATE FILTER -->
   <form method="GET" style="margin-top:15px;">
-    <input type="date" name="date" value="{{ selected_date }}">
+    <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}">
     <button type="submit">View Report</button>
   </form>
 
