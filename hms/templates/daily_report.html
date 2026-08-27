@@ -52,7 +52,7 @@
 
 .report-table-card {
   margin-top: 25px;
-  background: white;
+  background: var(--menu-bg, #1e2235);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -76,8 +76,11 @@ td:last-child {
   font-weight: bold;
 }
 
+tbody tr:nth-child(odd) td  { background: var(--bg2, #1a1d27); }
+tbody tr:nth-child(even) td { background: var(--bg3, #22263a); }
+
 tfoot {
-  background: #f0fafa;
+  background: var(--bg3, #22263a);
   font-weight: bold;
 }
 </style>
