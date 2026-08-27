@@ -27,11 +27,12 @@
 }
 
 .summary-card {
-  background: white;
+  background: var(--menu-bg, #1e2235);
+  border: 1px solid var(--border, #2d3148);
   padding: 18px;
   border-radius: 10px;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
   border-top: 4px solid #008080;
 }
 
@@ -41,11 +42,12 @@
 .s-amount {
   font-size: 26px;
   font-weight: bold;
+  color: var(--text, #e2e8f0);
 }
 
 .s-label {
   font-size: 13px;
-  color: #777;
+  color: var(--text-muted, #8892a4);
 }
 
 .report-table-card {
