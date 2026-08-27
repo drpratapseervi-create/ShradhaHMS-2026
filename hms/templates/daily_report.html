@@ -83,6 +83,160 @@ tfoot {
   background: var(--bg3, #22263a);
   font-weight: bold;
 }
+
+/* ── Charts ── */
+.charts-section {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 20px;
+  margin-top: 25px;
+}
+@media (max-width: 720px) {
+  .charts-section { grid-template-columns: 1fr; }
+}
+
+.chart-card {
+  background: var(--menu-bg, #1e2235);
+  border: 1px solid var(--border, #2d3148);
+  border-radius: 10px;
+  padding: 18px 20px 20px;
+}
+
+.chart-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text, #e2e8f0);
+  margin-bottom: 4px;
+}
+
+.chart-subtitle {
+  font-size: 11px;
+  color: var(--text-muted, #8892a4);
+  margin-bottom: 14px;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.chart-legend .lg-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted, #8892a4);
+}
+.chart-legend .lg-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* Bar chart */
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 190px;
+  border-bottom: 1px solid var(--border, #2d3148);
+}
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+.bar-value {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text, #e2e8f0);
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+.bar-value.is-negative { color: #ff8080; }
+.bar-fill {
+  width: 26px;
+  max-width: 70%;
+  border-radius: 4px 4px 0 0;
+}
+.bar-fill.is-negative {
+  background: transparent !important;
+  border: 1px dashed red;
+}
+.bar-label {
+  font-size: 10px;
+  color: var(--text-muted, #8892a4);
+  margin-top: 8px;
+  text-align: center;
+  line-height: 1.2;
+}
+.chart-empty-note {
+  font-size: 11px;
+  color: var(--text-muted, #8892a4);
+  text-align: center;
+  margin-top: 10px;
+  font-style: italic;
+}
+
+/* Donut chart */
+.donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.donut-svg-box {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  flex-shrink: 0;
+}
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+.donut-center .dc-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text, #e2e8f0);
+}
+.donut-center .dc-label {
+  font-size: 9px;
+  color: var(--text-muted, #8892a4);
+  margin-top: 2px;
+}
+.donut-legend {
+  flex: 1;
+  min-width: 160px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+.donut-legend .dl-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--text-muted, #8892a4);
+}
+.donut-legend .dl-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.donut-legend .dl-name { flex: 1; color: var(--text, #e2e8f0); }
+.donut-legend .dl-amt { font-weight: 700; color: var(--text, #e2e8f0); white-space: nowrap; }
 </style>
 
 <div class="report-wrapper">
@@ -145,6 +299,38 @@ tfoot {
 
   </div>
 
+  <!-- CHARTS -->
+  <div class="charts-section">
+
+    <div class="chart-card">
+      <div class="chart-title">Collection by Category</div>
+      <div class="chart-subtitle">All 7 figures for {{ selected_date|date:"d M Y" }}</div>
+      <div class="chart-legend">
+        <div class="lg-item"><span class="lg-swatch" style="background:#008080;"></span> Collection</div>
+        <div class="lg-item"><span class="lg-swatch" style="background:red;"></span> Expenses</div>
+        <div class="lg-item"><span class="lg-swatch" style="background:green;"></span> Net Cash</div>
+      </div>
+      <div class="bar-chart" id="barChart"></div>
+      <div class="chart-empty-note" id="barEmptyNote" style="display:none;">No collection recorded for this date yet.</div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Lab Department Breakdown</div>
+      <div class="chart-subtitle">Share of Lab Total (₹ {{ lab }})</div>
+      <div class="donut-wrap">
+        <div class="donut-svg-box">
+          <svg id="donutSvg" viewBox="0 0 150 150" width="150" height="150"></svg>
+          <div class="donut-center">
+            <div class="dc-amount" id="donutCenterAmount">₹ 0</div>
+            <div class="dc-label">Lab Total</div>
+          </div>
+        </div>
+        <div class="donut-legend" id="donutLegend"></div>
+      </div>
+    </div>
+
+  </div>
+
   <!-- LAB BREAKUP -->
   <div class="report-table-card">
     <table>
@@ -203,5 +389,130 @@ tfoot {
   </div>
 
 </div>
+
+<script>
+(function () {
+  var barData = [
+    { label: "OPD",         value: {{ opd|floatformat:2 }},            color: "#008080" },
+    { label: "Procedure",   value: {{ procedure|floatformat:2 }},      color: "#008080" },
+    { label: "Discharge",   value: {{ discharge|floatformat:2 }},      color: "#008080" },
+    { label: "IPD Advance", value: {{ advance|floatformat:2 }},        color: "#008080" },
+    { label: "Lab Total",   value: {{ lab|floatformat:2 }},            color: "#008080" },
+    { label: "Expenses",    value: {{ expenses|floatformat:2 }},       color: "red" },
+    { label: "Net Cash",    value: {{ net_collection|floatformat:2 }}, color: "green" }
+  ];
+
+  var labData = [
+    { label: "Radiology",      value: {{ radiology|floatformat:2 }},  color: "#3987e5" },
+    { label: "Biochemistry",   value: {{ biochem|floatformat:2 }},    color: "#d95926" },
+    { label: "Hematology",     value: {{ hematology|floatformat:2 }}, color: "#199e70" },
+    { label: "Microbiology",   value: {{ microbio|floatformat:2 }},   color: "#c98500" },
+    { label: "Histopathology", value: {{ histo|floatformat:2 }},      color: "#d55181" },
+    { label: "ECG",            value: {{ ecg|floatformat:2 }},        color: "#008300" },
+    { label: "Endoscopy",      value: {{ endoscopy|floatformat:2 }},  color: "#9085e9" }
+  ];
+
+  function fmt(n) {
+    var sign = n < 0 ? "-" : "";
+    return sign + "₹ " + Math.abs(n).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+
+  /* ---- Bar chart ---- */
+  var barEl = document.getElementById("barChart");
+  var MAX_BAR_PX = 120;
+  var maxVal = Math.max.apply(null, barData.map(function (d) { return Math.max(d.value, 0); }));
+  var isEmpty = maxVal <= 0;
+  document.getElementById("barEmptyNote").style.display = isEmpty ? "block" : "none";
+
+  barData.forEach(function (d) {
+    var col = document.createElement("div");
+    col.className = "bar-col";
+
+    var val = document.createElement("div");
+    val.className = "bar-value" + (d.value < 0 ? " is-negative" : "");
+    val.textContent = fmt(d.value);
+
+    var fill = document.createElement("div");
+    fill.className = "bar-fill" + (d.value < 0 ? " is-negative" : "");
+    var heightPx;
+    if (isEmpty) {
+      heightPx = 4;
+    } else if (d.value <= 0) {
+      heightPx = 3;
+    } else {
+      heightPx = Math.max((d.value / maxVal) * MAX_BAR_PX, 4);
+    }
+    fill.style.height = heightPx + "px";
+    if (d.value >= 0) fill.style.background = d.color;
+    fill.title = d.label + ": " + fmt(d.value);
+
+    var lbl = document.createElement("div");
+    lbl.className = "bar-label";
+    lbl.textContent = d.label;
+
+    col.appendChild(val);
+    col.appendChild(fill);
+    col.appendChild(lbl);
+    barEl.appendChild(col);
+  });
+
+  /* ---- Donut chart ---- */
+  var svg = document.getElementById("donutSvg");
+  var legendEl = document.getElementById("donutLegend");
+  var total = labData.reduce(function (s, d) { return s + Math.max(d.value, 0); }, 0);
+  var cx = 75, cy = 75, r = 58, strokeW = 20;
+  var circumference = 2 * Math.PI * r;
+  var GAP = 3;
+  var svgNS = "http://www.w3.org/2000/svg";
+
+  if (total <= 0) {
+    var ring = document.createElementNS(svgNS, "circle");
+    ring.setAttribute("cx", cx);
+    ring.setAttribute("cy", cy);
+    ring.setAttribute("r", r);
+    ring.setAttribute("fill", "none");
+    ring.setAttribute("stroke", "#2d3148");
+    ring.setAttribute("stroke-width", strokeW);
+    svg.appendChild(ring);
+    document.getElementById("donutCenterAmount").textContent = "No data";
+  } else {
+    document.getElementById("donutCenterAmount").textContent = fmt(total);
+    var offset = 0;
+    labData.forEach(function (d) {
+      var v = Math.max(d.value, 0);
+      if (v <= 0) return;
+      var segLen = (v / total) * circumference;
+      var dash = Math.max(segLen - GAP, 0.0001);
+      var circle = document.createElementNS(svgNS, "circle");
+      circle.setAttribute("cx", cx);
+      circle.setAttribute("cy", cy);
+      circle.setAttribute("r", r);
+      circle.setAttribute("fill", "none");
+      circle.setAttribute("stroke", d.color);
+      circle.setAttribute("stroke-width", strokeW);
+      circle.setAttribute("stroke-dasharray", dash + " " + (circumference - dash));
+      circle.setAttribute("stroke-dashoffset", -offset);
+      circle.setAttribute("transform", "rotate(-90 " + cx + " " + cy + ")");
+      var pct = ((v / total) * 100).toFixed(1);
+      var titleEl = document.createElementNS(svgNS, "title");
+      titleEl.textContent = d.label + ": " + fmt(v) + " (" + pct + "%)";
+      circle.appendChild(titleEl);
+      svg.appendChild(circle);
+      offset += segLen;
+    });
+  }
+
+  labData.forEach(function (d) {
+    var row = document.createElement("div");
+    row.className = "dl-row";
+    var pct = total > 0 ? ((Math.max(d.value, 0) / total) * 100).toFixed(1) : "0.0";
+    row.innerHTML =
+      '<span class="dl-swatch" style="background:' + d.color + ';"></span>' +
+      '<span class="dl-name">' + d.label + '</span>' +
+      '<span class="dl-amt">' + fmt(d.value) + ' <span style="opacity:.6;font-weight:400;">(' + pct + '%)</span></span>';
+    legendEl.appendChild(row);
+  });
+})();
+</script>
 
 {% endblock %}
