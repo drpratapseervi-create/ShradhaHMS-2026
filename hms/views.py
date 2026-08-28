@@ -9,6 +9,7 @@ from openai import OpenAI
 from django.conf import settings
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.core.paginator import Paginator
 from .models import PrescriptionTemplate, PrescriptionTemplateItem
 from django.http import HttpResponse, JsonResponse
 from decimal import Decimal
@@ -517,6 +518,7 @@ def lab_billing_direct(request, consultation_id=None):
 # ======================================================
 @login_required
 def pending_lab_orders(request):
+    q = request.GET.get("q", "").strip()
     pending_bills = (
         InvestigationBill.objects
         .filter(paid=False)
@@ -524,7 +526,24 @@ def pending_lab_orders(request):
         .prefetch_related("items__investigation")
         .order_by("-created_at")
     )
-    return render(request, "lab/pending_lab_orders.html", {"pending_bills": pending_bills})
+    if q:
+        filters = Q(patient__full_name__icontains=q) | Q(patient__uhid__icontains=q)
+        bill_id_query = q.lstrip("#")
+        if bill_id_query.isdigit():
+            filters |= Q(id=int(bill_id_query))
+        pending_bills = pending_bills.filter(filters)
+
+    paginator = Paginator(pending_bills, 10)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    elided_page_range = list(
+        paginator.get_elided_page_range(page_obj.number, on_each_side=2, on_ends=1)
+    )
+    return render(request, "lab/pending_lab_orders.html", {
+        "pending_bills": page_obj,
+        "page_obj": page_obj,
+        "elided_page_range": elided_page_range,
+        "q": q,
+    })
 
 
 # ======================================================
