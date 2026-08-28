@@ -1,10 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+.lab-pending-table tbody tr:nth-child(odd) td  { background: var(--bg2, #1a1d27) !important; }
+.lab-pending-table tbody tr:nth-child(even) td { background: var(--bg3, #22263a) !important; }
+</style>
 <div class="container mt-4">
   <h4>⏳ Pending Lab Orders <small class="text-muted">(Payment Pending)</small></h4>
 
   {% if pending_bills %}
-  <table class="table table-bordered table-hover mt-3">
+  <table class="table table-bordered table-hover mt-3 lab-pending-table">
     <thead class="table-warning">
       <tr>
         <th>Bill #</th>
