@@ -2,39 +2,100 @@
 {% block title %}Lab Reports{% endblock %}
 
 {% block content %}
+<style>
+.lab-reports-card {
+  background: #111111;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.6);
+  border: 1px solid #2a2a2a;
+  overflow: hidden;
+}
+.lab-reports-head {
+  background: #161616;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-bottom: 1px solid #2a2a2a;
+}
+.lab-reports-head h5 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #e2e8f0 !important;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.lab-reports-search-row {
+  background: #161616;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #2a2a2a;
+}
+.lab-reports-search-box { position: relative; }
+.lab-reports-search-box input {
+  height: 32px; padding: 0 10px 0 30px;
+  border: 1px solid #2a2a2a; border-radius: 7px;
+  font-size: 13px; background: #1a1a1a !important;
+  color: #e2e8f0 !important; width: 260px; outline: none; transition: 0.2s;
+}
+.lab-reports-search-box input::placeholder { color: #555 !important; }
+.lab-reports-search-box input:focus {
+  border-color: var(--accent2, #00e0c6) !important;
+  box-shadow: 0 0 0 3px rgba(0, 224, 198, 0.35), 0 0 10px rgba(0, 224, 198, 0.25) !important;
+}
+.lab-reports-search-box input:not(:placeholder-shown) {
+  border-color: var(--accent, #00b8a9) !important;
+  box-shadow: 0 0 0 2px rgba(0, 184, 169, 0.2) !important;
+}
+.lab-reports-search-box .si {
+  position: absolute; left: 9px; top: 50%;
+  transform: translateY(-50%);
+  color: #555; font-size: 13px; pointer-events: none;
+}
+.lab-reports-card table {
+  margin: 0;
+}
+.lab-reports-table tbody tr:nth-child(odd) td  { background: var(--bg2, #1a1d27) !important; }
+.lab-reports-table tbody tr:nth-child(even) td { background: var(--bg3, #22263a) !important; }
+</style>
 <div class="container py-4">
 
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">🧪 Lab Reports</h4>
-    <a href="{% url 'hms:lab_billing_direct' %}" class="btn btn-sm btn-success">
-      + Walk-in Lab Billing
-    </a>
-  </div>
+  <div class="lab-reports-card">
+    <div class="lab-reports-head">
+      <h5>🧪 Lab Reports</h5>
+      <a href="{% url 'hms:lab_billing_direct' %}" class="btn btn-sm btn-success">
+        + Walk-in Lab Billing
+      </a>
+    </div>
 
-  <!-- Search / Filter -->
-  <form method="get" class="row g-2 mb-4">
-    <div class="col-md-5">
-      <input
-        type="text"
-        name="q"
-        value="{{ request.GET.q }}"
-        class="form-control"
-        placeholder="Search patient name or UHID…"
-      />
-    </div>
-    <div class="col-auto">
+    <!-- Search / Filter -->
+    <form method="get" class="lab-reports-search-row">
+      <div class="lab-reports-search-box">
+        <span class="si">🔍</span>
+        <input
+          type="text"
+          name="q"
+          value="{{ request.GET.q }}"
+          placeholder="Search patient name or UHID…"
+          autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        />
+      </div>
       <button class="btn btn-primary">Search</button>
-    </div>
-    {% if request.GET.q %}
-    <div class="col-auto">
+      {% if request.GET.q %}
       <a href="{% url 'hms:lab_reports' %}" class="btn btn-outline-secondary">Clear</a>
-    </div>
-    {% endif %}
-  </form>
+      {% endif %}
+    </form>
 
   {% if completed_items %}
   <div class="table-responsive">
-    <table class="table table-bordered table-hover align-middle">
+    <table class="table table-bordered table-hover align-middle lab-reports-table">
       <thead class="table-dark">
         <tr>
           <th>#</th>
@@ -90,7 +151,7 @@
   <p class="text-muted small">Showing {{ completed_items|length }} record(s).</p>
 
   {% else %}
-  <div class="alert alert-info">
+  <div class="alert alert-info m-3">
     No lab reports found.
     {% if request.GET.q %}
       Try a different search term.
@@ -100,5 +161,6 @@
   </div>
   {% endif %}
 
+  </div>
 </div>
 {% endblock %}
