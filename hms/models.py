@@ -365,6 +365,7 @@ class InvestigationCategory(models.Model):
         ("BIOCHEMISTRY",   "Biochemistry"),
         ("HEMATOLOGY",     "Hematology"),
         ("MICROBIOLOGY",   "Microbiology"),
+        ("CARDIOLOGY",     "Cardiology"),
         ("ECG",            "ECG"),
         ("ENDOSCOPY",      "Endoscopy & Procedures"),
         ("OTHER",          "Other"),

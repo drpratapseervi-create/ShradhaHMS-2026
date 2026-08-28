@@ -1809,13 +1809,14 @@ def daily_report(request):
 
     radiology  = inv_by_dept('RADIOLOGY')
     ecg        = inv_by_dept('ECG')
+    cardiology = inv_by_dept('CARDIOLOGY')
     histo      = inv_by_dept('HISTOPATHOLOGY')
     biochem    = inv_by_dept('BIOCHEMISTRY')
     hematology = inv_by_dept('HEMATOLOGY')
     microbio   = inv_by_dept('MICROBIOLOGY')
     endoscopy  = inv_by_dept('ENDOSCOPY')
 
-    lab = radiology + ecg + histo + biochem + hematology + microbio + endoscopy
+    lab = radiology + ecg + cardiology + histo + biochem + hematology + microbio + endoscopy
 
     # ---------------- OPD COLLECTION ----------------
     # FIX: is_paid is now correctly set in appointment_create
@@ -1854,6 +1855,7 @@ def daily_report(request):
         "opd":              opd,
         "radiology":        radiology,
         "ecg":              ecg,
+        "cardiology":       cardiology,
         "histo":            histo,
         "biochem":          biochem,
         "hematology":       hematology,
@@ -2395,6 +2397,7 @@ def get_dept_display(dept_code):
         "BIOCHEMISTRY": "Biochemistry",
         "HEMATOLOGY": "Hematology",
         "MICROBIOLOGY": "Microbiology",
+        "CARDIOLOGY": "Cardiology",
         "ECG": "ECG",
         "ENDOSCOPY": "Endoscopy",
         "OTHER": "Other",
