@@ -3,9 +3,21 @@
 <style>
 .lab-pending-table tbody tr:nth-child(odd) td  { background: var(--bg2, #1a1d27) !important; }
 .lab-pending-table tbody tr:nth-child(even) td { background: var(--bg3, #22263a) !important; }
+
+.lab-pending-heading {
+  color: var(--accent, #00b8a9) !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-left: 3px solid var(--accent, #00b8a9);
+  padding-left: 8px;
+  margin: 4px 0 14px;
+}
+.lab-pending-heading small { text-transform: none; letter-spacing: normal; }
 </style>
 <div class="container mt-4">
-  <h4>⏳ Pending Lab Orders <small class="text-muted">(Payment Pending)</small></h4>
+  <h4 class="lab-pending-heading">⏳ Pending Lab Orders <small class="text-muted">(Payment Pending)</small></h4>
 
   {% if pending_bills %}
   <table class="table table-bordered table-hover mt-3 lab-pending-table">
