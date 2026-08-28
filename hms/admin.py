@@ -121,8 +121,13 @@ class AppointmentAdmin(admin.ModelAdmin):
 # ===================== INVESTIGATION CATEGORY =====================
 @admin.register(InvestigationCategory)
 class InvestigationCategoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "name")
+    list_display = ("id", "name", "dept_code", "investigation_count")
+    list_filter = ("dept_code",)
     search_fields = ("name",)
+
+    @admin.display(description="Tests")
+    def investigation_count(self, obj):
+        return obj.investigation_set.count()
 
 
 # ===================== INVESTIGATION PARAMETER INLINE =====================
