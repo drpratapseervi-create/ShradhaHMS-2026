@@ -4,58 +4,111 @@
 .lab-pending-table tbody tr:nth-child(odd) td  { background: var(--bg2, #1a1d27) !important; }
 .lab-pending-table tbody tr:nth-child(even) td { background: var(--bg3, #22263a) !important; }
 
-.lab-pending-heading {
-  color: var(--accent, #00b8a9) !important;
-  font-weight: 600 !important;
-  font-size: 16px !important;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  border-left: 3px solid var(--accent, #00b8a9);
-  padding-left: 8px;
-  margin: 4px 0 14px;
+.lab-pending-card {
+  background: #111111;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.6);
+  border: 1px solid #2a2a2a;
+  overflow: hidden;
 }
-.lab-pending-heading small { text-transform: none; letter-spacing: normal; }
+.lab-pending-head {
+  background: #161616;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-bottom: 1px solid #2a2a2a;
+}
+.lab-pending-head h5 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #e2e8f0 !important;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.lab-pending-head .badge-today {
+  background: #1e1e1e;
+  color: #8892a4;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #2a2a2a;
+}
+.lab-pending-card table.lab-pending-table {
+  margin: 0;
+}
+.lab-pending-table th,
+.lab-pending-table td {
+  padding: 8px 12px !important;
+  font-size: 13px;
+  vertical-align: middle;
+}
+.lab-pending-table thead th {
+  font-size: 11px !important;
+}
+.lab-pending-table .badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  margin: 1px 2px 1px 0;
+}
+.lab-pending-table .btn-sm {
+  padding: 3px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+}
 </style>
 <div class="container mt-4">
-  <h4 class="lab-pending-heading">⏳ Pending Lab Orders <small class="text-muted">(Payment Pending)</small></h4>
 
   {% if pending_bills %}
-  <table class="table table-bordered table-hover mt-3 lab-pending-table">
-    <thead class="table-warning">
-      <tr>
-        <th>Bill #</th>
-        <th>Patient</th>
-        <th>UHID</th>
-        <th>Date</th>
-        <th>Investigations</th>
-        <th>Amount</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for bill in pending_bills %}
-      <tr>
-        <td>#{{ bill.id }}</td>
-        <td>{{ bill.patient.full_name }}</td>
-        <td>{{ bill.patient.uhid }}</td>
-        <td>{{ bill.created_at|date:"d-m-Y H:i" }}</td>
-        <td>
-          {% for item in bill.items.all %}
-            <span class="badge bg-secondary">{{ item.investigation.name }}</span>
-          {% endfor %}
-        </td>
-        <td>₹{{ bill.total_amount }}</td>
-        <td>
-          <a href="{% url 'hms:lab_bill_print' bill.id %}"
-             class="btn btn-sm btn-outline-primary" target="_blank">
-            🖨️ Bill
-          </a>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="lab-pending-card">
+    <div class="lab-pending-head">
+      <h5>⏳ Pending Lab Orders <span class="badge-today">(Payment Pending)</span></h5>
+    </div>
+    <div style="overflow-x:auto;">
+    <table class="table table-bordered table-hover lab-pending-table">
+      <thead class="table-warning">
+        <tr>
+          <th>Bill #</th>
+          <th>Patient</th>
+          <th>UHID</th>
+          <th>Date</th>
+          <th>Investigations</th>
+          <th>Amount</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for bill in pending_bills %}
+        <tr>
+          <td>#{{ bill.id }}</td>
+          <td>{{ bill.patient.full_name }}</td>
+          <td>{{ bill.patient.uhid }}</td>
+          <td>{{ bill.created_at|date:"d-m-Y H:i" }}</td>
+          <td>
+            {% for item in bill.items.all %}
+              <span class="badge bg-secondary">{{ item.investigation.name }}</span>
+            {% endfor %}
+          </td>
+          <td>₹{{ bill.total_amount }}</td>
+          <td>
+            <a href="{% url 'hms:lab_bill_print' bill.id %}"
+               class="btn btn-sm btn-outline-primary" target="_blank">
+              🖨️ Bill
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
   {% else %}
+    <h5 class="mb-2">⏳ Pending Lab Orders <span class="text-muted">(Payment Pending)</span></h5>
     <div class="alert alert-success mt-3">✅ No pending lab orders.</div>
   {% endif %}
 </div>
