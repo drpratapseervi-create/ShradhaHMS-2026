@@ -1728,7 +1728,7 @@ def dashboard(request):
     role  = get_user_role(request.user)
     appointments = Appointment.objects.filter(
         date=today
-    ).select_related("patient", "doctor").order_by("time")
+    ).select_related("patient", "doctor", "consultation").order_by("time")
     return render(request, "dashboard.html", {
         "role":               role,
         "patient_count":      Patient.objects.count(),
@@ -1746,7 +1746,7 @@ def doctor_dashboard(request):
     today = today_date.today()
     appointments = Appointment.objects.filter(
         date=today
-    ).select_related("patient").order_by("time")
+    ).select_related("patient", "consultation").order_by("time")
     return render(request, "dashboard.html", {
         "appointments":       appointments,
         "appt_count":         appointments.count(),

@@ -180,6 +180,12 @@
     transition: 0.15s;
 }
 .btn-start-left:hover { background: #1e3a5f !important; color: #93c5fd !important; }
+.btn-start-seen {
+    background: #0d2018 !important;
+    color: #4ade80 !important;
+    border-color: #1e5f3a !important;
+}
+.btn-start-seen:hover { background: #14532d !important; color: #86efac !important; }
 
 .btn-chevron {
     background: #1a2a3a;
@@ -322,7 +328,7 @@
             <td style="white-space:nowrap;">
                 <div class="appt-action-group">
                     <a href="{% url 'hms:start_consultation' appt.id %}"
-                       class="btn-start-left">Start</a>
+                       class="btn-start-left{% if appt.consultation %} btn-start-seen{% endif %}">{% if appt.consultation %}View{% else %}Start{% endif %}</a>
                     <button class="btn-chevron"
                             data-appt-id="{{ appt.id }}"
                             data-patient-details="{% url 'hms:patient_update' appt.patient.id %}"
