@@ -3,256 +3,388 @@
 {% block title %}Discharge Bill{% endblock %}
 
 {% block content %}
+<style>
+/* ── Discharge Bill — standardized dark card style
+      (matches Pending Lab Orders / Lab Reports / Daily Report) ── */
+.dbill-card {
+  background: #111111;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.6);
+  border: 1px solid #2a2a2a;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.dbill-head {
+  background: #161616;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-bottom: 1px solid #2a2a2a;
+}
+.dbill-head h5 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #e2e8f0 !important;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.dbill-head .badge-today {
+  background: #1e1e1e;
+  color: #8892a4;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #2a2a2a;
+}
+.dbill-body { padding: 16px 18px; }
 
-<div class="container">
+/* Patient details — key/value table (same look as consultation patient info) */
+.dbill-kv { width: 100%; border-collapse: collapse; }
+.dbill-kv td {
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid #2a2a2a;
+  vertical-align: middle;
+  color: #e2e8f0 !important;
+}
+.dbill-kv td.k {
+  background: #161616 !important;
+  color: #8892a4 !important;
+  font-weight: 600;
+  width: 150px;
+  white-space: nowrap;
+}
 
-<h2>Discharge Bill</h2>
+/* Data table — dark zebra striping (same as Pending Lab Orders / Lab Reports) */
+.dbill-table { width: 100%; border-collapse: collapse; margin: 0; }
+.dbill-table th {
+  background: #161616 !important;
+  color: #8892a4 !important;
+  font-size: 11px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+  padding: 9px 12px !important;
+  text-align: left;
+  border-bottom: 2px solid #2a2a2a;
+}
+.dbill-table td {
+  padding: 9px 12px !important;
+  font-size: 13px;
+  vertical-align: middle;
+  border-bottom: 1px solid #22263a;
+  color: #e2e8f0 !important;
+}
+.dbill-table tbody tr:nth-child(odd) td  { background: var(--bg2, #1a1d27) !important; }
+.dbill-table tbody tr:nth-child(even) td { background: var(--bg3, #22263a) !important; }
+.dbill-table tbody tr:hover td { background: #252a40 !important; }
+.dbill-empty { padding: 18px 12px; color: #8892a4; font-size: 13px; text-align: center; }
 
-{% if error %}
-<div style="background:#ffeaea;border:1px solid #ffb5b5;padding:12px;border-radius:6px;color:#c40000;margin-bottom:20px;">
-    {{ error }}
+/* Inline form rows */
+.dbill-form-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 14px;
+}
+.dbill-field { display: flex; flex-direction: column; gap: 4px; }
+.dbill-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8892a4 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.dbill-field input,
+.dbill-field select {
+  height: 34px;
+  padding: 0 10px;
+  font-size: 13px;
+  background: #1a1a1a !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #2a2a2a !important;
+  border-radius: 7px;
+}
+
+/* Payment summary */
+.dbill-summary { width: 100%; max-width: 440px; border-collapse: collapse; }
+.dbill-summary td {
+  padding: 10px 14px;
+  font-size: 13px;
+  border: 1px solid #2a2a2a;
+  color: #e2e8f0 !important;
+}
+.dbill-summary td.k {
+  background: #161616 !important;
+  color: #8892a4 !important;
+  font-weight: 600;
+  width: 160px;
+}
+.dbill-summary td.v { text-align: right; font-weight: 700; }
+.dbill-summary tr.net td {
+  background: #0d2a1a !important;
+  color: #4ade80 !important;
+  border-color: #166534 !important;
+  font-size: 15px;
+  font-weight: 700;
+}
+.dbill-summary tr.refund td {
+  background: #2a1a00 !important;
+  color: #fbbf24 !important;
+  border-color: #78350f !important;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* Buttons — themed, behaviour unchanged */
+.dbill-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.dbill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  text-decoration: none;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.dbill-btn-ghost   { background: #1e2235; color: #e2e8f0 !important; border-color: #2d3148; }
+.dbill-btn-ghost:hover   { background: #252a40; }
+.dbill-btn-primary { background: #2563eb; color: #fff !important; border-color: #2563eb; }
+.dbill-btn-primary:hover { background: #1d4ed8; }
+.dbill-btn-success { background: #16a34a; color: #fff !important; border-color: #16a34a; }
+.dbill-btn-success:hover { background: #15803d; }
+.dbill-btn-teal    { background: #0d2a1a; color: #4ade80 !important; border-color: #166534; }
+.dbill-btn-teal:hover    { background: #14532d; color: #86efac !important; }
+.dbill-btn-blue    { background: #0d1a2a; color: #60a5fa !important; border-color: #1e3a5f; }
+.dbill-btn-blue:hover    { background: #1e3a5f; color: #93c5fd !important; }
+
+.dbill-balance { font-size: 18px; font-weight: 700; color: #4ade80; padding-top: 4px; }
+</style>
+
+<div class="container py-4">
+
+  <h4 class="mb-3" style="color:#e2e8f0 !important;">Discharge Bill</h4>
+
+  {% if error %}
+  <div class="alert alert-danger">{{ error }}</div>
+  {% else %}
+
+  <!-- ═══ Patient Details ═══ -->
+  <div class="dbill-card">
+    <div class="dbill-head">
+      <h5>👤 Patient details</h5>
+      <span class="badge-today">IPD {{ admission.ipd_no }}</span>
+    </div>
+    <div class="dbill-body">
+      <table class="dbill-kv">
+        <tr>
+          <td class="k">Patient Name</td><td>{{ admission.patient.full_name }}</td>
+          <td class="k">Father Name</td><td>{{ admission.patient.father_or_husband_name }}</td>
+        </tr>
+        <tr>
+          <td class="k">UHID</td><td>{{ admission.patient.uhid }}</td>
+          <td class="k">IPD No</td><td>{{ admission.ipd_no }}</td>
+        </tr>
+        <tr>
+          <td class="k">Ward</td><td>{{ admission.ward.name }}</td>
+          <td class="k">Bed No</td><td>{{ admission.bed.bed_number }}</td>
+        </tr>
+        <tr>
+          <td class="k">Doctor</td><td>{{ admission.doctor.full_name }}</td>
+          <td class="k">Department</td><td>{{ admission.department.name }}</td>
+        </tr>
+        <tr>
+          <td class="k">Admission Date</td><td>{{ admission.admission_date|date:"d M Y H:i" }}</td>
+          <td class="k">Discharge Date</td><td>{{ admission.discharge_date|date:"d M Y H:i" }}</td>
+        </tr>
+        <tr>
+          <td class="k">Diagnosis</td><td colspan="3">{{ admission.diagnosis }}</td>
+        </tr>
+        <tr>
+          <td class="k">Address</td><td colspan="3">{{ admission.patient.address }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ Bill Items ═══ -->
+  <div class="dbill-card">
+    <div class="dbill-head">
+      <h5>🧾 Bill items</h5>
+    </div>
+    <div class="dbill-body">
+
+      <form method="post" class="dbill-form-row">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_item">
+        <div class="dbill-field">
+          <label>Item</label>
+          <select name="item">
+            {% for item in items %}
+            <option value="{{ item.id }}">{{ item.name }} - ₹{{ item.price }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="dbill-field">
+          <label>Quantity</label>
+          <input type="number" name="quantity" value="1" min="1" style="width:90px;">
+        </div>
+        <button type="submit" class="dbill-btn dbill-btn-ghost">➕ Add Item</button>
+      </form>
+
+      <div style="overflow-x:auto;">
+        <table class="dbill-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Price</th>
+              <th>Total</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in bill_items %}
+            <tr>
+              <td>{{ b.item.name }}</td>
+              <td>{{ b.quantity }}</td>
+              <td>₹ {{ b.price }}</td>
+              <td>₹ {{ b.total }}</td>
+              <td><a href="{% url 'hms:delete_bill_item' b.id %}" style="color:#f87171;">Delete</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="dbill-empty">No bill items added yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ Add Advance Payment + Summary ═══ -->
+  <div class="dbill-card">
+    <div class="dbill-head">
+      <h5>💰 Advance &amp; payment summary</h5>
+    </div>
+    <div class="dbill-body">
+
+      <form method="post" class="dbill-form-row">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_advance">
+        <div class="dbill-field">
+          <label>Amount</label>
+          <input type="number" name="advance_amount" step="0.01" required style="width:140px;">
+        </div>
+        <div class="dbill-field">
+          <label>Payment Mode</label>
+          <select name="advance_payment_mode">
+            <option value="CASH">Cash</option>
+            <option value="UPI">UPI</option>
+            <option value="CARD">Card</option>
+            <option value="CHEQUE">Cheque</option>
+          </select>
+        </div>
+        <div class="dbill-field">
+          <label>Note</label>
+          <input type="text" name="advance_note" style="width:200px;">
+        </div>
+        <button type="submit" class="dbill-btn dbill-btn-primary">Save Advance</button>
+      </form>
+
+      <table class="dbill-summary">
+        <tr>
+          <td class="k">Gross Total</td>
+          <td class="v">₹ {{ total_amount }}</td>
+        </tr>
+        <tr>
+          <td class="k">Discount</td>
+          <td class="v">
+            <form method="post" style="display:flex;gap:6px;justify-content:flex-end;align-items:center;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="update_payment">
+              <input type="number" name="discount" value="{{ bill.discount }}" step="0.01" style="width:110px;">
+              <button type="submit" class="dbill-btn dbill-btn-ghost" style="padding:6px 12px;">Update</button>
+            </form>
+          </td>
+        </tr>
+        <tr>
+          <td class="k">Total Advance</td>
+          <td class="v">₹ {{ total_advance }}</td>
+        </tr>
+        {% if refund_amount %}
+        <tr class="refund">
+          <td>Refund</td>
+          <td style="text-align:right;">₹ {{ refund_amount }}</td>
+        </tr>
+        {% else %}
+        <tr class="net">
+          <td>Net Payable</td>
+          <td style="text-align:right;">₹ {{ net_amount }}</td>
+        </tr>
+        {% endif %}
+      </table>
+
+    </div>
+  </div>
+
+  <!-- ═══ Documents ═══ -->
+  <div class="dbill-card">
+    <div class="dbill-head">
+      <h5>🖨️ Documents</h5>
+    </div>
+    <div class="dbill-body dbill-actions">
+      <a href="{% url 'hms:discharge_bill_pdf' admission.id %}" class="dbill-btn dbill-btn-teal">🖨️ Print Discharge Bill</a>
+      <a href="{% url 'hms:advance_payment_receipt' patient.id %}" class="dbill-btn dbill-btn-blue">🧾 Print Advance Receipts</a>
+    </div>
+  </div>
+
+  <!-- ═══ Final Payment ═══ -->
+  <div class="dbill-card">
+    <div class="dbill-head">
+      <h5>{% if bill.is_paid %}✅ Payment received{% else %}💵 Collect final payment{% endif %}</h5>
+    </div>
+    <div class="dbill-body">
+      {% if bill.is_paid %}
+      <div class="alert alert-success" style="margin:0 0 12px;">
+        ✅ Payment Received — {{ bill.get_payment_mode_display }} on {{ bill.paid_at|date:"d-m-Y H:i" }}
+      </div>
+      <a href="{% url 'hms:final_payment_receipt' patient.id %}" class="dbill-btn dbill-btn-blue">Print Final Receipt</a>
+      {% else %}
+      <form method="post" class="dbill-form-row" style="margin-bottom:0;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="mark_paid">
+        <div class="dbill-field">
+          <label>Payment Mode</label>
+          <select name="final_payment_mode">
+            <option value="CASH">Cash</option>
+            <option value="UPI">UPI</option>
+            <option value="CARD">Card</option>
+            <option value="CHEQUE">Cheque</option>
+          </select>
+        </div>
+        <div class="dbill-field">
+          <label>Balance Amount</label>
+          <div class="dbill-balance">₹ {{ net_amount }}</div>
+        </div>
+        <button type="submit" class="dbill-btn dbill-btn-success">Mark Paid &amp; Print Receipt</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  {% endif %}
+
 </div>
-{% else %}
-
-<h3>Patient Details</h3>
-
-<table border="1" width="100%" cellpadding="6">
-
-<tr>
-<td><b>Patient Name</b></td>
-<td>{{ admission.patient.full_name }}</td>
-<td><b>Father Name</b></td>
-<td>{{ admission.patient.father_or_husband_name }}</td>
-</tr>
-
-<tr>
-<td><b>UHID</b></td>
-<td>{{ admission.patient.uhid }}</td>
-<td><b>IPD No</b></td>
-<td>{{ admission.ipd_no }}</td>
-</tr>
-
-<tr>
-<td><b>Ward</b></td>
-<td>{{ admission.ward.name }}</td>
-<td><b>Bed No</b></td>
-<td>{{ admission.bed.bed_number }}</td>
-</tr>
-
-<tr>
-<td><b>Doctor</b></td>
-<td>{{ admission.doctor.full_name }}</td>
-<td><b>Department</b></td>
-<td>{{ admission.department.name }}</td>
-</tr>
-
-<tr>
-<td><b>Admission Date</b></td>
-<td>{{ admission.admission_date|date:"d M Y H:i" }}</td>
-<td><b>Discharge Date</b></td>
-<td>{{ admission.discharge_date|date:"d M Y H:i" }}</td>
-</tr>
-
-<tr>
-<td><b>Diagnosis</b></td>
-<td colspan="3">{{ admission.diagnosis }}</td>
-</tr>
-
-<tr>
-<td><b>Address</b></td>
-<td colspan="3">{{ admission.patient.address }}</td>
-</tr>
-
-</table>
-
-<br>
-
-<h3>Add Bill Item</h3>
-
-<form method="post">
-{% csrf_token %}
-<input type="hidden" name="action" value="add_item">
-
-<select name="item">
-{% for item in items %}
-<option value="{{ item.id }}">
-{{ item.name }} - ₹{{ item.price }}
-</option>
-{% endfor %}
-</select>
-
-<input type="number" name="quantity" value="1" min="1">
-
-<button type="submit">Add Item</button>
-
-</form>
-
-<h3>Bill Items</h3>
-
-<table border="1" width="100%">
-
-<tr>
-<th>Item</th>
-<th>Qty</th>
-<th>Price</th>
-<th>Total</th>
-<th>Action</th>
-</tr>
-
-{% for b in bill_items %}
-<tr>
-<td>{{ b.item.name }}</td>
-<td>{{ b.quantity }}</td>
-<td>{{ b.price }}</td>
-<td>{{ b.total }}</td>
-<td>
-<a href="{% url 'hms:delete_bill_item' b.id %}" style="color:red;">Delete</a>
-</td>
-</tr>
-{% endfor %}
-
-</table>
-
-<br>
-
-<h3>Add Advance Payment</h3>
-
-<form method="post" style="display:flex;gap:15px;flex-wrap:wrap;align-items:end;">
-{% csrf_token %}
-<input type="hidden" name="action" value="add_advance">
-
-<div>
-<label>Amount</label><br>
-<input type="number" name="advance_amount" step="0.01" required style="padding:6px;">
-</div>
-
-<div>
-<label>Payment Mode</label><br>
-<select name="advance_payment_mode" style="padding:6px;">
-<option value="CASH">Cash</option>
-<option value="UPI">UPI</option>
-<option value="CARD">Card</option>
-<option value="CHEQUE">Cheque</option>
-</select>
-</div>
-
-<div>
-<label>Note</label><br>
-<input type="text" name="advance_note" style="padding:6px;">
-</div>
-
-<button type="submit"
-style="background:#2563eb;color:white;padding:8px 18px;border:none;border-radius:5px;">
-Save Advance
-</button>
-
-</form>
-
-<br>
-
-<!-- Payment Summary -->
-
-<table border="1" width="50%" cellpadding="8">
-
-<tr>
-<td><b>Gross Total</b></td>
-<td>₹ {{ total_amount }}</td>
-</tr>
-
-<tr>
-<td><b>Discount</b></td>
-<td>
-<form method="post">
-{% csrf_token %}
-<input type="hidden" name="action" value="update_payment">
-<input type="number" name="discount" value="{{ bill.discount }}" step="0.01">
-<button type="submit">Update</button>
-</form>
-</td>
-</tr>
-
-<tr>
-<td><b>Total Advance</b></td>
-<td>₹ {{ total_advance }}</td>
-</tr>
-
-{% if refund_amount %}
-<tr style="background:#d1fae5;">
-<td><b>Refund</b></td>
-<td><b>₹ {{ refund_amount }}</b></td>
-</tr>
-{% else %}
-<tr style="background:#e6ffe6;">
-<td><b>Net Payable</b></td>
-<td><b>₹ {{ net_amount }}</b></td>
-</tr>
-{% endif %}
-
-</table>
-
-<br>
-
-<a href="{% url 'hms:discharge_bill_pdf' admission.id %}"
-style="background:#28a745;color:white;padding:8px 15px;text-decoration:none;border-radius:5px;">
-🖨️ Print Discharge Bill
-</a>
-
-&nbsp;
-
-<a href="{% url 'hms:advance_payment_receipt' patient.id %}"
-style="background:#1a6fad;color:white;padding:8px 15px;text-decoration:none;border-radius:5px;">
-🧾 Print Advance Receipts
-</a>
-
-<br><br>
-
-{% if bill.is_paid %}
-
-<div style="background:#d4edda;border:1px solid #28a745;padding:12px;border-radius:6px;margin-bottom:12px;">
-✅ Payment Received — {{ bill.get_payment_mode_display }} on {{ bill.paid_at|date:"d-m-Y H:i" }}
-
-<a href="{% url 'hms:final_payment_receipt' patient.id %}"
-style="background:#0d3b66;color:white;padding:6px 14px;text-decoration:none;border-radius:5px;font-size:13px;">
-Print Final Receipt
-</a>
-
-</div>
-
-{% else %}
-
-<h3>Collect Final Payment</h3>
-
-<form method="post">
-
-{% csrf_token %}
-<input type="hidden" name="action" value="mark_paid">
-
-<label>Payment Mode</label>
-
-<select name="final_payment_mode">
-<option value="CASH">Cash</option>
-<option value="UPI">UPI</option>
-<option value="CARD">Card</option>
-<option value="CHEQUE">Cheque</option>
-</select>
-
-<br><br>
-
-Balance Amount: ₹ {{ net_amount }}
-
-<br><br>
-
-<button type="submit"
-style="background:#16a34a;color:white;padding:8px 18px;border:none;border-radius:5px;">
-Mark Paid & Print Receipt
-</button>
-
-</form>
-
-{% endif %}
-
-</div>
-
-{% endif %}
-
 {% endblock %}
