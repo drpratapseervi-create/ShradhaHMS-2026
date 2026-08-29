@@ -322,18 +322,18 @@ table.print-shell > thead > tr > td {
 {% endif %}
 
 <!-- ── Past History ── -->
-{% if past_history_list or custom_past_history %}
+{% if past_history_list %}
 <div class="sec-title">PAST HISTORY</div>
 <div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
-{% for h in past_history_list %}• {{ h.name }}{% if not forloop.last or custom_past_history %}<br>{% endif %}{% endfor %}{% for line in custom_past_history %}• {{ line }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+{% for h in past_history_list %}• {{ h.name }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
 </div>
 {% endif %}
 
 <!-- ── Surgical History ── -->
-{% if surgical_history_list or custom_surgical_history %}
+{% if surgical_history_list %}
 <div class="sec-title">SURGICAL HISTORY</div>
 <div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
-{% for h in surgical_history_list %}• {{ h.name }}{% if not forloop.last or custom_surgical_history %}<br>{% endif %}{% endfor %}{% for line in custom_surgical_history %}• {{ line }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+{% for h in surgical_history_list %}• {{ h.name }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
 </div>
 {% if consultation.surgery_date %}
 <p style="margin:3px 0; font-size:11px;"><em>Date of Surgery: {{ consultation.surgery_date|date:"d-M-Y" }}</em></p>

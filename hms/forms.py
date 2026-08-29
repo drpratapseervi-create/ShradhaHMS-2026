@@ -33,8 +33,6 @@ class ConsultationForm(forms.ModelForm):
             "surgical_history",
             "custom_symptoms",
             "custom_signs",
-            "custom_past_history",
-            "custom_surgical_history",
             "surgery_date",
             "investigations",
             "created_at",

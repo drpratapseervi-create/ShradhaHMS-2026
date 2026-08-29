@@ -388,12 +388,10 @@ def start_consultation(request, appointment_id):
                 obj.follow_up_notes = request.POST.get("follow_up_notes", "").strip()
                 obj.custom_investigations = request.POST.get("custom_investigations", "")
 
-                # Free-text "Add new…" entries per section — this consultation only,
-                # never saved to the Symptom / Sign / PastHistory / SurgicalHistory masters.
-                obj.custom_symptoms         = request.POST.get("custom_symptoms", "").strip()
-                obj.custom_signs            = request.POST.get("custom_signs", "").strip()
-                obj.custom_past_history     = request.POST.get("custom_past_history", "").strip()
-                obj.custom_surgical_history = request.POST.get("custom_surgical_history", "").strip()
+                # Free-text entries under Chief Complaints / Examination Findings —
+                # this consultation only, never saved to the Symptom / Sign masters.
+                obj.custom_symptoms = request.POST.get("custom_symptoms", "").strip()
+                obj.custom_signs    = request.POST.get("custom_signs", "").strip()
 
                 obj.surgery_date    = request.POST.get("surgery_date") or None
 
@@ -592,10 +590,8 @@ def consultation_pdf(request, appointment_id):
         "examination_list":      consultation.signs.all(),
         "past_history_list":     consultation.past_history.all(),
         "surgical_history_list": consultation.surgical_history.all(),
-        "custom_symptoms":          _lines(consultation.custom_symptoms),
-        "custom_signs":             _lines(consultation.custom_signs),
-        "custom_past_history":      _lines(consultation.custom_past_history),
-        "custom_surgical_history":  _lines(consultation.custom_surgical_history),
+        "custom_symptoms":       _lines(consultation.custom_symptoms),
+        "custom_signs":          _lines(consultation.custom_signs),
         "investigations":        consultation.investigations.all(),
         "prescriptions":         Prescription.objects.filter(consultation=consultation),
     })

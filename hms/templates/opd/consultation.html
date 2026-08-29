@@ -97,6 +97,8 @@
     letter-spacing: 0.3px;
 }
 .sec-body { padding: 12px 14px; }
+.sec-head.is-collapsible { cursor: pointer; user-select: none; }
+.sec-chevron { font-size: 10px; line-height: 1; opacity: 0.9; }
 
 /* Section header colors — VIBRANT */
 .sh-blue   { background: linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; border-bottom:none; }
@@ -180,11 +182,15 @@
 
 /* ── Quick Lab Values (manual, outside-lab entry) ── */
 .qlv-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
     gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;   /* room for the horizontal scrollbar */
 }
 .qlv-box {
+    flex: 0 0 auto;
+    width: 138px;
     background: #0b2e2a;
     border: 1px solid #134e4a;
     border-radius: 8px;
@@ -200,6 +206,8 @@
     letter-spacing: 0.4px;
     margin-bottom: 4px;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .qlv-input, .qlv-select {
     width: 100%;
@@ -217,7 +225,8 @@
 .qlv-select { cursor: pointer; }
 .qlv-select option { background: #0b2e2a; color: #ecfdf5; }
 .qlv-box-other {
-    grid-column: span 2;
+    flex: 0 0 auto;
+    width: 288px;
     display: flex;
     gap: 8px;
 }
@@ -264,18 +273,21 @@
     white-space: nowrap;
 }
 
-/* ── Free-text "additional …" box under each history section — card-style, green border ── */
+/* ── Free-text "additional …" box under each history section — full-width, compact, green border ── */
 .cc-freetext-label { font-size: 12px; color: #555; font-weight: 600; margin: 10px 0 4px; display: block; }
 .cc-freetext {
     display: block;
     width: 100%;
-    max-width: 460px;
+    height: 36px;               /* chip-card height; drag the handle for more lines */
+    min-height: 36px;
     border-radius: 8px;
     border: 1.5px solid #16a34a !important;
-    padding: 9px 12px;
+    padding: 7px 12px;
     font-size: 13px;
+    line-height: 1.25;
     font-family: inherit;
     resize: vertical;
+    overflow-y: auto;
 }
 .cc-freetext:focus {
     border-color: #22c55e !important;
@@ -916,7 +928,7 @@
         </div>
 
         <label class="cc-freetext-label">Additional complaints &mdash; free text, one per line (saved with this visit only)</label>
-        <textarea name="custom_symptoms" id="custom-symptoms-field" rows="2" class="cc-freetext"
+        <textarea name="custom_symptoms" id="custom-symptoms-field" rows="1" class="cc-freetext"
             placeholder="e.g. Intermittent right-flank pain since 2 days">{{ consultation.custom_symptoms }}</textarea>
     </div>
 </div>
@@ -941,7 +953,7 @@
         </div>
 
         <label class="cc-freetext-label">Additional findings &mdash; free text, one per line (saved with this visit only)</label>
-        <textarea name="custom_signs" id="custom-signs-field" rows="2" class="cc-freetext"
+        <textarea name="custom_signs" id="custom-signs-field" rows="1" class="cc-freetext"
             placeholder="e.g. Mild tenderness right hypochondrium">{{ consultation.custom_signs }}</textarea>
     </div>
 </div>
@@ -964,10 +976,6 @@
             <p style="color:#888; font-style:italic;">No past history items configured.</p>
             {% endfor %}
         </div>
-
-        <label class="cc-freetext-label">Additional past history &mdash; free text, one per line (saved with this visit only)</label>
-        <textarea name="custom_past_history" id="custom-past-history-field" rows="2" class="cc-freetext"
-            placeholder="e.g. Hypertension since 2018, on amlodipine">{{ consultation.custom_past_history }}</textarea>
     </div>
 </div>
 
@@ -993,10 +1001,6 @@
                 <input type="date" name="surgery_date" id="id_surgery_date" value="{{ consultation.surgery_date|date:'Y-m-d'|default:'' }}" style="height:26px;border-radius:5px;border:1px solid #ccc;padding:0 6px;font-size:12px;">
             </div>
         </div>
-
-        <label class="cc-freetext-label">Additional surgical history &mdash; free text, one per line (saved with this visit only)</label>
-        <textarea name="custom_surgical_history" id="custom-surgical-history-field" rows="2" class="cc-freetext"
-            placeholder="e.g. Open cholecystectomy 2015">{{ consultation.custom_surgical_history }}</textarea>
     </div>
 </div>
 
@@ -1256,7 +1260,7 @@
             <span class="ch-pill" onclick="addProcedure(this)">Suturing under LA</span>
             <span class="ch-pill" onclick="addProcedure(this)">Wound debridement</span>
         </div>
-        <textarea name="procedures_performed" id="id_procedures_performed" rows="2" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Type procedure done today or click chips above…">{{ consultation.procedures_performed|default:'' }}</textarea>
+        <textarea name="procedures_performed" id="id_procedures_performed" rows="1" class="cc-freetext" placeholder="Type procedure done today or click chips above…">{{ consultation.procedures_performed|default:'' }}</textarea>
     </div>
 </div>
 
@@ -1280,7 +1284,7 @@
                 onkeydown="if(event.key==='Enter'){event.preventDefault();addAdviceOption();}">
             <button type="button" onclick="addAdviceOption()" style="background:#0284c7;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">Add</button>
         </div>
-        <textarea name="advice" id="id_advice" rows="3" style="width:100%;max-width:360px;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Type advice or click chips above…">{{ consultation.advice|default:'' }}</textarea>
+        <textarea name="advice" id="id_advice" rows="1" class="cc-freetext" placeholder="Type advice or click chips above…">{{ consultation.advice|default:'' }}</textarea>
     </div>
 </div>
 
@@ -1308,7 +1312,7 @@
                 onkeydown="if(event.key==='Enter'){event.preventDefault();addDietOption();}">
             <button type="button" onclick="addDietOption()" style="background:#16a34a;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">Add</button>
         </div>
-        <textarea name="diet_advice" id="id_diet_advice" rows="2" style="width:100%;max-width:360px;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Type diet advice or click chips above…">{{ consultation.diet_advice|default:'' }}</textarea>
+        <textarea name="diet_advice" id="id_diet_advice" rows="1" class="cc-freetext" placeholder="Type diet advice or click chips above…">{{ consultation.diet_advice|default:'' }}</textarea>
     </div>
 </div>
 
@@ -1341,8 +1345,8 @@
 
 <!-- ═══ REFUSAL OF ADMISSION / LAMA CONSENT ═══ -->
 <div class="sec">
-    <div class="sec-head" style="background:linear-gradient(135deg,#b91c1c,#991b1b);color:#fff;">⚠️ Refusal of Admission / LAMA Consent</div>
-    <div class="sec-body">
+    <div class="sec-head is-collapsible" style="background:linear-gradient(135deg,#b91c1c,#991b1b);color:#fff;" onclick="toggleSection(this)"><span class="sec-chevron">▸</span>⚠️ Refusal of Admission / LAMA Consent</div>
+    <div class="sec-body" style="display:none;">
         <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#333;cursor:pointer;">
             <input type="checkbox" name="lama_declined" id="id_lama_declined" {% if consultation.lama_declined %}checked{% endif %} onchange="toggleLamaSection()" style="width:16px;height:16px;">
             Patient advised admission but declined
@@ -2464,7 +2468,7 @@ function addAdvice(chip) {
     var ta = document.getElementById('id_advice');
     var txtEl = chip.querySelector('.chip-text');
     var txt = (txtEl ? txtEl.textContent : chip.textContent).trim();
-    ta.value = ta.value.trim() ? ta.value.trim() + '\n' + txt : txt;
+    ta.value = ta.value.trim() ? ta.value.trim() + ' | ' + txt : txt;   // side-by-side, matches PDF format
     chip.style.background='#007676'; chip.style.color='#fff'; chip.style.borderColor='#007676';
 }
 
@@ -2499,7 +2503,7 @@ function addDiet(chip) {
     var ta = document.getElementById('id_diet_advice');
     var txtEl = chip.querySelector('.chip-text');
     var txt = (txtEl ? txtEl.textContent : chip.textContent).trim();
-    ta.value = ta.value.trim() ? ta.value.trim() + '\n' + txt : txt;
+    ta.value = ta.value.trim() ? ta.value.trim() + ' | ' + txt : txt;   // side-by-side, matches PDF format
     chip.style.background='#16a34a'; chip.style.color='#fff'; chip.style.borderColor='#16a34a';
 }
 
@@ -2533,7 +2537,7 @@ function addDietOption() {
 function addProcedure(chip) {
     var ta = document.getElementById('id_procedures_performed');
     var txt = chip.textContent.trim();
-    ta.value = ta.value.trim() ? ta.value.trim() + '\n' + txt : txt;
+    ta.value = ta.value.trim() ? ta.value.trim() + ' | ' + txt : txt;   // side-by-side, matches PDF format
     chip.style.background='#0891b2'; chip.style.color='#fff'; chip.style.borderColor='#0891b2';
 }
 
@@ -2922,6 +2926,16 @@ function generateAIMedicines() {
         btn.disabled = false;
         btn.innerHTML = '\U0001f916 AI Suggest Medicines';
     });
+}
+
+/* ── Collapsible section: click the header to expand / collapse ── */
+function toggleSection(headEl) {
+    var body = headEl.nextElementSibling;
+    if (!body || !body.classList.contains('sec-body')) return;
+    var willShow = (body.style.display === 'none');
+    body.style.display = willShow ? '' : 'none';
+    var chev = headEl.querySelector('.sec-chevron');
+    if (chev) chev.textContent = willShow ? '▾' : '▸';
 }
 
 /* ── Refusal of Admission / LAMA Consent ── */
