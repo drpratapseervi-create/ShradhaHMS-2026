@@ -264,16 +264,23 @@
     white-space: nowrap;
 }
 
-/* ── Free-text "additional …" box under each history section (Follow-up Notes style) ── */
+/* ── Free-text "additional …" box under each history section — card-style, green border ── */
 .cc-freetext-label { font-size: 12px; color: #555; font-weight: 600; margin: 10px 0 4px; display: block; }
 .cc-freetext {
+    display: block;
     width: 100%;
-    border-radius: 7px;
-    border: 1px solid #ccc;
+    max-width: 460px;
+    border-radius: 8px;
+    border: 1.5px solid #16a34a !important;
     padding: 9px 12px;
     font-size: 13px;
     font-family: inherit;
     resize: vertical;
+}
+.cc-freetext:focus {
+    border-color: #22c55e !important;
+    box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.25) !important;
+    outline: none;
 }
 
 .cb-item {
