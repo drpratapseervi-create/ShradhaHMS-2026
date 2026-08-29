@@ -1,6 +1,70 @@
 {% extends "base.html" %}
 {% load hms_extras %}
 
+{% block extra_css %}
+<style>
+  /* ── Lab parameter rows: match app dark theme ── */
+  .lab-param-table {
+    border-collapse: separate;
+    border-spacing: 0 8px;
+  }
+  /* Kill Bootstrap's inset box-shadow / --bs-table-bg white fill */
+  .lab-param-table > :not(caption) > * > * {
+    box-shadow: none !important;
+    background-color: transparent !important;
+  }
+  .lab-param-table .lab-param-head th {
+    background: var(--bg3) !important;
+    color: var(--text-muted) !important;
+    border: 1px solid var(--border) !important;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .lab-param-table .lab-param-row td {
+    background: var(--bg3) !important;          /* dark navy card, like the sidebar */
+    color: var(--text) !important;
+    vertical-align: middle;
+    border-top: 1px solid var(--border) !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  .lab-param-table .lab-param-row td:first-child {
+    border-left: 3px solid var(--accent) !important;   /* subtle teal accent */
+  }
+  .lab-param-table .lab-param-row td:last-child {
+    border-right: 1px solid var(--border) !important;
+  }
+  .lab-param-name strong {
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .lab-param-method {
+    display: block;
+    margin-top: 2px;
+    font-size: 11px;
+    color: var(--text-muted) !important;
+  }
+  /* Keep the value input light so typed text stays easy to read */
+  .lab-result-input.form-control {
+    background: #f8fafc !important;
+    color: #0f1117 !important;
+    border: 1px solid var(--border) !important;
+    font-weight: 600;
+  }
+  .lab-result-input.form-control:focus {
+    background: #ffffff !important;
+    color: #0f1117 !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 2px rgba(0,184,169,0.25) !important;
+  }
+  .lab-result-input.form-control::placeholder {
+    color: #94a3b8 !important;
+    font-weight: 400;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <div class="container mt-4" style="max-width: 700px;">
@@ -33,9 +97,9 @@
 <form method="post">
 {% csrf_token %}
 
-<table class="table table-bordered">
+<table class="table lab-param-table">
 
-<thead class="table-light">
+<thead class="lab-param-head">
 <tr>
 <th>Parameter</th>
 <th style="width:180px;">Result Value</th>
@@ -48,15 +112,14 @@
 
 {% for p in parameters %}
 
-<tr>
+<tr class="lab-param-row">
 
-<td>
+<td class="lab-param-name">
 
 <strong>{{ p.name }}</strong>
 
 {% if p.method %}
-<br>
-<span style="font-size:11px;color:#666;">
+<span class="lab-param-method">
 Method: {{ p.method }}
 </span>
 {% endif %}
@@ -68,7 +131,7 @@ Method: {{ p.method }}
 <input
 type="text"
 name="param_{{ p.id }}"
-class="form-control form-control-sm"
+class="form-control form-control-sm lab-result-input"
 value="{{ existing_results|get_item:p.id|default:'' }}"
 placeholder="Enter value"
 >
