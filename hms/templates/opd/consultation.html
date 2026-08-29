@@ -254,7 +254,7 @@
 .cb-chips-sm.cb-chips { gap: 6px; }
 .cb-chips-sm .cb-item { padding: 5px 10px; font-size: 12px; }
 
-/* ── Chief Complaints only: fixed-width truncating chips, 6 visible + "more" toggle ── */
+/* ── Chief Complaints only: fixed-width chips with ellipsis truncation ── */
 #symptom-grid .cb-item { width: 150px; box-sizing: border-box; }
 #symptom-grid .cc-label {
     flex: 1 1 auto;
@@ -263,49 +263,18 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-#symptom-grid.is-collapsed .cb-item.cc-overflow { display: none; }
 
-/* ── Free-text (visit-only) chips, used in all 4 history sections ── */
-.cb-item.cc-custom { border-style: dashed; }
-.cc-badge {
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .3px;
-    color: #835a00;
-    background: #fff3e0;
-    border: 1px solid #f0a500;
-    border-radius: 4px;
-    padding: 1px 4px;
-    margin-left: 6px;
-    flex: none;
-}
-.cc-custom .cc-x {
-    margin-left: 6px;
-    color: #ccc;
-    font-size: 13px;
-    cursor: pointer;
-    padding: 0 2px;
-    flex: none;
-}
-.cc-custom .cc-x:hover { color: #dc3545; }
-
-#symptom-grid .cc-more-toggle {
-    width: 150px;
-    box-sizing: border-box;
-    padding: 5px 10px;
-    border: 1px dashed #f0a500;
+/* ── Free-text "additional …" box under each history section (Follow-up Notes style) ── */
+.cc-freetext-label { font-size: 12px; color: #555; font-weight: 600; margin: 10px 0 4px; display: block; }
+.cc-freetext {
+    width: 100%;
     border-radius: 7px;
-    background: #fff7e6;
-    color: #835a00;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    border: 1px solid #ccc;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
 }
-#symptom-grid .cc-more-toggle:hover { background: #ffefcf; }
 
 .cb-item {
     display: flex;
@@ -922,14 +891,13 @@
 
 <!-- ═══ CHIEF COMPLAINTS ═══ -->
 <div class="sec">
-    <div class="sec-head sh-amber" style="display:flex;align-items:center;justify-content:space-between;">
+    <div class="sec-head sh-amber">
         <span>🤒 Chief Complaints</span>
-        <button type="button" onclick="openManage('symptom')" style="background:#fff3e0;border:1px solid #f0a500;color:#835a00;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;">⚙️ Manage</button>
     </div>
     <div class="sec-body">
-        <div class="cb-chips cb-chips-sm{% if symptoms|length > 6 %} is-collapsed{% endif %}" id="symptom-grid">
+        <div class="cb-chips cb-chips-sm" id="symptom-grid">
             {% for s in symptoms %}
-            <label class="cb-item{% if forloop.counter > 6 %} cc-overflow{% endif %}" data-id="{{ s.id }}" title="{{ s.name }}">
+            <label class="cb-item" data-id="{{ s.id }}" title="{{ s.name }}">
                 <input type="checkbox" name="symptoms" value="{{ s.id }}"
                        {% if s in consultation.symptoms.all %}checked{% endif %}>
                 <span class="cc-label">{{ s.name }}</span>
@@ -938,31 +906,18 @@
             {% empty %}
             <p style="color:#888; font-style:italic;">No symptoms configured.</p>
             {% endfor %}
-            {% for line in consultation.custom_symptoms.splitlines %}{% if line.strip %}
-            <label class="cb-item cc-custom" title="{{ line }}">
-                <span class="cc-label cc-text">{{ line }}</span>
-                <span class="cc-badge">custom</span>
-                <span class="cc-x" title="Remove" onclick="removeCustomChip(this,'symptom')">✕</span>
-            </label>
-            {% endif %}{% endfor %}
-            <textarea name="custom_symptoms" id="custom-symptoms-field" style="display:none;">{{ consultation.custom_symptoms }}</textarea>
-            {% if symptoms|length > 6 %}
-            <button type="button" class="cc-more-toggle" data-more-label="+{{ symptoms|length|add:'-6' }} more"
-                    onclick="toggleCCMore(this)">+{{ symptoms|length|add:'-6' }} more</button>
-            {% endif %}
-            <input type="text" id="new-symptom-input" placeholder="➕ Add new…"
-                style="width:140px;padding:5px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
-                onkeydown="if(event.key==='Enter'){event.preventDefault();addSymptom();}">
-            <button type="button" onclick="addSymptom()" style="background:#f0a500;color:#fff;border:none;border-radius:7px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Add</button>
         </div>
+
+        <label class="cc-freetext-label">Additional complaints &mdash; free text, one per line (saved with this visit only)</label>
+        <textarea name="custom_symptoms" id="custom-symptoms-field" rows="2" class="cc-freetext"
+            placeholder="e.g. Intermittent right-flank pain since 2 days">{{ consultation.custom_symptoms }}</textarea>
     </div>
 </div>
 
 <!-- ═══ EXAMINATION ═══ -->
 <div class="sec">
-    <div class="sec-head sh-purple" style="display:flex;align-items:center;justify-content:space-between;">
+    <div class="sec-head sh-purple">
         <span>🔬 Examination Findings</span>
-        <button type="button" onclick="openManage('sign')" style="background:#f3f0ff;border:1px solid #7c3aed;color:#7c3aed;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;">⚙️ Manage</button>
     </div>
     <div class="sec-body">
         <div class="cb-chips cb-chips-sm" id="sign-grid">
@@ -976,27 +931,18 @@
             {% empty %}
             <p style="color:#888; font-style:italic;">No signs configured.</p>
             {% endfor %}
-            {% for line in consultation.custom_signs.splitlines %}{% if line.strip %}
-            <label class="cb-item cc-custom" title="{{ line }}">
-                <span class="cc-label cc-text">{{ line }}</span>
-                <span class="cc-badge">custom</span>
-                <span class="cc-x" title="Remove" onclick="removeCustomChip(this,'sign')">✕</span>
-            </label>
-            {% endif %}{% endfor %}
-            <textarea name="custom_signs" id="custom-signs-field" style="display:none;">{{ consultation.custom_signs }}</textarea>
-            <input type="text" id="new-sign-input" placeholder="➕ Add new…"
-                style="width:140px;padding:5px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
-                onkeydown="if(event.key==='Enter'){event.preventDefault();addSign();}">
-            <button type="button" onclick="addSign()" style="background:#7c3aed;color:#fff;border:none;border-radius:7px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Add</button>
         </div>
+
+        <label class="cc-freetext-label">Additional findings &mdash; free text, one per line (saved with this visit only)</label>
+        <textarea name="custom_signs" id="custom-signs-field" rows="2" class="cc-freetext"
+            placeholder="e.g. Mild tenderness right hypochondrium">{{ consultation.custom_signs }}</textarea>
     </div>
 </div>
 
 <!-- ═══ PAST HISTORY ═══ -->
 <div class="sec">
-    <div class="sec-head sh-rose" style="display:flex;align-items:center;justify-content:space-between;">
+    <div class="sec-head sh-rose">
         <span>🩺 Past History</span>
-        <button type="button" onclick="openManage('pasthistory')" style="background:#ffe4e6;border:1px solid #e11d48;color:#9f1239;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;">⚙️ Manage</button>
     </div>
     <div class="sec-body">
         <div class="cb-chips" id="pasthistory-grid">
@@ -1010,27 +956,18 @@
             {% empty %}
             <p style="color:#888; font-style:italic;">No past history items configured.</p>
             {% endfor %}
-            {% for line in consultation.custom_past_history.splitlines %}{% if line.strip %}
-            <label class="cb-item cc-custom" title="{{ line }}">
-                <span class="cc-label cc-text">{{ line }}</span>
-                <span class="cc-badge">custom</span>
-                <span class="cc-x" title="Remove" onclick="removeCustomChip(this,'pasthistory')">✕</span>
-            </label>
-            {% endif %}{% endfor %}
-            <textarea name="custom_past_history" id="custom-past-history-field" style="display:none;">{{ consultation.custom_past_history }}</textarea>
-            <input type="text" id="new-pasthistory-input" placeholder="➕ Add new…"
-                style="width:140px;padding:6px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
-                onkeydown="if(event.key==='Enter'){event.preventDefault();addPastHistory();}">
-            <button type="button" onclick="addPastHistory()" style="background:#e11d48;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Add</button>
         </div>
+
+        <label class="cc-freetext-label">Additional past history &mdash; free text, one per line (saved with this visit only)</label>
+        <textarea name="custom_past_history" id="custom-past-history-field" rows="2" class="cc-freetext"
+            placeholder="e.g. Hypertension since 2018, on amlodipine">{{ consultation.custom_past_history }}</textarea>
     </div>
 </div>
 
 <!-- ═══ SURGICAL HISTORY ═══ -->
 <div class="sec">
-    <div class="sec-head sh-cyan" style="display:flex;align-items:center;justify-content:space-between;">
+    <div class="sec-head sh-cyan">
         <span>🔪 Surgical History</span>
-        <button type="button" onclick="openManage('surgicalhistory')" style="background:#ecfeff;border:1px solid #0891b2;color:#0e7490;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;">⚙️ Manage</button>
     </div>
     <div class="sec-body">
         <div class="cb-chips" id="surgicalhistory-grid">
@@ -1044,23 +981,15 @@
             {% empty %}
             <p style="color:#888; font-style:italic;">No surgical history items configured.</p>
             {% endfor %}
-            {% for line in consultation.custom_surgical_history.splitlines %}{% if line.strip %}
-            <label class="cb-item cc-custom" title="{{ line }}">
-                <span class="cc-label cc-text">{{ line }}</span>
-                <span class="cc-badge">custom</span>
-                <span class="cc-x" title="Remove" onclick="removeCustomChip(this,'surgicalhistory')">✕</span>
-            </label>
-            {% endif %}{% endfor %}
-            <textarea name="custom_surgical_history" id="custom-surgical-history-field" style="display:none;">{{ consultation.custom_surgical_history }}</textarea>
             <div id="surgical-date-anchor" style="display:flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid #e2e8f0;border-radius:7px;background:#fafafa;">
                 <label for="id_surgery_date" style="font-size:12px;color:#555;font-weight:600;white-space:nowrap;">Date of Surgery</label>
                 <input type="date" name="surgery_date" id="id_surgery_date" value="{{ consultation.surgery_date|date:'Y-m-d'|default:'' }}" style="height:26px;border-radius:5px;border:1px solid #ccc;padding:0 6px;font-size:12px;">
             </div>
-            <input type="text" id="new-surgicalhistory-input" placeholder="➕ Add new…"
-                style="width:140px;padding:6px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
-                onkeydown="if(event.key==='Enter'){event.preventDefault();addSurgicalHistory();}">
-            <button type="button" onclick="addSurgicalHistory()" style="background:#0891b2;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Add</button>
         </div>
+
+        <label class="cc-freetext-label">Additional surgical history &mdash; free text, one per line (saved with this visit only)</label>
+        <textarea name="custom_surgical_history" id="custom-surgical-history-field" rows="2" class="cc-freetext"
+            placeholder="e.g. Open cholecystectomy 2015">{{ consultation.custom_surgical_history }}</textarea>
     </div>
 </div>
 
@@ -2467,70 +2396,11 @@ document.addEventListener('click', function(e) {
 });
 
 /* ══ SYMPTOMS & SIGNS ══ */
-var DEPT_ID = {{ appointment.department.id }};
 var CSRF = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-function toggleCCMore(btn) {
-    var grid = document.getElementById('symptom-grid');
-    var collapsed = grid.classList.toggle('is-collapsed');
-    btn.textContent = collapsed ? btn.dataset.moreLabel : 'Show less';
-}
-
-/* ══ Free-text "Add new…" entries — scoped to THIS consultation only.
-   They are NOT written to the Symptom / Sign / PastHistory / SurgicalHistory
-   master tables; they persist in per-consultation TextFields (hidden
-   <textarea>s) and print on this consultation's PDF. ══ */
-var CUSTOM_CFG = {
-    symptom:         { grid: 'symptom-grid',         input: 'new-symptom-input',         field: 'custom-symptoms-field',          before: 'new-symptom-input' },
-    sign:            { grid: 'sign-grid',            input: 'new-sign-input',            field: 'custom-signs-field',             before: 'new-sign-input' },
-    pasthistory:     { grid: 'pasthistory-grid',     input: 'new-pasthistory-input',     field: 'custom-past-history-field',      before: 'new-pasthistory-input' },
-    surgicalhistory: { grid: 'surgicalhistory-grid', input: 'new-surgicalhistory-input', field: 'custom-surgical-history-field',  before: 'surgical-date-anchor' }
-};
-
-function syncCustomField(type) {
-    var cfg = CUSTOM_CFG[type];
-    var vals = Array.from(document.getElementById(cfg.grid)
-                   .querySelectorAll('.cb-item.cc-custom .cc-text'))
-                   .map(function (el) { return el.textContent.trim(); })
-                   .filter(Boolean);
-    document.getElementById(cfg.field).value = vals.join('\n');
-}
-
-function removeCustomChip(el, type) {
-    el.closest('.cb-item').remove();
-    syncCustomField(type);
-}
-
-function addCustomEntry(type) {
-    var cfg = CUSTOM_CFG[type];
-    var inp = document.getElementById(cfg.input);
-    var name = inp.value.trim();
-    if (!name) return;
-    var grid = document.getElementById(cfg.grid);
-
-    var dup = Array.from(grid.querySelectorAll('.cb-item.cc-custom .cc-text'))
-                  .some(function (el) { return el.textContent.trim().toLowerCase() === name.toLowerCase(); });
-    if (dup) { showToast('Already added', '#f0a500'); inp.value = ''; return; }
-
-    var label = document.createElement('label');
-    label.className = 'cb-item cc-custom';
-    label.title = name;
-    label.innerHTML =
-        '<span class="cc-label cc-text"></span>' +
-        '<span class="cc-badge">custom</span>' +
-        '<span class="cc-x" title="Remove" onclick="removeCustomChip(this,\'' + type + '\')">✕</span>';
-    label.querySelector('.cc-text').textContent = name;
-
-    grid.insertBefore(label, document.getElementById(cfg.before));
-    inp.value = '';
-    syncCustomField(type);
-    showToast('✅ "' + name + '" added (this visit only)', '#007676');
-}
-
-function addSymptom()         { addCustomEntry('symptom'); }
-function addSign()            { addCustomEntry('sign'); }
-function addPastHistory()     { addCustomEntry('pasthistory'); }
-function addSurgicalHistory() { addCustomEntry('surgicalhistory'); }
+/* Custom free-text entries for the four history sections are now plain
+   <textarea name="custom_*"> boxes (Follow-up Notes style) — no JS: the
+   form's normal "Save Consultation" persists whatever is typed. */
 
 var DELETE_URLS = {
     symptom: '/symptoms/delete/',
@@ -2574,10 +2444,6 @@ function deleteChip(type, id, el) {
 }
 
 var MANAGE_INPUTS = {
-    symptom: 'new-symptom-input',
-    sign: 'new-sign-input',
-    pasthistory: 'new-pasthistory-input',
-    surgicalhistory: 'new-surgicalhistory-input',
     advice: 'new-advice-input',
     diet: 'new-diet-input'
 };
