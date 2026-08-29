@@ -73,16 +73,32 @@
       margin-bottom: 18px;
     }
 
-    /* ── Patient metadata: borderless 2-column ── */
-    table.meta { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-    table.meta td {
-      padding: 2px 0;
-      vertical-align: top;
-      font-size: 12.5px;
-      border: 0;
+    /* ── Patient details: bordered 2-column grid (OPD prescription print style) ── */
+    .sec-title {
+      background: #e8e8e8;
+      color: #000;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 7px 4px 0;
+      margin: 14px 0 4px 0;
+      letter-spacing: 0.5px;
+      text-align: left;
+      display: block;
+      width: 100%;
     }
-    table.meta td.k { font-weight: bold; white-space: nowrap; padding-right: 6px; width: 1%; }
-    table.meta td.v { padding-right: 30px; }
+    table.meta { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+    table.meta td {
+      border: 1px solid #999;
+      padding: 4px 7px;
+      vertical-align: top;
+      font-size: 11px;
+    }
+    table.meta td.lbl {
+      font-weight: 700;
+      background: #f5f5f5;
+      width: 20%;
+      white-space: nowrap;
+    }
 
     /* ── Section header: plain bold caps, no bar ── */
     .panel-name {
@@ -162,14 +178,15 @@
   <div class="report-title">Laboratory Evaluation Report</div>
   <div class="report-subtitle">{{ item.investigation.name }}</div>
 
-  <!-- Patient metadata -->
+  <!-- Patient details (OPD prescription print table style) -->
+  <div class="sec-title">PATIENT DETAILS</div>
   <table class="meta">
     {% for lk, lv, rk, rv in meta_rows %}
     <tr>
-      <td class="k">{% if lk %}{{ lk }}:{% endif %}</td>
-      <td class="v">{{ lv }}</td>
-      <td class="k">{% if rk %}{{ rk }}:{% endif %}</td>
-      <td class="v">{{ rv }}</td>
+      <td class="lbl">{{ lk }}</td>
+      <td>{% if lk == "Patient Name" %}<strong>{{ lv }}</strong>{% else %}{{ lv }}{% endif %}</td>
+      <td class="lbl">{{ rk }}</td>
+      <td>{{ rv }}</td>
     </tr>
     {% endfor %}
   </table>
