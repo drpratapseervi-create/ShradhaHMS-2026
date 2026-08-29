@@ -264,6 +264,32 @@
     white-space: nowrap;
 }
 #symptom-grid.is-collapsed .cb-item.cc-overflow { display: none; }
+
+/* ── Free-text (visit-only) chips, used in all 4 history sections ── */
+.cb-item.cc-custom { border-style: dashed; }
+.cc-badge {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    color: #835a00;
+    background: #fff3e0;
+    border: 1px solid #f0a500;
+    border-radius: 4px;
+    padding: 1px 4px;
+    margin-left: 6px;
+    flex: none;
+}
+.cc-custom .cc-x {
+    margin-left: 6px;
+    color: #ccc;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0 2px;
+    flex: none;
+}
+.cc-custom .cc-x:hover { color: #dc3545; }
+
 #symptom-grid .cc-more-toggle {
     width: 150px;
     box-sizing: border-box;
@@ -912,6 +938,14 @@
             {% empty %}
             <p style="color:#888; font-style:italic;">No symptoms configured.</p>
             {% endfor %}
+            {% for line in consultation.custom_symptoms.splitlines %}{% if line.strip %}
+            <label class="cb-item cc-custom" title="{{ line }}">
+                <span class="cc-label cc-text">{{ line }}</span>
+                <span class="cc-badge">custom</span>
+                <span class="cc-x" title="Remove" onclick="removeCustomChip(this,'symptom')">✕</span>
+            </label>
+            {% endif %}{% endfor %}
+            <textarea name="custom_symptoms" id="custom-symptoms-field" style="display:none;">{{ consultation.custom_symptoms }}</textarea>
             {% if symptoms|length > 6 %}
             <button type="button" class="cc-more-toggle" data-more-label="+{{ symptoms|length|add:'-6' }} more"
                     onclick="toggleCCMore(this)">+{{ symptoms|length|add:'-6' }} more</button>
@@ -942,6 +976,14 @@
             {% empty %}
             <p style="color:#888; font-style:italic;">No signs configured.</p>
             {% endfor %}
+            {% for line in consultation.custom_signs.splitlines %}{% if line.strip %}
+            <label class="cb-item cc-custom" title="{{ line }}">
+                <span class="cc-label cc-text">{{ line }}</span>
+                <span class="cc-badge">custom</span>
+                <span class="cc-x" title="Remove" onclick="removeCustomChip(this,'sign')">✕</span>
+            </label>
+            {% endif %}{% endfor %}
+            <textarea name="custom_signs" id="custom-signs-field" style="display:none;">{{ consultation.custom_signs }}</textarea>
             <input type="text" id="new-sign-input" placeholder="➕ Add new…"
                 style="width:140px;padding:5px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();addSign();}">
@@ -968,6 +1010,14 @@
             {% empty %}
             <p style="color:#888; font-style:italic;">No past history items configured.</p>
             {% endfor %}
+            {% for line in consultation.custom_past_history.splitlines %}{% if line.strip %}
+            <label class="cb-item cc-custom" title="{{ line }}">
+                <span class="cc-label cc-text">{{ line }}</span>
+                <span class="cc-badge">custom</span>
+                <span class="cc-x" title="Remove" onclick="removeCustomChip(this,'pasthistory')">✕</span>
+            </label>
+            {% endif %}{% endfor %}
+            <textarea name="custom_past_history" id="custom-past-history-field" style="display:none;">{{ consultation.custom_past_history }}</textarea>
             <input type="text" id="new-pasthistory-input" placeholder="➕ Add new…"
                 style="width:140px;padding:6px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();addPastHistory();}">
@@ -994,6 +1044,14 @@
             {% empty %}
             <p style="color:#888; font-style:italic;">No surgical history items configured.</p>
             {% endfor %}
+            {% for line in consultation.custom_surgical_history.splitlines %}{% if line.strip %}
+            <label class="cb-item cc-custom" title="{{ line }}">
+                <span class="cc-label cc-text">{{ line }}</span>
+                <span class="cc-badge">custom</span>
+                <span class="cc-x" title="Remove" onclick="removeCustomChip(this,'surgicalhistory')">✕</span>
+            </label>
+            {% endif %}{% endfor %}
+            <textarea name="custom_surgical_history" id="custom-surgical-history-field" style="display:none;">{{ consultation.custom_surgical_history }}</textarea>
             <div id="surgical-date-anchor" style="display:flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid #e2e8f0;border-radius:7px;background:#fafafa;">
                 <label for="id_surgery_date" style="font-size:12px;color:#555;font-weight:600;white-space:nowrap;">Date of Surgery</label>
                 <input type="date" name="surgery_date" id="id_surgery_date" value="{{ consultation.surgery_date|date:'Y-m-d'|default:'' }}" style="height:26px;border-radius:5px;border:1px solid #ccc;padding:0 6px;font-size:12px;">
@@ -2418,105 +2476,61 @@ function toggleCCMore(btn) {
     btn.textContent = collapsed ? btn.dataset.moreLabel : 'Show less';
 }
 
-function addSymptom() {
-    var inp = document.getElementById('new-symptom-input');
-    var name = inp.value.trim();
-    if (!name) return;
-    fetch('/symptoms/add/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-        body: JSON.stringify({ name: name, department_id: DEPT_ID })
-    })
-    .then(r => r.json())
-    .then(function(d) {
-        if (d.id) {
-            var label = document.createElement('label');
-            label.className = 'cb-item';
-            label.dataset.id = d.id;
-            label.title = d.name;
-            label.innerHTML = '<input type="checkbox" name="symptoms" value="' + d.id + '" checked> ' +
-                '<span class="cc-label"></span>' +
-                ' <span onclick="deleteItem(\'symptom\',' + d.id + ',this)" title="Delete" style="margin-left:auto;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color=\'#dc3545\'" onmouseout="this.style.color=\'#ccc\'">✕</span>';
-            label.querySelector('.cc-label').textContent = d.name;
-            inp.parentNode.insertBefore(label, inp);
-            inp.value = '';
-            showToast('✅ "' + d.name + '" added', '#007676');
-        }
-    });
+/* ══ Free-text "Add new…" entries — scoped to THIS consultation only.
+   They are NOT written to the Symptom / Sign / PastHistory / SurgicalHistory
+   master tables; they persist in per-consultation TextFields (hidden
+   <textarea>s) and print on this consultation's PDF. ══ */
+var CUSTOM_CFG = {
+    symptom:         { grid: 'symptom-grid',         input: 'new-symptom-input',         field: 'custom-symptoms-field',          before: 'new-symptom-input' },
+    sign:            { grid: 'sign-grid',            input: 'new-sign-input',            field: 'custom-signs-field',             before: 'new-sign-input' },
+    pasthistory:     { grid: 'pasthistory-grid',     input: 'new-pasthistory-input',     field: 'custom-past-history-field',      before: 'new-pasthistory-input' },
+    surgicalhistory: { grid: 'surgicalhistory-grid', input: 'new-surgicalhistory-input', field: 'custom-surgical-history-field',  before: 'surgical-date-anchor' }
+};
+
+function syncCustomField(type) {
+    var cfg = CUSTOM_CFG[type];
+    var vals = Array.from(document.getElementById(cfg.grid)
+                   .querySelectorAll('.cb-item.cc-custom .cc-text'))
+                   .map(function (el) { return el.textContent.trim(); })
+                   .filter(Boolean);
+    document.getElementById(cfg.field).value = vals.join('\n');
 }
 
-function addSign() {
-    var inp = document.getElementById('new-sign-input');
-    var name = inp.value.trim();
-    if (!name) return;
-    fetch('/signs/add/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-        body: JSON.stringify({ name: name, department_id: DEPT_ID })
-    })
-    .then(r => r.json())
-    .then(function(d) {
-        if (d.id) {
-            var label = document.createElement('label');
-            label.className = 'cb-item';
-            label.dataset.id = d.id;
-            label.innerHTML = '<input type="checkbox" name="signs" value="' + d.id + '" checked> ' + d.name +
-                ' <span onclick="deleteItem(\'sign\',' + d.id + ',this)" title="Delete" style="margin-left:auto;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color=\'#dc3545\'" onmouseout="this.style.color=\'#ccc\'">✕</span>';
-            inp.parentNode.insertBefore(label, inp);
-            inp.value = '';
-            showToast('✅ "' + d.name + '" added', '#007676');
-        }
-    });
+function removeCustomChip(el, type) {
+    el.closest('.cb-item').remove();
+    syncCustomField(type);
 }
 
-function addPastHistory() {
-    var inp = document.getElementById('new-pasthistory-input');
+function addCustomEntry(type) {
+    var cfg = CUSTOM_CFG[type];
+    var inp = document.getElementById(cfg.input);
     var name = inp.value.trim();
     if (!name) return;
-    fetch('/past-history/add/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-        body: JSON.stringify({ name: name })
-    })
-    .then(r => r.json())
-    .then(function(d) {
-        if (d.id) {
-            var label = document.createElement('label');
-            label.className = 'cb-item';
-            label.dataset.id = d.id;
-            label.innerHTML = '<input type="checkbox" name="past_history" value="' + d.id + '" checked> ' + d.name +
-                ' <span onclick="deleteItem(\'pasthistory\',' + d.id + ',this)" title="Delete" style="margin-left:auto;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color=\'#dc3545\'" onmouseout="this.style.color=\'#ccc\'">✕</span>';
-            inp.parentNode.insertBefore(label, inp);
-            inp.value = '';
-            showToast('✅ "' + d.name + '" added', '#007676');
-        }
-    });
+    var grid = document.getElementById(cfg.grid);
+
+    var dup = Array.from(grid.querySelectorAll('.cb-item.cc-custom .cc-text'))
+                  .some(function (el) { return el.textContent.trim().toLowerCase() === name.toLowerCase(); });
+    if (dup) { showToast('Already added', '#f0a500'); inp.value = ''; return; }
+
+    var label = document.createElement('label');
+    label.className = 'cb-item cc-custom';
+    label.title = name;
+    label.innerHTML =
+        '<span class="cc-label cc-text"></span>' +
+        '<span class="cc-badge">custom</span>' +
+        '<span class="cc-x" title="Remove" onclick="removeCustomChip(this,\'' + type + '\')">✕</span>';
+    label.querySelector('.cc-text').textContent = name;
+
+    grid.insertBefore(label, document.getElementById(cfg.before));
+    inp.value = '';
+    syncCustomField(type);
+    showToast('✅ "' + name + '" added (this visit only)', '#007676');
 }
 
-function addSurgicalHistory() {
-    var inp = document.getElementById('new-surgicalhistory-input');
-    var name = inp.value.trim();
-    if (!name) return;
-    fetch('/surgical-history/add/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-        body: JSON.stringify({ name: name })
-    })
-    .then(r => r.json())
-    .then(function(d) {
-        if (d.id) {
-            var anchor = document.getElementById('surgical-date-anchor');
-            var label = document.createElement('label');
-            label.className = 'cb-item';
-            label.dataset.id = d.id;
-            label.innerHTML = '<input type="checkbox" name="surgical_history" value="' + d.id + '" checked> ' + d.name +
-                ' <span onclick="deleteItem(\'surgicalhistory\',' + d.id + ',this)" title="Delete" style="margin-left:auto;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color=\'#dc3545\'" onmouseout="this.style.color=\'#ccc\'">✕</span>';
-            anchor.parentNode.insertBefore(label, anchor);
-            inp.value = '';
-            showToast('✅ "' + d.name + '" added', '#007676');
-        }
-    });
-}
+function addSymptom()         { addCustomEntry('symptom'); }
+function addSign()            { addCustomEntry('sign'); }
+function addPastHistory()     { addCustomEntry('pasthistory'); }
+function addSurgicalHistory() { addCustomEntry('surgicalhistory'); }
 
 var DELETE_URLS = {
     symptom: '/symptoms/delete/',

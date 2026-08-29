@@ -289,6 +289,12 @@ class Consultation(models.Model):
     signs            = models.ManyToManyField("Sign", blank=True)
     past_history     = models.ManyToManyField("PastHistory", blank=True)
     surgical_history  = models.ManyToManyField("SurgicalHistory", blank=True)
+    # Free-text entries typed in each section's "Add new…" box — scoped to THIS
+    # consultation only (newline-separated), never written to the shared masters.
+    custom_symptoms         = models.TextField(blank=True, default="")
+    custom_signs            = models.TextField(blank=True, default="")
+    custom_past_history     = models.TextField(blank=True, default="")
+    custom_surgical_history = models.TextField(blank=True, default="")
     surgery_date     = models.DateField(null=True, blank=True)
     diagnosis_text   = models.CharField(max_length=255, blank=True)
     diagnosis_icd    = models.ForeignKey(
