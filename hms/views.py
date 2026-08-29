@@ -133,6 +133,224 @@ def compute_flag(value_str, param):
 
 
 # ======================================================
+# ASCII LAB REPORT BUILDER  (monospace print template)
+# ======================================================
+_LAB_FLAG_LABEL = {"HIGH": "HIGH", "LOW": "LOW", "CR": "CRIT"}
+_LAB_FLAG_CSS   = {"HIGH": "flag-high", "LOW": "flag-low", "CR": "flag-crit"}
+
+
+def _lab_num(x):
+    """Trim trailing .0 from float range bounds -> '140' not '140.0'."""
+    try:
+        return f"{float(x):g}"
+    except (TypeError, ValueError):
+        return str(x)
+
+
+def _lab_range_str(param, gender):
+    if gender == "Female" and param.female_range:
+        return param.female_range.strip()
+    if gender == "Male" and param.male_range:
+        return param.male_range.strip()
+    if param.min_value is not None and param.max_value is not None:
+        return f"{_lab_num(param.min_value)} - {_lab_num(param.max_value)}"
+    if param.min_value is not None:
+        return f"> {_lab_num(param.min_value)}"
+    if param.max_value is not None:
+        return f"< {_lab_num(param.max_value)}"
+    return "--"
+
+
+def _lab_param_code(param, item):
+    """LOINC code on the parameter, else the investigation's panel LOINC code, else ''."""
+    code = (getattr(param, "loinc_code", "") or "").strip()
+    if code:
+        return code
+    return (getattr(item.investigation, "loinc_panel_code", "") or "").strip()
+
+
+def _lab_panel_label(param, item):
+    grp = (param.group or "").strip()
+    if grp:
+        return grp.upper()
+    try:
+        return item.investigation.category.get_dept_code_display().upper()
+    except Exception:
+        return "INVESTIGATIONS"
+
+
+def build_ascii_lab_report(item, results):
+    """
+    Returns a flat list of line dicts for lab/report_print.html.
+
+    Each element is either:
+      {"is_row": False, "text": "<literal line>"}
+      {"is_row": True, "before": "<name+result, padded>",
+       "flag": "HIGH"|"LOW"|"CRIT"|"", "flag_css": "...",
+       "after": "<flag padding + range + units>"}
+
+    Column widths are measured from the real data (test names, codes, values,
+    ranges) so alignment holds for any length -- nothing is hardcoded.
+    """
+    patient = item.bill.patient
+    gender  = patient.gender or ""
+
+    # ---- flatten rows + collect the strings we need to size columns ----
+    rows = []
+    for r in results:
+        code = _lab_param_code(r.parameter, item)
+        name = r.parameter.name.strip()
+        if code:
+            name = f"{name} [{code}]"
+        rows.append({
+            "panel":  _lab_panel_label(r.parameter, item),
+            "name":   name,
+            "value":  str(r.value).strip(),
+            "flag":   r.flag or "",
+            "range":  _lab_range_str(r.parameter, gender),
+            "units":  (r.parameter.unit or "").strip() or "--",
+            "method": (r.parameter.method or "").strip(),
+        })
+
+    H_NAME, H_RES, H_FLAG, H_RANGE, H_UNITS = (
+        "Test Parameter / [Method]", "Result", "Flag", "Reference Range", "Units")
+
+    w_name  = max([len(x["name"])  for x in rows] + [len(H_NAME)])          + 2
+    w_res   = max([len(x["value"]) for x in rows] + [len(H_RES)])           + 2
+    w_flag  = max([len(_LAB_FLAG_LABEL.get(x["flag"], "")) for x in rows]
+                  + [len(H_FLAG)])                                          + 2
+    w_range = max([len(x["range"]) for x in rows] + [len(H_RANGE)])         + 2
+    w_units = max([len(x["units"]) for x in rows] + [len(H_UNITS)])
+
+    rule_w = max(80, w_name + w_res + w_flag + w_range + w_units)
+    dbl, sgl = "=" * rule_w, "-" * rule_w
+
+    L = []
+    def txt(s=""):
+        L.append({"is_row": False, "text": s})
+
+    # ---- letterhead ----
+    txt(dbl)
+    txt("SHRADHA HOSPITAL & MULTISPECIALITY CENTRE".center(rule_w))
+    txt("Pani Ki Do Tanki, Surajpole, Pali (Raj.) - 306401".center(rule_w))
+    txt("Phone: 9414122542".center(rule_w))
+    txt(dbl)
+    try:
+        dept = item.investigation.category.get_dept_code_display().upper()
+    except Exception:
+        dept = "LABORATORY"
+    txt(f"{dept} REPORT ({item.investigation.name.upper()})".center(rule_w))
+    txt(dbl)
+    txt("")
+
+    # ---- patient / specimen metadata (two columns) ----
+    try:
+        doctor = item.bill.consultation.appointment.doctor
+    except Exception:
+        doctor = None
+    ref_dr = f"Dr. {doctor.full_name}" if doctor and getattr(doctor, "full_name", "") else "--"
+
+    age = patient.age if patient.age is not None else "--"
+    created = timezone.localtime(item.bill.created_at) if item.bill.created_at else None
+    date_str = created.strftime("%d-%b-%Y") if created else "--"
+    recv_str = created.strftime("%d-%b-%Y %H:%M") if created else "--"
+
+    try:
+        total_params = InvestigationParameter.objects.filter(
+            investigation=item.investigation, show_in_report=True).count()
+    except Exception:
+        total_params = len(results)
+    if not results:
+        status = "Pending"
+    elif total_params and len(results) >= total_params:
+        status = "Final"
+    else:
+        status = "Provisional"
+
+    left = [
+        ("Patient ID / UHID", patient.uhid or "--"),
+        ("Patient Name",      (patient.full_name or "--").title()),
+        ("Age / Gender",      f"{age} / {gender or '--'}"),
+        ("Referring Dr.",     ref_dr),
+    ]
+    right = [
+        ("Bill No.",        f"#{item.bill.id}"),
+        ("Sample Received", recv_str),
+        ("Report Date",     date_str),
+        ("Report Status",   status),
+    ]
+    llw = max(len(k) for k, _ in left)
+    rlw = max(len(k) for k, _ in right)
+    left_lines  = [f"{k:<{llw}} : {v}" for k, v in left]
+    right_lines = [f"{k:<{rlw}} : {v}" for k, v in right]
+    lcw = max(len(s) for s in left_lines) + 4
+
+    txt("PATIENT & SPECIMEN METADATA")
+    txt(sgl)
+    for i in range(max(len(left_lines), len(right_lines))):
+        l = left_lines[i]  if i < len(left_lines)  else ""
+        rr = right_lines[i] if i < len(right_lines) else ""
+        txt(f"{l:<{lcw}}{rr}".rstrip())
+    txt(sgl)
+    txt("")
+
+    # ---- results, grouped by panel (encounter order preserved) ----
+    header_line = (f"{H_NAME:<{w_name}}{H_RES:<{w_res}}"
+                   f"{H_FLAG:<{w_flag}}{H_RANGE:<{w_range}}{H_UNITS}")
+
+    if not rows:
+        txt("RESULTS")
+        txt(sgl)
+        txt("No results have been entered for this investigation.")
+        txt(sgl)
+    else:
+        panel_order, panel_map = [], {}
+        for x in rows:
+            panel_map.setdefault(x["panel"], [])
+            if x["panel"] not in panel_order:
+                panel_order.append(x["panel"])
+            panel_map[x["panel"]].append(x)
+
+        for panel in panel_order:
+            txt(panel)
+            txt(sgl)
+            txt(header_line)
+            txt(sgl)
+            for x in panel_map[panel]:
+                label = _LAB_FLAG_LABEL.get(x["flag"], "")
+                before = f"{x['name']:<{w_name}}{x['value']:<{w_res}}"
+                after  = (f"{' ' * max(0, w_flag - len(label))}"
+                          f"{x['range']:<{w_range}}{x['units']}".rstrip())
+                L.append({
+                    "is_row":   True,
+                    "before":   before,
+                    "flag":     label,
+                    "flag_css": _LAB_FLAG_CSS.get(x["flag"], ""),
+                    "after":    after,
+                })
+                if x["method"]:
+                    txt(f"  [Method: {x['method']}]")
+            txt(sgl)
+
+    # ---- clinical remarks + footer ----
+    txt("")
+    txt("CLINICAL REMARKS")
+    txt(sgl)
+    if any(x["flag"] in ("HIGH", "LOW", "CR") for x in rows):
+        txt("* One or more parameters fall outside the stated reference range (flagged).")
+    txt("* Computer-generated report - values are for clinical reference only.")
+    txt("* Please correlate clinically; consult the treating physician for interpretation.")
+    txt("")
+    txt(dbl)
+    gen = timezone.localtime(timezone.now()).strftime("%d-%b-%Y %H:%M")
+    sig = "Authorized Signatory"
+    txt(f"{('Generated: ' + gen):<{max(1, rule_w - len(sig))}}{sig}")
+    txt(dbl)
+
+    return L
+
+
+# ======================================================
 # PATIENT
 # ======================================================
 @login_required
@@ -632,7 +850,7 @@ def lab_report_print(request, bill_item_id):
         InvestigationBillItem.objects.select_related(
             "bill__patient",
             "bill__consultation__appointment__doctor",
-            "investigation",
+            "investigation__category",
         ),
         id=bill_item_id,
     )
@@ -648,8 +866,9 @@ def lab_report_print(request, bill_item_id):
         r.flag = compute_flag(r.value, r.parameter)
 
     return render(request, "lab/report_print.html", {
-        "item":    item,
-        "results": results,
+        "item":         item,
+        "results":      results,
+        "report_lines": build_ascii_lab_report(item, results),
     })
 
 
