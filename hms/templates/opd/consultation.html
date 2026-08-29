@@ -254,6 +254,33 @@
 .cb-chips-sm.cb-chips { gap: 6px; }
 .cb-chips-sm .cb-item { padding: 5px 10px; font-size: 12px; }
 
+/* ── Chief Complaints only: fixed-width truncating chips, 6 visible + "more" toggle ── */
+#symptom-grid .cb-item { width: 150px; box-sizing: border-box; }
+#symptom-grid .cc-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#symptom-grid.is-collapsed .cb-item.cc-overflow { display: none; }
+#symptom-grid .cc-more-toggle {
+    width: 150px;
+    box-sizing: border-box;
+    padding: 5px 10px;
+    border: 1px dashed #f0a500;
+    border-radius: 7px;
+    background: #fff7e6;
+    color: #835a00;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#symptom-grid .cc-more-toggle:hover { background: #ffefcf; }
+
 .cb-item {
     display: flex;
     align-items: center;
@@ -874,17 +901,21 @@
         <button type="button" onclick="openManage('symptom')" style="background:#fff3e0;border:1px solid #f0a500;color:#835a00;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;">⚙️ Manage</button>
     </div>
     <div class="sec-body">
-        <div class="cb-chips cb-chips-sm" id="symptom-grid">
+        <div class="cb-chips cb-chips-sm{% if symptoms|length > 6 %} is-collapsed{% endif %}" id="symptom-grid">
             {% for s in symptoms %}
-            <label class="cb-item" data-id="{{ s.id }}">
+            <label class="cb-item{% if forloop.counter > 6 %} cc-overflow{% endif %}" data-id="{{ s.id }}" title="{{ s.name }}">
                 <input type="checkbox" name="symptoms" value="{{ s.id }}"
                        {% if s in consultation.symptoms.all %}checked{% endif %}>
-                {{ s.name }}
+                <span class="cc-label">{{ s.name }}</span>
                 <span onclick="deleteItem('symptom',{{ s.id }},this)" title="Delete" style="margin-left:auto;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color='#dc3545'" onmouseout="this.style.color='#ccc'">✕</span>
             </label>
             {% empty %}
             <p style="color:#888; font-style:italic;">No symptoms configured.</p>
             {% endfor %}
+            {% if symptoms|length > 6 %}
+            <button type="button" class="cc-more-toggle" data-more-label="+{{ symptoms|length|add:'-6' }} more"
+                    onclick="toggleCCMore(this)">+{{ symptoms|length|add:'-6' }} more</button>
+            {% endif %}
             <input type="text" id="new-symptom-input" placeholder="➕ Add new…"
                 style="width:140px;padding:5px 10px;border:1px dashed #ccc;border-radius:7px;font-size:12px;outline:none;"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();addSymptom();}">
@@ -2381,6 +2412,12 @@ document.addEventListener('click', function(e) {
 var DEPT_ID = {{ appointment.department.id }};
 var CSRF = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
+function toggleCCMore(btn) {
+    var grid = document.getElementById('symptom-grid');
+    var collapsed = grid.classList.toggle('is-collapsed');
+    btn.textContent = collapsed ? btn.dataset.moreLabel : 'Show less';
+}
+
 function addSymptom() {
     var inp = document.getElementById('new-symptom-input');
     var name = inp.value.trim();
@@ -2396,8 +2433,11 @@ function addSymptom() {
             var label = document.createElement('label');
             label.className = 'cb-item';
             label.dataset.id = d.id;
-            label.innerHTML = '<input type="checkbox" name="symptoms" value="' + d.id + '" checked> ' + d.name +
+            label.title = d.name;
+            label.innerHTML = '<input type="checkbox" name="symptoms" value="' + d.id + '" checked> ' +
+                '<span class="cc-label"></span>' +
                 ' <span onclick="deleteItem(\'symptom\',' + d.id + ',this)" title="Delete" style="margin-left:auto;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;" onmouseover="this.style.color=\'#dc3545\'" onmouseout="this.style.color=\'#ccc\'">✕</span>';
+            label.querySelector('.cc-label').textContent = d.name;
             inp.parentNode.insertBefore(label, inp);
             inp.value = '';
             showToast('✅ "' + d.name + '" added', '#007676');
