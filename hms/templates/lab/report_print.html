@@ -8,96 +8,232 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: #d9d9d9;
+      background: #f0f0f0;
       color: #000;
-      font-family: 'Courier New', Consolas, 'DejaVu Sans Mono', monospace;
+      font-family: 'Times New Roman', Times, Georgia, serif;
+      font-size: 13px;
+      line-height: 1.4;
     }
 
-    /* ── Print toolbar (screen only) ── */
+    /* ── Print toolbar (screen only, neutral) ── */
     .toolbar {
-      background: #1a3a5c;
-      padding: 12px 20px;
+      background: #ededed;
+      border-bottom: 1px solid #ccc;
+      padding: 10px 18px;
       display: flex;
       align-items: center;
       gap: 16px;
       font-family: Arial, Helvetica, sans-serif;
     }
-    .toolbar a { color: #fff; text-decoration: none; font-size: 14px; opacity: .85; }
-    .toolbar a:hover { opacity: 1; }
+    .toolbar a { color: #333; text-decoration: none; font-size: 13px; }
+    .toolbar a:hover { text-decoration: underline; }
     .btn-print {
       background: #fff;
-      color: #1a3a5c;
-      border: none;
-      padding: 8px 22px;
-      border-radius: 4px;
-      font: bold 14px Arial, Helvetica, sans-serif;
+      color: #000;
+      border: 1px solid #999;
+      padding: 7px 18px;
+      border-radius: 3px;
+      font: 13px Arial, Helvetica, sans-serif;
       cursor: pointer;
     }
-    .btn-print:hover { background: #ddeeff; }
+    .btn-print:hover { background: #f4f4f4; }
 
     /* ── Report sheet ── */
     .sheet {
       background: #fff;
-      max-width: 860px;
-      margin: 24px auto 40px;
-      padding: 28px 32px;
-      border: 1px solid #bbb;
-      box-shadow: 0 2px 16px rgba(0,0,0,.15);
-      overflow-x: auto;                 /* long lines scroll on screen, don't wrap */
+      max-width: 800px;
+      margin: 22px auto 40px;
+      padding: 34px 42px 40px;
+      border: 1px solid #ddd;
     }
-    .report-body {
-      font-family: 'Courier New', Consolas, 'DejaVu Sans Mono', monospace;
-      font-size: 12.5px;
-      line-height: 1.38;
-      white-space: pre;                 /* preserve every space -> column alignment */
-      tab-size: 4;
-      color: #000;
-    }
-    /* HIGH / LOW / CRIT flags: bold, still one monospace column wide */
-    .report-body .flag { font-weight: 700; }
-    .report-body .flag-high { color: #b3261e; }
-    .report-body .flag-low  { color: #1a4f8b; }
-    .report-body .flag-crit { color: #b3261e; }
 
-    /* ── Print ── */
+    .hospital-name {
+      text-align: center;
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 19px;
+      letter-spacing: .5px;
+    }
+    .hospital-sub {
+      text-align: center;
+      font-size: 12px;
+      margin-top: 3px;
+    }
+    .report-title {
+      text-align: center;
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 14px;
+      letter-spacing: 1.5px;
+      margin: 18px 0 4px;
+    }
+    .report-subtitle {
+      text-align: center;
+      font-size: 12.5px;
+      margin-bottom: 18px;
+    }
+
+    /* ── Patient metadata: borderless 2-column ── */
+    table.meta { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    table.meta td {
+      padding: 2px 0;
+      vertical-align: top;
+      font-size: 12.5px;
+      border: 0;
+    }
+    table.meta td.k { font-weight: bold; white-space: nowrap; padding-right: 6px; width: 1%; }
+    table.meta td.v { padding-right: 30px; }
+
+    /* ── Section header: plain bold caps, no bar ── */
+    .panel-name {
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 12.5px;
+      letter-spacing: .5px;
+      margin: 20px 0 2px;
+    }
+
+    /* ── Results table: only a rule under the header + thin row separators ── */
+    table.results { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+    table.results thead th {
+      text-align: left;
+      font-weight: bold;
+      font-size: 12px;
+      padding: 5px 8px;
+      border-bottom: 1.5px solid #000;
+    }
+    table.results tbody td {
+      text-align: left;
+      font-size: 12.5px;
+      padding: 6px 8px;
+      border-bottom: 1px solid #ccc;
+      vertical-align: top;
+    }
+    .param-name { font-weight: bold; }
+    .method {
+      display: block;
+      font-size: 11px;
+      font-style: italic;
+      color: #333;
+      margin-top: 2px;
+    }
+    .flag { font-weight: bold; }
+    .flag.abn { color: #b3261e; }
+
+    .no-results { font-size: 12.5px; font-style: italic; color: #444; margin: 10px 0; }
+
+    /* ── Clinical remarks: one plain paragraph ── */
+    .remarks { margin-top: 18px; font-size: 12.5px; line-height: 1.55; }
+
+    /* ── Two-column signature footer ── */
+    .sign-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 48px;
+      margin-top: 60px;
+    }
+    .sign-col { width: 46%; text-align: center; }
+    .sign-line { border-top: 1px solid #000; margin-bottom: 5px; }
+    .sign-name { font-weight: bold; font-size: 12.5px; }
+    .sign-title { font-size: 11px; color: #333; }
+
     @media print {
-      body { background: #fff; }
-      .toolbar, .print-again { display: none !important; }
-      .sheet {
-        max-width: 100%;
-        margin: 0;
-        padding: 0;
-        border: none;
-        box-shadow: none;
-        overflow: visible;
-      }
-      .report-body { font-size: 10.5px; }
-      .report-body .flag-high,
-      .report-body .flag-low,
-      .report-body .flag-crit {
-        color: #000;                    /* mono print: rely on bold, not colour */
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
+      body { background: #fff; font-size: 12px; }
+      .toolbar, .foot-print { display: none !important; }
+      .sheet { max-width: 100%; margin: 0; padding: 0; border: none; }
+      table.results tbody td { border-bottom: 1px solid #bbb; }
+      .flag.abn { color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
   </style>
 </head>
 <body>
 
 <div class="toolbar">
-  <button class="btn-print" onclick="window.print()">&#128424; Print Report</button>
+  <button class="btn-print" onclick="window.print()">Print Report</button>
   <a href="javascript:history.back()">&larr; Back</a>
 </div>
 
-<div class="sheet"><pre class="report-body">{% for ln in report_lines %}{% if ln.is_row %}{{ ln.before }}<b class="flag{% if ln.flag_css %} {{ ln.flag_css }}{% endif %}">{{ ln.flag }}</b>{{ ln.after }}
-{% else %}{{ ln.text }}
-{% endif %}{% endfor %}</pre></div>
+<div class="sheet">
 
-<div class="print-again" style="text-align:center; margin-bottom:32px;">
-  <button class="btn-print" onclick="window.print()"
-    style="background:#1a3a5c;color:#fff;padding:10px 28px;border-radius:5px;">
-    &#128424; Print Report
-  </button>
+  <div class="hospital-name">Shradha Hospital &amp; Multispeciality Centre</div>
+  <div class="hospital-sub">Pani Ki Do Tanki, Surajpole, Pali (Raj.) &ndash; 306401</div>
+  <div class="hospital-sub">Department of Laboratory Medicine &nbsp;|&nbsp; Phone: 9414122542</div>
+
+  <div class="report-title">Laboratory Evaluation Report</div>
+  <div class="report-subtitle">{{ item.investigation.name }}</div>
+
+  <!-- Patient metadata -->
+  <table class="meta">
+    {% for lk, lv, rk, rv in meta_rows %}
+    <tr>
+      <td class="k">{% if lk %}{{ lk }}:{% endif %}</td>
+      <td class="v">{{ lv }}</td>
+      <td class="k">{% if rk %}{{ rk }}:{% endif %}</td>
+      <td class="v">{{ rv }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <!-- Results by panel -->
+  {% for panel in panels %}
+    <div class="panel-name">{{ panel.name }}</div>
+    <table class="results">
+      <colgroup>
+        <col style="width:auto">
+        <col style="width:12%">
+        <col style="width:9%">
+        <col style="width:20%">
+        <col style="width:12%">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Test Parameter / [Method]</th>
+          <th>Result</th>
+          <th>Flag</th>
+          <th>Reference Range</th>
+          <th>Units</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in panel.rows %}
+        <tr>
+          <td>
+            <span class="param-name">{{ row.name }}{% if row.code %} [{{ row.code }}]{% endif %}</span>
+            {% if row.method %}<span class="method">[Method: {{ row.method }}]</span>{% endif %}
+          </td>
+          <td>{{ row.value }}</td>
+          <td><span class="flag{% if row.abnormal %} abn{% endif %}">{{ row.flag }}</span></td>
+          <td>{{ row.range }}</td>
+          <td>{{ row.units }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% empty %}
+    <p class="no-results">No results have been entered for this investigation.</p>
+  {% endfor %}
+
+  <!-- Clinical remarks -->
+  <p class="remarks"><strong>Clinical Remarks:</strong> {{ remarks }}</p>
+
+  <!-- Signatures -->
+  <div class="sign-row">
+    <div class="sign-col">
+      <div class="sign-line">&nbsp;</div>
+      <div class="sign-name">{{ sig_left.name }}</div>
+      <div class="sign-title">{{ sig_left.title }}</div>
+    </div>
+    <div class="sign-col">
+      <div class="sign-line">&nbsp;</div>
+      <div class="sign-name">{{ sig_right.name }}</div>
+      <div class="sign-title">{{ sig_right.title }}</div>
+    </div>
+  </div>
+
+</div><!-- /.sheet -->
+
+<div class="foot-print" style="text-align:center; margin-bottom:32px;">
+  <button class="btn-print" onclick="window.print()">Print Report</button>
 </div>
 
 </body>
