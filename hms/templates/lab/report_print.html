@@ -62,17 +62,9 @@
     .report-title {
       text-align: center;
       font-weight: bold;
-      text-transform: uppercase;
-      font-size: 14px;
-      letter-spacing: 1.5px;
-      margin: 18px 0 4px;
+      font-size: 13px;
+      margin-top: 8px;
     }
-    .report-subtitle {
-      text-align: center;
-      font-size: 12.5px;
-      margin-bottom: 18px;
-    }
-
     /* ── Patient details: bordered 2-column grid (OPD prescription print style) ── */
     .sec-title {
       background: #e8e8e8;
@@ -129,13 +121,14 @@
       border-bottom: 1px solid #ccc;
       vertical-align: top;
     }
+    /* No rule between a test's data row and its own Method line below it */
+    table.results tbody tr.has-method td { border-bottom: none; }
+    table.results tbody tr.method-row td { padding-top: 0; }
     .param-name { font-weight: bold; }
     .method {
-      display: block;
       font-size: 11px;
       font-style: italic;
       color: #333;
-      margin-top: 2px;
     }
     .flag { font-weight: bold; }
     .flag.abn { color: #b3261e; }
@@ -162,9 +155,7 @@
 
   <div class="hospital-name">Shradha Hospital &amp; Multispeciality Centre</div>
   <div class="hospital-sub">Pani Ki Do Tanki, Surajpole, Pali (Raj.) &ndash; 306401</div>
-
-  <div class="report-title">Laboratory Evaluation Report</div>
-  <div class="report-subtitle">{{ item.investigation.name }}</div>
+  <div class="report-title">Laboratory Report</div>
 
   <!-- Patient details (OPD prescription print table style) -->
   <div class="sec-title">PATIENT DETAILS</div>
@@ -201,16 +192,20 @@
       </thead>
       <tbody>
         {% for row in panel.rows %}
-        <tr>
+        <tr{% if row.method %} class="has-method"{% endif %}>
           <td>
             <span class="param-name">{{ row.name }}{% if row.code %} [{{ row.code }}]{% endif %}</span>
-            {% if row.method %}<span class="method">Method: {{ row.method }}</span>{% endif %}
           </td>
           <td>{{ row.value }}</td>
           <td><span class="flag{% if row.abnormal %} abn{% endif %}">{{ row.flag }}</span></td>
           <td>{{ row.range }}</td>
           <td>{{ row.units }}</td>
         </tr>
+        {% if row.method %}
+        <tr class="method-row">
+          <td colspan="5"><span class="method">Method: {{ row.method }}</span></td>
+        </tr>
+        {% endif %}
         {% endfor %}
       </tbody>
     </table>
