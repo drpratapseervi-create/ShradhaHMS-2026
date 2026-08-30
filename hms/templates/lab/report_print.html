@@ -103,7 +103,7 @@
       margin: 20px 0 2px;
     }
 
-    /* ── Results table: one rule under the header, no lines between rows ── */
+    /* ── Results table: header rule + a light hairline between rows ── */
     table.results { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
     /* Extra room after the last panel now the report ends at the results table */
     table.results:last-of-type { margin-bottom: 90px; }
@@ -119,8 +119,10 @@
       font-size: 12.5px;
       padding: 6px 8px;
       vertical-align: top;
+      border-bottom: 0.5px solid #eee;
     }
-    table.results tbody tr.method-row td { padding-top: 0; }
+    table.results tbody tr.method-row td { padding-top: 0; padding-bottom: 14px; }
+    table.results tbody tr.group-end td { padding-bottom: 14px; }
     .param-name { font-weight: normal; }
     .method {
       font-size: 11px;
@@ -189,7 +191,7 @@
       </thead>
       <tbody>
         {% for row in panel.rows %}
-        <tr>
+        <tr{% if not row.method %} class="group-end"{% endif %}>
           <td>
             <span class="param-name">{{ row.name }}{% if row.code %} [{{ row.code }}]{% endif %}</span>
           </td>
