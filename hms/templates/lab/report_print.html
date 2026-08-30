@@ -130,8 +130,6 @@
       color: #333;
     }
     .result.abn { font-weight: bold; color: #b3261e; }
-    .flag { font-weight: bold; }
-    .flag.abn { color: #b3261e; }
 
     .no-results { font-size: 12.5px; font-style: italic; color: #444; margin: 10px 0 90px; }
 
@@ -139,7 +137,7 @@
       body { background: #fff; font-size: 11px; }
       .toolbar, .foot-print { display: none !important; }
       .sheet { max-width: 100%; margin: 0; padding: 0; border: none; }
-      .flag.abn, .result.abn { color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .result.abn { color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
   </style>
 </head>
@@ -175,18 +173,14 @@
     <table class="results">
       <colgroup>
         <col style="width:auto">
-        <col style="width:12%">
-        <col style="width:9%">
-        <col style="width:20%">
-        <col style="width:12%">
+        <col style="width:22%">
+        <col style="width:25%">
       </colgroup>
       <thead>
         <tr>
           <th>Test Parameter / [Method]</th>
           <th>Result</th>
-          <th>Flag</th>
           <th>Reference Range</th>
-          <th>Units</th>
         </tr>
       </thead>
       <tbody>
@@ -196,13 +190,11 @@
             <span class="param-name">{{ row.name }}{% if row.code %} [{{ row.code }}]{% endif %}</span>
           </td>
           <td><span class="result{% if row.abnormal %} abn{% endif %}">{{ row.value }}</span></td>
-          <td><span class="flag{% if row.abnormal %} abn{% endif %}">{{ row.flag }}</span></td>
-          <td>{{ row.range }}</td>
-          <td>{{ row.units }}</td>
+          <td>{{ row.range }}{% if row.units and row.units != "-" %} {{ row.units }}{% endif %}</td>
         </tr>
         {% if row.method %}
         <tr class="method-row">
-          <td colspan="5"><span class="method">Method: {{ row.method }}</span></td>
+          <td colspan="3"><span class="method">Method: {{ row.method }}</span></td>
         </tr>
         {% endif %}
         {% endfor %}
