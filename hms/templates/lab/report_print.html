@@ -216,7 +216,7 @@
         <tr>
           <td>
             <span class="param-name">{{ row.name }}{% if row.code %} [{{ row.code }}]{% endif %}</span>
-            {% if row.method %}<span class="method">[Method: {{ row.method }}]</span>{% endif %}
+            {% if row.method %}<span class="method">Method: {{ row.method }}</span>{% endif %}
           </td>
           <td>{{ row.value }}</td>
           <td><span class="flag{% if row.abnormal %} abn{% endif %}">{{ row.flag }}</span></td>

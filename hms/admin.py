@@ -144,6 +144,7 @@ class InvestigationParameterInline(admin.TabularInline):
         "result_type",
         "group",
         "method",
+        "method_description",
         "show_in_report",
     )
 
@@ -190,7 +191,7 @@ class InvestigationParameterAdmin(admin.ModelAdmin):
         "min_value", "max_value",
         "male_range", "female_range",
         "critical_low", "critical_high",
-        "result_type", "group", "method",
+        "result_type", "group", "method", "method_description",
         "order", "show_in_report",
     )
 

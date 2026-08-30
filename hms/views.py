@@ -196,6 +196,8 @@ def build_lab_report_context(item, results):
 
     row = {name, code, method, value, flag ('' | HIGH | LOW | CRIT),
            abnormal (bool), range, units}
+    method here is the full descriptive sentence (InvestigationParameter.method_description,
+    falling back to the short .method label if no description is set).
     """
     patient = item.bill.patient
     gender  = patient.gender or ""
@@ -215,7 +217,8 @@ def build_lab_report_context(item, results):
         panel_map[label].append({
             "name":     r.parameter.name.strip(),
             "code":     _lab_param_code(r.parameter, item),      # LOINC or panel code or ''
-            "method":   (r.parameter.method or "").strip(),
+            "method":   ((r.parameter.method_description or "").strip()
+                         or (r.parameter.method or "").strip()),
             "value":    str(r.value).strip(),
             "flag":     _LAB_FLAG_LABEL.get(r.flag or "", ""),
             "abnormal": (r.flag or "") in ("HIGH", "LOW", "CR"),
@@ -227,7 +230,10 @@ def build_lab_report_context(item, results):
     # ---- metadata (borderless two-column) ----
     created = timezone.localtime(item.bill.created_at) if item.bill.created_at else None
     ts = created.strftime("%d-%b-%Y %I:%M %p") if created else "-"
-    reported_ts = timezone.localtime(timezone.now()).strftime("%d-%b-%Y %I:%M %p")
+
+    last_entered = max((r.entered_at for r in results if r.entered_at), default=None)
+    reported_ts = (timezone.localtime(last_entered).strftime("%d-%b-%Y %I:%M %p")
+                   if last_entered else "-")
 
     total_params = InvestigationParameter.objects.filter(
         investigation=item.investigation, show_in_report=True).count()

@@ -508,6 +508,12 @@ class InvestigationParameter(models.Model):
     result_type    = models.CharField(max_length=20, choices=RESULT_TYPES, default="numeric")
     group          = models.CharField(max_length=50, blank=True)
     method         = models.CharField(max_length=100, blank=True)
+    method_description = models.TextField(
+        blank=True,
+        help_text="Full descriptive method sentence for the printed report, "
+                   "e.g. 'Hexokinase / Enzymatic method using glucose-6-phosphate "
+                   "dehydrogenase coupled reaction.' Falls back to 'method' if blank."
+    )
     order          = models.IntegerField(default=1)
     show_in_report = models.BooleanField(default=True)
 
