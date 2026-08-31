@@ -7,7 +7,7 @@
 @page {
     size: A4;
     margin-top: 1.5cm;
-    margin-bottom: 1cm;
+    margin-bottom: 2cm;
     margin-left: 2cm;
     margin-right: 1.5cm;
     @top-left { content: ""; }
@@ -91,8 +91,8 @@ body {
     color: #000;
     font-size: 11px;
     font-weight: 700;
-    padding: 3px 7px 3px 0;
-    margin: 6px 0 2px 0;
+    padding: 4px 7px 4px 0;
+    margin: 14px 0 4px 0;
     letter-spacing: 0.5px;
     text-align: left;
     display: block;
@@ -103,7 +103,7 @@ body {
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 3px;
+    margin-bottom: 6px;
 }
 td, th {
     border: 1px solid #999;
@@ -185,8 +185,8 @@ th {
 /* ── Footer ── */
 .footer {
     border-top: 2px solid #e8e8e8;
-    margin-top: 8px;
-    padding-top: 4px;
+    margin-top: 16px;
+    padding-top: 8px;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
@@ -325,7 +325,7 @@ table.print-shell > thead > tr > td {
 
 <!-- ── Chief Complaints ── -->
 <div class="sec-title">CHIEF COMPLAINTS</div>
-<div class="sec-body-text" style="padding:2px 0 2px 7px; text-align:left; font-size:11px;">
+<div class="sec-body-text" style="padding:5px 0 5px 7px; text-align:left; font-size:11px;">
 {% for c in chief_complaints_list %}{{ c.name }}{% if not forloop.last or custom_symptoms %} &nbsp;|&nbsp; {% endif %}{% endfor %}{% for line in custom_symptoms %}{{ line }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% endfor %}{% if not chief_complaints_list and not custom_symptoms %}None recorded{% endif %}
 </div>
 {% if consultation.chief_complaints %}
@@ -334,7 +334,7 @@ table.print-shell > thead > tr > td {
 
 <!-- ── Examination ── -->
 <div class="sec-title">EXAMINATION FINDINGS</div>
-<div class="sec-body-text" style="padding:2px 0; text-align:left; font-size:11px;">
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
 {% for e in examination_list %}{{ e.name }}{% if not forloop.last or custom_signs %} &nbsp;|&nbsp; {% endif %}{% endfor %}{% for line in custom_signs %}{{ line }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% endfor %}{% if not examination_list and not custom_signs %}None recorded{% endif %}
 </div>
 {% if consultation.examination %}
@@ -344,7 +344,7 @@ table.print-shell > thead > tr > td {
 <!-- ── Past History ── -->
 {% if past_history_list %}
 <div class="sec-title">PAST HISTORY</div>
-<div class="sec-body-text" style="padding:2px 0; text-align:left; font-size:11px;">
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
 {% for h in past_history_list %}• {{ h.name }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
 </div>
 {% endif %}
@@ -352,7 +352,7 @@ table.print-shell > thead > tr > td {
 <!-- ── Surgical History ── -->
 {% if surgical_history_list %}
 <div class="sec-title">SURGICAL HISTORY</div>
-<div class="sec-body-text" style="padding:2px 0; text-align:left; font-size:11px;">
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
 {% for h in surgical_history_list %}• {{ h.name }}{% if consultation.surgery_date %} — <em>Date of Surgery: {{ consultation.surgery_date|date:"d-M-Y" }}</em>{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %}
 </div>
 {% endif %}
@@ -374,7 +374,7 @@ table.print-shell > thead > tr > td {
 
 <!-- ── Investigations ── -->
 <div class="sec-title">INVESTIGATIONS ADVISED</div>
-<div class="sec-body-text" style="padding:2px 0; text-align:left; font-size:11px;">
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
 {% for inv in investigations %}{{ inv.name }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% empty %}{% if not consultation.custom_investigations %}None recorded{% endif %}{% endfor %}
 </div>
 {% if consultation.custom_investigations %}
@@ -409,7 +409,7 @@ table.print-shell > thead > tr > td {
 <!-- ── Procedures ── -->
 {% if consultation.procedures_performed %}
 <div class="sec-title">PROCEDURES PERFORMED TODAY</div>
-<div class="sec-body-text" style="padding:2px 0; text-align:left; font-size:11px;">
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
 {% for line in consultation.procedures_performed.splitlines %}{{ line }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% endfor %}
 </div>
 {% endif %}
@@ -417,7 +417,7 @@ table.print-shell > thead > tr > td {
 <!-- ── Investigation Results ── -->
 {% if consultation.ai_investigation_input %}
 <div class="sec-title">INVESTIGATION RESULTS</div>
-<div class="sec-body-text" style="padding:2px 0; text-align:left; font-size:11px;">
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
     {{ consultation.ai_investigation_input }}
 </div>
 {% endif %}
@@ -425,7 +425,7 @@ table.print-shell > thead > tr > td {
 <!-- ── Advice ── -->
 {% if consultation.advice %}
 <div class="sec-title">ADVICE TO PATIENT</div>
-<div class="sec-body-text" style="padding:2px 0; text-align:left; font-size:11px;">
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
 {% for line in consultation.advice.splitlines %}{{ line }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% endfor %}
 </div>
 {% endif %}
@@ -433,7 +433,7 @@ table.print-shell > thead > tr > td {
 <!-- ── Diet ── -->
 {% if consultation.diet_advice %}
 <div class="sec-title">DIET ADVICE</div>
-<div class="sec-body-text" style="padding:2px 0; text-align:left; font-size:11px;">
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
 {% for line in consultation.diet_advice.splitlines %}{{ line }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% endfor %}
 </div>
 {% endif %}
@@ -441,7 +441,7 @@ table.print-shell > thead > tr > td {
 <!-- ── Follow-up ── -->
 {% if consultation.follow_up_date or consultation.follow_up_notes %}
 <div class="sec-title">FOLLOW-UP</div>
-<div class="sec-body-text" style="padding:2px 0; font-size:11px; text-align:left;">
+<div class="sec-body-text" style="padding:5px 0; font-size:11px; text-align:left;">
     {% if consultation.follow_up_date %}
         <strong>Follow-up Date:</strong> {{ consultation.follow_up_date|date:"d M Y" }}
     {% endif %}
