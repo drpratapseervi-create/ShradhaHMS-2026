@@ -182,6 +182,43 @@ th {
 /* ── Prescription table ── */
 .rx-table th { background: #f7f7f7; color: #000; }
 
+/* ── Emergency instruction (standing, prints on every sheet) ── */
+.emergency-notice {
+    border: 2px solid #b71c1c;
+    background: #ffebee;
+    color: #b71c1c;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 8px 10px;
+    margin: 10px 0;
+    border-radius: 4px;
+    text-align: left;
+}
+
+/* ── LAMA / Refusal of Admission card ── */
+.lama-card {
+    border: 2px solid #b91c1c;
+    border-radius: 6px;
+    margin: 10px 0;
+    overflow: hidden;
+    page-break-inside: avoid;
+}
+.lama-card-head {
+    background: #b91c1c;
+    color: #fff;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 6px 10px;
+    letter-spacing: 0.5px;
+}
+.lama-card-body {
+    background: #fff5f5;
+    padding: 8px 10px;
+    font-size: 11px;
+    line-height: 1.6;
+}
+.lama-card-body p { margin: 3px 0; }
+
 /* ── Footer ── */
 .footer {
     border-top: 2px solid #e8e8e8;
@@ -372,6 +409,24 @@ table.print-shell > thead > tr > td {
 <p class="sec-body-text"><strong>ICD-10:</strong> {{ consultation.diagnosis_icd.code }} — {{ consultation.diagnosis_icd.description }}</p>
 {% endif %}
 
+<!-- ── Refusal of Admission / LAMA Consent ── -->
+{% if consultation.lama_declined %}
+<div class="lama-card">
+    <div class="lama-card-head">⚠️ REFUSAL OF ADMISSION / LEAVE AGAINST MEDICAL ADVICE (LAMA)</div>
+    <div class="lama-card-body">
+        <p><strong>Diagnosis:</strong> {{ consultation.lama_diagnosis|default:"-" }}</p>
+        <p><strong>Recommended Treatment / Admission Advised:</strong> {{ consultation.lama_plan|default:"-" }}</p>
+        <p style="margin-top:6px;">
+        {% if consultation.lama_consent_en %}
+            {{ consultation.lama_consent_en }}
+        {% else %}
+            The diagnosis, recommended treatment, and the risks of declining the same were explained to the patient/attendant in a language they understand. The patient/attendant voluntarily chose to decline this treatment and leave the hospital against medical advice.
+        {% endif %}
+        </p>
+    </div>
+</div>
+{% endif %}
+
 <!-- ── Investigations ── -->
 <div class="sec-title">INVESTIGATIONS ADVISED</div>
 <div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
@@ -443,13 +498,18 @@ table.print-shell > thead > tr > td {
 <div class="sec-title">FOLLOW-UP</div>
 <div class="sec-body-text" style="padding:5px 0; font-size:11px; text-align:left;">
     {% if consultation.follow_up_date %}
-        <strong>Follow-up Date:</strong> {{ consultation.follow_up_date|date:"d M Y" }}
+        Follow up in surgery OPD on <strong>{{ consultation.follow_up_date|date:"d M Y" }}</strong> at <strong>10:00 AM</strong>. For prior appointment, call <strong>9414122542</strong>.
     {% endif %}
     {% if consultation.follow_up_notes %}
         <br><strong>Notes:</strong> {{ consultation.follow_up_notes }}
     {% endif %}
 </div>
 {% endif %}
+
+<!-- ── Emergency Instruction (standing, always printed) ── -->
+<div class="emergency-notice">
+⚠ In case of emergency — high-grade fever, headache, seizures, or abdominal pain — come to the hospital immediately. Emergency contact: 9414122542.
+</div>
 
 <!-- ── Footer ── -->
 <div class="footer">
