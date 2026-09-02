@@ -3298,8 +3298,55 @@ def patient_get_api(request):
         })
     except Patient.DoesNotExist:
         return JsonResponse({}, status=404)
-    
-    from .models import PrescriptionTemplate, PrescriptionTemplateItem
+
+
+@login_required
+def patient_recent_consultation_api(request, patient_id):
+    consultation = (
+        Consultation.objects
+        .filter(appointment__patient_id=patient_id)
+        .select_related("diagnosis_icd")
+        .prefetch_related("symptoms", "signs")
+        .order_by("-created_at")
+        .first()
+    )
+    if not consultation:
+        return JsonResponse({"found": False})
+
+    # Chief Complaints / Examination Findings are free-text fields that exist on
+    # the model but the OPD consultation UI actually records this via the
+    # symptoms/signs checklists (+ custom_symptoms/custom_signs) instead, so
+    # pull from whichever of these is actually populated for this consultation.
+    symptoms_lines = []
+    if consultation.chief_complaints and consultation.chief_complaints.strip():
+        symptoms_lines.append(consultation.chief_complaints.strip())
+
+    symptom_names = list(consultation.symptoms.values_list("name", flat=True))
+    if consultation.custom_symptoms and consultation.custom_symptoms.strip():
+        symptom_names.append(consultation.custom_symptoms.strip())
+    if symptom_names:
+        symptoms_lines.append("Symptoms: " + ", ".join(symptom_names))
+
+    sign_names = list(consultation.signs.values_list("name", flat=True))
+    if consultation.custom_signs and consultation.custom_signs.strip():
+        sign_names.append(consultation.custom_signs.strip())
+    if sign_names:
+        symptoms_lines.append("Signs: " + ", ".join(sign_names))
+
+    if consultation.examination and consultation.examination.strip():
+        symptoms_lines.append("Examination: " + consultation.examination.strip())
+
+    diagnosis_text = (consultation.diagnosis_text or "").strip()
+    if not diagnosis_text and consultation.diagnosis_icd:
+        diagnosis_text = f"{consultation.diagnosis_icd.code} - {consultation.diagnosis_icd.description}"
+
+    return JsonResponse({
+        "found": True,
+        "consultation_date": consultation.created_at.strftime("%d-%m-%Y"),
+        "symptoms": "\n".join(symptoms_lines),
+        "diagnosis": diagnosis_text,
+    })
+
 
 @login_required
 def save_prescription_template(request):
@@ -3701,9 +3748,12 @@ Write "consent_en": a formal 6-7 line consent/refusal paragraph in English,
 first person plural ("We, the patient/attendant..."), covering:
 - the diagnosis
 - the treatment/admission that was recommended
-- the risks of declining this treatment, specific to this diagnosis
-  (e.g. perforation, sepsis, worsening of the condition, or other
-  clinically relevant complications)
+- name 2-3 SPECIFIC, clinically accurate complications that could plausibly
+  result from NOT receiving this exact treatment for this exact diagnosis
+  (reason about the actual anatomy/pathology involved -- a fracture, a
+  stone, an infection, etc. each have different realistic complications).
+  Do not fall back to a generic, one-size-fits-all list of complications --
+  they must be medically appropriate to THIS diagnosis specifically.
 - a statement that the patient/attendant was informed of these risks in
   a language they understand, and voluntarily chose to decline/leave
   against medical advice, releasing the hospital and treating doctor

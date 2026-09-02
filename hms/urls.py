@@ -79,6 +79,7 @@ urlpatterns = [
     path("ipd/", views.ipd_dashboard, name="ipd_dashboard"),
     path("ipd/admit/<int:bed_id>/", views.admit_bed, name="admit_bed"),
     path("ipd/new/", views.admit_patient, name="admit_patient"),
+    path("patients/<int:patient_id>/recent-consultation/", views.patient_recent_consultation_api, name="patient_recent_consultation_api"),
     path("ipd/discharge/<int:admission_id>/", views.ipd_discharge, name="ipd_discharge"),
     path("ipd/patient/<int:admission_id>/", views.ipd_patient_file, name="ipd_patient_file"),
     path("ipd/discharge/<int:admission_id>/pdf/", views.discharge_pdf, name="discharge_pdf"),
