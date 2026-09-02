@@ -337,7 +337,7 @@
                             data-proc-bill="{% url 'hms:procedure_billing' %}"
                             data-advance="{% url 'hms:advance_payment_receipt' appt.patient.id %}"
                             data-consult="{% url 'hms:start_consultation' appt.id %}"
-                            data-admit="{% url 'hms:admit_patient' %}"
+                            data-admit="{% url 'hms:admit_patient' %}?patient={{ appt.patient.id }}"
                             data-upload="{% url 'hms:upload_medical_image' appt.patient.id %}"
                             onclick="openDropdown(this)">&#8964;</button>
                     <button class="btn-more-dots"
@@ -348,7 +348,7 @@
                             data-proc-bill="{% url 'hms:procedure_billing' %}"
                             data-advance="{% url 'hms:advance_payment_receipt' appt.patient.id %}"
                             data-consult="{% url 'hms:start_consultation' appt.id %}"
-                            data-admit="{% url 'hms:admit_patient' %}"
+                            data-admit="{% url 'hms:admit_patient' %}?patient={{ appt.patient.id }}"
                             data-upload="{% url 'hms:upload_medical_image' appt.patient.id %}"
                             onclick="openDropdown(this)">&#8943;</button>
                 </div>

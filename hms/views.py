@@ -17,6 +17,7 @@ from django.db.models import Sum
 from .models import PartnerDeposit
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.db import transaction
 from django.db.models import Q, F, Sum, Count
 from django.contrib import messages
@@ -1113,11 +1114,21 @@ def admit_bed(request, bed_id):
         doctor_id  = request.POST.get("doctor")
 
         chief_complaint    = request.POST.get("chief_complaint", "")
+        symptoms           = request.POST.get("symptoms", "")
         diagnosis          = request.POST.get("diagnosis", "")
         icd_code           = request.POST.get("icd_code", "")
         attendant_name     = request.POST.get("attendant_name", "")
         attendant_relation = request.POST.get("attendant_relation", "")
         attendant_mobile   = request.POST.get("attendant_mobile", "")
+
+        admission_date = timezone.now()
+        admission_date_raw = request.POST.get("admission_date", "").strip()
+        if admission_date_raw:
+            parsed_date = parse_datetime(admission_date_raw)
+            if parsed_date:
+                if timezone.is_naive(parsed_date):
+                    parsed_date = timezone.make_aware(parsed_date, timezone.get_current_timezone())
+                admission_date = parsed_date
 
         if not patient_id:
             patients = Patient.objects.all().order_by("full_name")
@@ -1161,12 +1172,13 @@ def admit_bed(request, bed_id):
             ward               = bed.ward,
             bed                = bed,
             chief_complaint    = chief_complaint,
+            symptoms           = symptoms,
             diagnosis          = auto_diagnosis,
             icd_code           = icd_code,
             attendant_name     = attendant_name,
             attendant_relation = attendant_relation,
             attendant_mobile   = attendant_mobile,
-            admission_date     = timezone.now(),
+            admission_date     = admission_date,
             status             = "ADMITTED",
         )
 
@@ -1211,8 +1223,15 @@ def admit_patient(request):
         if form.is_valid():
             form.save()
             return redirect("hms:ipd_dashboard")
+        selected_patient_id = request.POST.get("patient")
     else:
         form = IPDAdmissionForm()
+        selected_patient_id = request.GET.get("patient")
+
+    try:
+        selected_patient_id = int(selected_patient_id)
+    except (TypeError, ValueError):
+        selected_patient_id = None
 
     patients = Patient.objects.all().order_by("full_name")
     doctors = Doctor.objects.all().order_by("full_name")
@@ -1220,6 +1239,7 @@ def admit_patient(request):
         "form": form,
         "patients": patients,
         "doctors": doctors,
+        "selected_patient_id": selected_patient_id,
     })
 
 

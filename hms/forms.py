@@ -153,6 +153,15 @@ class AppointmentForm(forms.ModelForm):
 # ===================== IPD ADMISSION FORM =====================
 class IPDAdmissionForm(forms.ModelForm):
 
+    admission_date = forms.DateTimeField(
+        required=False,
+        input_formats=["%Y-%m-%dT%H:%M"],
+        widget=forms.DateTimeInput(
+            format="%Y-%m-%dT%H:%M",
+            attrs={"type": "datetime-local", "class": "form-control"},
+        ),
+    )
+
     class Meta:
         model = IPDAdmission
         fields = [
@@ -161,8 +170,10 @@ class IPDAdmissionForm(forms.ModelForm):
             "ward",
             "bed",
             "chief_complaint",
+            "symptoms",
             "diagnosis",
             "icd_code",
+            "admission_date",
             "attendant_name",
             "attendant_relation",
             "attendant_mobile",
@@ -170,6 +181,7 @@ class IPDAdmissionForm(forms.ModelForm):
         widgets = {
             "diagnosis": forms.Textarea(attrs={"rows": 3}),
             "chief_complaint": forms.Textarea(attrs={"rows": 3}),
+            "symptoms": forms.Textarea(attrs={"rows": 3}),
         }
 
 # ===================== IPD VITAL FORM =====================

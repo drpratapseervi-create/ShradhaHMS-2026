@@ -2,6 +2,43 @@
 
 {% block title %}Admit Patient — {{ bed.ward.name }} Bed {{ bed.bed_number }}{% endblock %}
 
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+<style>
+/* ── Select2 dark theme ── */
+.select2-container{ width:100% !important; }
+.select2-container--default .select2-selection--single{
+    height:42px !important; background:#1a1a1a !important;
+    border:1px solid #2a2a2a !important; border-radius:7px !important;
+    display:flex; align-items:center; padding:0 12px !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered{
+    color:#e2e8f0 !important; padding:0 !important; line-height:normal !important; font-size:14px;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow{ height:40px !important; }
+.select2-container--default .select2-selection--single .select2-selection__arrow b{ border-color:#8892a4 transparent transparent transparent !important; }
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--single{
+    border-color:#00b8a9 !important; box-shadow:0 0 0 2px rgba(0,184,169,.15) !important;
+}
+.select2-dropdown{
+    background:#111111 !important; border:1px solid #2a2a2a !important;
+    border-radius:8px !important; box-shadow:0 8px 24px rgba(0,0,0,0.6) !important;
+}
+.select2-search--dropdown{ padding:7px !important; background:#111111 !important; }
+.select2-container--default .select2-search--dropdown .select2-search__field{
+    background:#1a1a1a !important; color:#e2e8f0 !important;
+    border:1px solid #2a2a2a !important; border-radius:6px !important;
+    padding:7px 10px !important; font-size:13px !important;
+}
+.select2-results__option{ padding:9px 13px !important; font-size:13px !important; color:#e2e8f0 !important; background:#111111 !important; }
+.select2-container--default .select2-results__option--highlighted[aria-selected]{ background:#00b8a9 !important; color:#000 !important; }
+.select2-container--default .select2-results__option[aria-selected=true]{ background:#1e3a3a !important; color:#00b8a9 !important; }
+.select2-container--default .select2-selection--single .select2-selection__placeholder{ color:#444 !important; }
+.select2-container--default .select2-selection--single .select2-selection__clear{ color:#8892a4 !important; }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <style>
@@ -178,11 +215,12 @@ background:#155555;
 <option value="">Select Patient</option>
 {% for p in patients %}
 <option value="{{ p.id }}"
-  data-age="{{ p.age }}"
-  data-gender="{{ p.gender }}"
-  data-mobile="{{ p.mobile_no }}"
-  data-address="{{ p.address }}"
-  data-guardian="{{ p.father_or_husband_name }}">
+  data-age="{{ p.age|default:'' }}"
+  data-gender="{{ p.gender|default:'' }}"
+  data-mobile="{{ p.mobile_no|default:'' }}"
+  data-address="{{ p.address|default:'' }}"
+  data-guardian="{{ p.father_or_husband_name|default:'' }}"
+  {% if p.id == selected_patient_id %}selected{% endif %}>
   {{ p.full_name }} | {{ p.uhid }}
 </option>
 {% endfor %}
@@ -223,6 +261,33 @@ background:#155555;
 </div>
 
 <div class="form-card">
+<div class="form-title">Clinical Details</div>
+<div class="form-grid">
+
+<div class="form-group full">
+<label>Signs &amp; Symptoms</label>
+<textarea name="symptoms" class="form-control"></textarea>
+</div>
+
+<div class="form-group full">
+<label>Provisional Diagnosis</label>
+<div class="icd-wrapper">
+<input type="text" id="icd-search" class="form-control" placeholder="Search diagnosis or ICD code to auto-fill below">
+<input type="hidden" name="icd_code" id="icd-hidden">
+<div class="icd-dropdown" id="icd-results"></div>
+</div>
+<textarea name="diagnosis" id="diagnosis-textarea" class="form-control" style="margin-top:8px;" placeholder="Type the provisional diagnosis, or pick one from ICD search above"></textarea>
+</div>
+
+<div class="form-group full">
+<label>Reason for Admission</label>
+<textarea name="chief_complaint" class="form-control"></textarea>
+</div>
+
+</div>
+</div>
+
+<div class="form-card">
 <div class="form-title">Admission Details</div>
 <div class="form-grid">
 
@@ -243,14 +308,9 @@ background:#155555;
 <input type="text" id="doctor-department" class="form-control" readonly>
 </div>
 
-<div class="form-group full">
-<label>Diagnosis (ICD Search)</label>
-<div class="icd-wrapper">
-<input type="text" id="icd-search" class="form-control" placeholder="Search diagnosis or ICD code">
-<input type="hidden" name="icd_code" id="icd-hidden">
-<input type="hidden" name="diagnosis" id="diagnosis-hidden">
-<div class="icd-dropdown" id="icd-results"></div>
-</div>
+<div class="form-group">
+<label>Date &amp; Time of Admission</label>
+<input type="datetime-local" name="admission_date" id="admission-date" class="form-control">
 </div>
 
 </div>
@@ -291,14 +351,27 @@ background:#155555;
 /* PATIENT AUTO FILL */
 const patientSelect = document.getElementById("patient-select")
 
-patientSelect.addEventListener("change", function(){
-    const sel = this.options[this.selectedIndex]
+function fillPatientDetails(){
+    const sel = patientSelect.options[patientSelect.selectedIndex]
     document.getElementById("age").value          = sel.dataset.age      || ""
     document.getElementById("gender").value       = sel.dataset.gender   || ""
     document.getElementById("mobile").value       = sel.dataset.mobile   || ""
     document.getElementById("address").value      = sel.dataset.address  || ""
     document.getElementById("guardian_name").value = sel.dataset.guardian || ""
-})
+}
+
+patientSelect.addEventListener("change", fillPatientDetails)
+
+if(patientSelect.value){ fillPatientDetails() }
+
+/* DATE & TIME OF ADMISSION — default to now, stays editable */
+const admissionDateInput = document.getElementById("admission-date")
+if(admissionDateInput && !admissionDateInput.value){
+    const now = new Date()
+    const pad = n => String(n).padStart(2, "0")
+    admissionDateInput.value = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate())
+        + "T" + pad(now.getHours()) + ":" + pad(now.getMinutes())
+}
 
 /* DOCTOR → DEPARTMENT AUTO */
 const doctorSelect = document.getElementById("doctor-select")
@@ -310,10 +383,10 @@ doctorSelect.addEventListener("change", function(){
 
 /* ICD SEARCH */
 const ICD_SEARCH_URL = "{% url 'hms:icd_search' %}"
-const icdInput       = document.getElementById("icd-search")
-const icdHidden      = document.getElementById("icd-hidden")
-const diagnosisHidden = document.getElementById("diagnosis-hidden")
-const icdBox         = document.getElementById("icd-results")
+const icdInput        = document.getElementById("icd-search")
+const icdHidden       = document.getElementById("icd-hidden")
+const diagnosisTextarea = document.getElementById("diagnosis-textarea")
+const icdBox          = document.getElementById("icd-results")
 let timer
 
 icdInput.addEventListener("input", function(){
@@ -341,12 +414,31 @@ icdInput.addEventListener("input", function(){
 })
 
 function selectICD(code, diagnosis){
-    icdHidden.value      = code
-    diagnosisHidden.value = diagnosis
-    icdInput.value       = code + " - " + diagnosis
-    icdBox.style.display = "none"
+    icdHidden.value         = code
+    diagnosisTextarea.value = diagnosis
+    icdInput.value          = code + " - " + diagnosis
+    icdBox.style.display    = "none"
 }
 
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(function(){
+    $('#patient-select').select2({
+        placeholder: '🔍 Search patient by name or UHID...',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // Select2 changes the value via jQuery's .trigger('change'), which does NOT
+    // dispatch a native DOM 'change' event on a <select> (no elem.change() to
+    // bridge through), so the plain addEventListener("change", ...) above never
+    // fires for a Select2-driven pick. Bind through jQuery too so autofill works
+    // both for manual Select2 selection and for the ?patient= pre-fill.
+    $('#patient-select').on('change', fillPatientDetails);
+});
 </script>
 
 {% endblock %}

@@ -412,6 +412,14 @@ margin:20px 0;
 
 </div>
 
+{% if admission.chief_complaint or admission.symptoms or admission.diagnosis %}
+<div class="ipd-grid" style="grid-template-columns:1fr; margin-top:12px; padding-top:12px; border-top:1px solid #2a2a2a;">
+<div><b>Reason for Admission:</b> {{ admission.chief_complaint|default:"-" }}</div>
+<div><b>Signs &amp; Symptoms:</b> {{ admission.symptoms|default:"-" }}</div>
+<div><b>Provisional Diagnosis:</b> {{ admission.diagnosis|default:"-" }}</div>
+</div>
+{% endif %}
+
 </div>
 
 
