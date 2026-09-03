@@ -394,14 +394,14 @@
 .pv-value { font-size: 13px; color: #1a1a1a; }
 .pv-rx-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
 .pv-rx-table th {
-    background: #f1f5f9;
+    background: #f1f5f9 !important;
     padding: 5px 8px;
     font-size: 10px;
     text-transform: uppercase;
-    color: #475569;
+    color: #475569 !important;
     text-align: left;
 }
-.pv-rx-table td { padding: 5px 8px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+.pv-rx-table td { padding: 5px 8px; border-bottom: 1px solid #f1f5f9; font-size: 12px; color: #1a1a1a !important; }
 .pv-rx-table tr:last-child td { border-bottom: none; }
 .cb-item input[type=checkbox] { accent-color: #1a1a1a; width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
 .cb-item:has(input:checked) { background: #f7f7f7; border-color: #ddd; color: #1a1a1a; font-weight: 500; }
@@ -3048,6 +3048,57 @@ function clearLamaSignature() {
     canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
     document.getElementById('id_lama_signature_data').value = '';
 }
+</script>
+
+<!-- ═══ SCROLL TO TOP ═══ -->
+<style>
+.scroll-top-btn {
+    position: fixed !important;
+    right: 24px;
+    bottom: 90px;
+    width: 50px !important;
+    height: 50px !important;
+    max-width: 50px !important;
+    min-width: 0 !important;
+    border-radius: 50%;
+    background: #374151;
+    color: #fff;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+    z-index: 9000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+}
+.scroll-top-btn.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+.scroll-top-btn:hover { background: #1f2937; }
+</style>
+<button type="button" id="scroll-top-btn" class="scroll-top-btn" title="Back to top" aria-label="Scroll to top">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+</button>
+<script>
+(function() {
+    var btn = document.getElementById('scroll-top-btn');
+    window.addEventListener('scroll', function() {
+        if (window.scrollY > 300) {
+            btn.classList.add('show');
+        } else {
+            btn.classList.remove('show');
+        }
+    });
+    btn.addEventListener('click', function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+})();
 </script>
 
 {% endblock %}
