@@ -1,7 +1,7 @@
 from encrypted_model_fields.fields import EncryptedCharField
 from auditlog.registry import auditlog
 from django.db import models
-from django.core.validators import RegexValidator
+from django.core.validators import RegexValidator, FileExtensionValidator
 from django.utils import timezone
 from datetime import date, timedelta
 from django.contrib.auth.models import User
@@ -1624,6 +1624,45 @@ class ConstructionExpense(models.Model):
         ordering            = ['-created_at']
         verbose_name        = 'Construction Expense'
         verbose_name_plural = 'Construction Expenses'
+
+
+# ===================== CONSTRUCTION MEDIA (PHOTOS & VIDEOS) =====================
+
+CONSTRUCTION_MEDIA_VIDEO_EXTENSIONS = ['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp']
+CONSTRUCTION_MEDIA_PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'heic']
+
+
+def construction_media_upload_path(instance, filename):
+    return f"construction_media/{timezone.now():%Y/%m}/{filename}"
+
+
+class ConstructionMedia(models.Model):
+    MEDIA_TYPE_CHOICES = [('video', 'Video'), ('photo', 'Photo')]
+
+    file        = models.FileField(
+        upload_to=construction_media_upload_path,
+        validators=[FileExtensionValidator(
+            allowed_extensions=CONSTRUCTION_MEDIA_VIDEO_EXTENSIONS + CONSTRUCTION_MEDIA_PHOTO_EXTENSIONS
+        )],
+    )
+    media_type  = models.CharField(max_length=10, choices=MEDIA_TYPE_CHOICES, blank=True)
+    caption     = models.CharField(max_length=255, blank=True, null=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.media_type and self.file:
+            ext = self.file.name.rsplit('.', 1)[-1].lower()
+            self.media_type = 'photo' if ext in CONSTRUCTION_MEDIA_PHOTO_EXTENSIONS else 'video'
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.caption or f"Construction {self.get_media_type_display()} {self.pk}"
+
+    class Meta:
+        ordering            = ['-uploaded_at']
+        verbose_name        = 'Construction Media'
+        verbose_name_plural = 'Construction Media'
 
 
 # ===================== PARTNER PAYMENT =====================

@@ -199,4 +199,6 @@ urlpatterns = [
     path("construction/deposits/", views.partner_deposits, name="partner_deposits"),
     path("construction/deposits/<int:pk>/edit/", views.partner_deposit_edit, name="partner_deposit_edit"),
     path("construction/deposits/<int:pk>/delete/", views.partner_deposit_delete, name="partner_deposit_delete"),
+    path("construction/media/upload/",              views.construction_media_upload, name="construction_media_upload"),
+    path("construction/media/<int:pk>/delete/",     views.construction_media_delete, name="construction_media_delete"),
 ]

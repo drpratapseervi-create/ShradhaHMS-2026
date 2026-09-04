@@ -47,7 +47,7 @@ from .models import (
 )
 
 from .models import (
-    ConstructionExpense, Vendor, PartnerPayment, ExpenseBudget,
+    ConstructionExpense, Vendor, PartnerPayment, ExpenseBudget, ConstructionMedia,
     EXPENSE_HEAD_CHOICES, AREA_CHOICES, PAYMENT_MODE_CHOICES,
     PAID_BY_CHOICES, PAID_FROM_CHOICES, APPROVAL_STATUS_CHOICES,
     APPROVED_BY_CHOICES, WORK_STATUS_CHOICES, YES_NO_PARTIAL_CHOICES,
@@ -3001,7 +3001,64 @@ def construction_expense_list(request):
         "f_head": head, "f_area": area, "f_status": status,
         "f_paid_by": paid_by, "f_date_from": date_from,
         "f_date_to": date_to, "f_q": q,
+        "media_items": ConstructionMedia.objects.select_related("uploaded_by").order_by("-uploaded_at"),
+        "media_max_size_mb": CONSTRUCTION_MEDIA_MAX_SIZE_MB,
     })
+
+
+# ─────────────────────────────────────────────────────────────
+# CONSTRUCTION MEDIA (PHOTOS & VIDEOS)
+# ─────────────────────────────────────────────────────────────
+
+CONSTRUCTION_MEDIA_MAX_SIZE_MB = 500
+CONSTRUCTION_MEDIA_ALLOWED_EXTENSIONS = tuple(
+    f".{ext}" for ext in
+    ['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'jpg', 'jpeg', 'png', 'webp', 'heic']
+)
+
+
+@login_required
+@role_required("admin")
+def construction_media_upload(request):
+    if request.method == "POST":
+        files = request.FILES.getlist("files")
+        caption = request.POST.get("caption", "").strip() or None
+
+        if not files:
+            messages.error(request, "Please choose at least one photo or video to upload.")
+        else:
+            uploaded, skipped = 0, []
+            for f in files:
+                if not f.name.lower().endswith(CONSTRUCTION_MEDIA_ALLOWED_EXTENSIONS):
+                    skipped.append(f"{f.name} (unsupported type)")
+                    continue
+                if f.size > CONSTRUCTION_MEDIA_MAX_SIZE_MB * 1024 * 1024:
+                    skipped.append(f"{f.name} ({f.size / (1024*1024):.0f} MB, over {CONSTRUCTION_MEDIA_MAX_SIZE_MB} MB limit)")
+                    continue
+                ConstructionMedia.objects.create(
+                    file=f,
+                    caption=caption,
+                    uploaded_by=request.user,
+                )
+                uploaded += 1
+
+            if uploaded:
+                messages.success(request, f"{uploaded} file(s) uploaded successfully.")
+            if skipped:
+                messages.error(request, "Skipped: " + "; ".join(skipped))
+
+    return redirect("hms:construction_expense_list")
+
+
+@login_required
+@role_required("admin")
+def construction_media_delete(request, pk):
+    media = get_object_or_404(ConstructionMedia, pk=pk)
+    if request.method == "POST":
+        media.file.delete(save=False)
+        media.delete()
+        messages.success(request, "File deleted.")
+    return redirect("hms:construction_expense_list")
 
 
 # ─────────────────────────────────────────────────────────────

@@ -44,6 +44,7 @@ from .models import (
     VillageMaster,
     UserProfile,
     ConstructionExpense,
+    ConstructionMedia,
     Vendor,
     PartnerPayment,
     ExpenseBudget,
@@ -410,6 +411,14 @@ from django.utils.html import format_html
 class VendorAdmin(admin.ModelAdmin):
     list_display  = ["name", "mobile", "work_type", "gst_no", "created_at"]
     search_fields = ["name", "mobile", "work_type"]
+
+
+@admin.register(ConstructionMedia)
+class ConstructionMediaAdmin(admin.ModelAdmin):
+    list_display  = ["caption", "media_type", "uploaded_at", "uploaded_by"]
+    list_filter   = ["media_type"]
+    search_fields = ["caption"]
+    readonly_fields = ["uploaded_at", "media_type"]
 
 
 @admin.register(ConstructionExpense)
