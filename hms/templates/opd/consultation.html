@@ -1343,8 +1343,9 @@
     </div>
 </div>
 
-<!-- ═══ REFUSAL OF ADMISSION / LAMA CONSENT ═══ -->
-<div class="sec">
+<!-- ═══ REFUSAL OF ADMISSION / LAMA CONSENT  +  REFERRAL NOTE ═══ -->
+<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
+<div class="sec" style="flex:1;min-width:320px;">
     <div class="sec-head is-collapsible" style="background:linear-gradient(135deg,#b91c1c,#991b1b);color:#fff;" onclick="toggleSection(this)"><span class="sec-chevron">▸</span>⚠️ Refusal of Admission / LAMA Consent</div>
     <div class="sec-body" style="display:none;">
         <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#333;cursor:pointer;">
@@ -1430,6 +1431,59 @@
             </div>
         </div>
     </div>
+</div>
+
+<div class="sec" style="flex:1;min-width:320px;">
+    <div class="sec-head is-collapsible" style="background:linear-gradient(135deg,#0369a1,#075985);color:#fff;" onclick="toggleSection(this)"><span class="sec-chevron">▸</span>↗️ Referral Note</div>
+    <div class="sec-body" style="display:none;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#333;cursor:pointer;">
+            <input type="checkbox" name="referral_flag" id="id_referral_flag" {% if consultation.referral_flag %}checked{% endif %} onchange="toggleReferralSection()" style="width:16px;height:16px;">
+            Patient referred to another facility/specialist
+        </label>
+
+        <div id="referral-section-body" style="display:{% if consultation.referral_flag %}block{% else %}none{% endif %};margin-top:14px;">
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:220px;">
+                    <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Referred To (Doctor / Hospital)</label>
+                    <input type="text" name="referral_to" id="id_referral_to" value="{{ consultation.referral_to|default:'' }}" placeholder="e.g. Dr. Sharma, City Hospital" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 12px;font-size:13px;">
+                </div>
+                <div style="flex:1;min-width:160px;">
+                    <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Urgency</label>
+                    <select name="referral_urgency" id="id_referral_urgency" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 10px;font-size:13px;">
+                        <option value="">Select…</option>
+                        <option value="routine"   {% if consultation.referral_urgency == "routine" %}selected{% endif %}>Routine</option>
+                        <option value="urgent"    {% if consultation.referral_urgency == "urgent" %}selected{% endif %}>Urgent</option>
+                        <option value="emergency" {% if consultation.referral_urgency == "emergency" %}selected{% endif %}>Emergency</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-top:12px;">
+                <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Reason for Referral</label>
+                <textarea name="referral_reason" id="id_referral_reason" rows="4" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Reason the patient is being referred out…">{{ consultation.referral_reason|default:'' }}</textarea>
+            </div>
+
+            <div style="margin-top:12px;display:flex;align-items:center;gap:10px;">
+                {% if ai_enabled %}
+                <button type="button" id="referral-generate-btn" onclick="generateReferralLetter()" style="background:#0369a1;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;">🤖 Generate Referral Letter</button>
+                {% else %}
+                <span title="AI features not configured" style="color:#94a3b8;border:1px dashed #cbd5e1;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;">🤖 Generate Referral Letter (not configured)</span>
+                {% endif %}
+                <span id="referral-loading" style="display:none;font-size:12px;color:#888;">⏳ Generating…</span>
+            </div>
+            <div id="referral-error" style="display:none;margin-top:6px;font-size:12px;color:#dc2626;"></div>
+
+            <div style="margin-top:12px;">
+                <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Referral Letter (Editable)</label>
+                <textarea name="referral_letter_text" id="id_referral_letter_text" rows="6" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Generated referral letter body will appear here — editable before saving.">{{ consultation.referral_letter_text|default:'' }}</textarea>
+            </div>
+
+            <div style="margin-top:14px;">
+                <a href="{% url 'hms:referral_letter_print' appointment.id %}" target="_blank" style="background:#0369a1;color:#fff;text-decoration:none;border-radius:6px;padding:8px 16px;font-size:12px;font-weight:600;">🖨️ Print / Download Referral Letter</a>
+                <span style="font-size:11px;color:#888;margin-left:8px;">Save the consultation first so the letter reflects the latest text.</span>
+            </div>
+        </div>
+    </div>
+</div>
 </div>
 
 <!-- ═══ QUICK LAB VALUES ═══ -->
@@ -2938,15 +2992,103 @@ function toggleSection(headEl) {
     if (chev) chev.textContent = willShow ? '▾' : '▸';
 }
 
+/* ── Shared: current diagnosis (ICD tags, falling back to free-text diagnosis) ── */
+function getMainDiagnosisSummary() {
+    var icdTexts = [];
+    document.querySelectorAll('#icd-tags-container span.icd-selected-tag').forEach(function(span) {
+        var text = span.textContent.replace('✕', '').trim();
+        if (text) icdTexts.push(text);
+    });
+    var diagField = document.querySelector('input[name="diagnosis_text"]');
+    var diagText = diagField ? diagField.value.trim() : '';
+    return icdTexts.length ? icdTexts.join(', ') : diagText;
+}
+
 /* ── Refusal of Admission / LAMA Consent ── */
+function autofillLamaDiagnosis() {
+    var field = document.getElementById('id_lama_diagnosis');
+    if (!field || field.value.trim()) return; // never clobber an existing/manual value
+    var diagnosis = getMainDiagnosisSummary();
+    if (diagnosis) field.value = diagnosis;
+}
+
 function toggleLamaSection() {
     var checked = document.getElementById('id_lama_declined').checked;
     document.getElementById('lama-section-body').style.display = checked ? 'block' : 'none';
+    if (checked) autofillLamaDiagnosis();
 }
+document.addEventListener('DOMContentLoaded', autofillLamaDiagnosis);
 
 function toggleLamaSigFallback() {
     var checked = document.getElementById('lama-sig-fallback-toggle').checked;
     document.getElementById('lama-sig-fallback').style.display = checked ? 'block' : 'none';
+}
+
+/* ── Referral Note ── */
+function toggleReferralSection() {
+    var checked = document.getElementById('id_referral_flag').checked;
+    document.getElementById('referral-section-body').style.display = checked ? 'block' : 'none';
+}
+
+function generateReferralLetter() {
+    var referredTo = document.getElementById('id_referral_to').value.trim();
+    var reason = document.getElementById('id_referral_reason').value.trim();
+    var urgency = document.getElementById('id_referral_urgency').value;
+    if (!referredTo || !reason) {
+        alert('Please fill in Referred To and Reason for Referral first.');
+        return;
+    }
+
+    var diagnosis = getMainDiagnosisSummary();
+
+    var complaints = [];
+    document.querySelectorAll("input[name='symptoms']:checked").forEach(function(el) {
+        complaints.push(el.parentElement.innerText.trim());
+    });
+    var customComplaints = document.getElementById('custom-symptoms-field');
+    if (customComplaints && customComplaints.value.trim()) complaints.push(customComplaints.value.trim());
+
+    var exam = [];
+    document.querySelectorAll("input[name='signs']:checked").forEach(function(el) {
+        exam.push(el.parentElement.innerText.trim());
+    });
+    var customExam = document.getElementById('custom-signs-field');
+    if (customExam && customExam.value.trim()) exam.push(customExam.value.trim());
+
+    var clinicalSummary = 'Complaints: ' + (complaints.join(', ') || '-') + '. Examination: ' + (exam.join(', ') || '-') + '.';
+
+    var btn = document.getElementById('referral-generate-btn');
+    var loading = document.getElementById('referral-loading');
+    var errBox = document.getElementById('referral-error');
+    btn.disabled = true;
+    loading.style.display = 'inline';
+    errBox.style.display = 'none';
+
+    fetch('/generate-referral-letter/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({
+            appointment_id: {{ appointment.id }},
+            referred_to: referredTo,
+            reason: reason,
+            urgency: urgency,
+            diagnosis: diagnosis,
+            clinical_summary: clinicalSummary
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.error) { throw new Error(data.error); }
+        document.getElementById('id_referral_letter_text').value = data.letter_text || '';
+    })
+    .catch(function(err) {
+        errBox.textContent = '⚠️ ' + err.message;
+        errBox.style.display = 'block';
+    })
+    .finally(function() {
+        btn.disabled = false;
+        loading.style.display = 'none';
+    });
 }
 
 function updateLamaDatetime() {
@@ -2960,6 +3102,7 @@ function updateLamaDatetime() {
 document.addEventListener('DOMContentLoaded', updateLamaDatetime);
 
 function generateLamaConsent() {
+    autofillLamaDiagnosis();
     var diagnosis = document.getElementById('id_lama_diagnosis').value.trim();
     var plan = document.getElementById('id_lama_plan').value.trim();
     if (!diagnosis || !plan) {

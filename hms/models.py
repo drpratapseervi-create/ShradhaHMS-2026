@@ -349,6 +349,21 @@ class Consultation(models.Model):
     lama_signature_data = models.TextField(blank=True, null=True)
     lama_signed_at = models.DateTimeField(null=True, blank=True)
 
+    # ===== REFERRAL NOTE =====
+    referral_flag = models.BooleanField(default=False)
+    referral_to = models.CharField(max_length=200, blank=True)
+    referral_reason = models.TextField(blank=True)
+    referral_urgency = models.CharField(
+        max_length=20,
+        choices=[
+            ("routine",   "Routine"),
+            ("urgent",    "Urgent"),
+            ("emergency", "Emergency"),
+        ],
+        blank=True,
+    )
+    referral_letter_text = models.TextField(blank=True)
+
     # ===== METADATA =====
     custom_investigations = models.TextField(blank=True, null=True)
     last_modified_by = models.CharField(max_length=100, blank=True, null=True)

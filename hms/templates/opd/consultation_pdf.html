@@ -217,6 +217,31 @@ th {
 }
 .lama-card-body p { margin: 3px 0; }
 
+/* ── Referral Note card ── */
+.referral-card {
+    border: 2px solid #0369a1;
+    border-radius: 6px;
+    margin: 10px 0;
+    overflow: hidden;
+    page-break-inside: avoid;
+}
+.referral-card-head {
+    background: #0369a1;
+    color: #fff;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 6px 10px;
+    letter-spacing: 0.5px;
+}
+.referral-card-body {
+    background: #f0f9ff;
+    color: #000;
+    padding: 8px 10px;
+    font-size: 11px;
+    line-height: 1.6;
+}
+.referral-card-body p { margin: 3px 0; }
+
 /* ── Footer ── */
 .footer {
     border-top: 2px solid #e8e8e8;
@@ -421,6 +446,18 @@ table.print-shell > thead > tr > td {
             The diagnosis, recommended treatment, and the risks of declining the same were explained to the patient/attendant in a language they understand. The patient/attendant voluntarily chose to decline this treatment and leave the hospital against medical advice.
         {% endif %}
         </p>
+    </div>
+</div>
+{% endif %}
+
+<!-- ── Referral Note ── -->
+{% if consultation.referral_flag %}
+<div class="referral-card">
+    <div class="referral-card-head">↗️ REFERRAL NOTE</div>
+    <div class="referral-card-body">
+        <p><strong>Referred To:</strong> {{ consultation.referral_to|default:"-" }}</p>
+        <p><strong>Urgency:</strong> {{ consultation.get_referral_urgency_display|default:"-" }}</p>
+        <p><strong>Reason for Referral:</strong> {{ consultation.referral_reason|default:"-"|linebreaksbr }}</p>
     </div>
 </div>
 {% endif %}

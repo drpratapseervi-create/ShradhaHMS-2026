@@ -417,6 +417,13 @@ def start_consultation(request, appointment_id):
                 if obj.lama_declined and not obj.lama_signed_at:
                     obj.lama_signed_at = timezone.now()
 
+                # ── Referral Note ──
+                obj.referral_flag = bool(request.POST.get("referral_flag"))
+                obj.referral_to = request.POST.get("referral_to", "").strip()
+                obj.referral_reason = request.POST.get("referral_reason", "").strip()
+                obj.referral_urgency = request.POST.get("referral_urgency", "").strip()
+                obj.referral_letter_text = request.POST.get("referral_letter_text", "").strip()
+
                 # ── Quick Lab Values (manual outside/patient-reported entry) ──
                 obj.quick_lab_values = {
                     "hb":           request.POST.get("qlv_hb", "").strip(),
@@ -613,6 +620,20 @@ def lama_consent_print(request, appointment_id):
     return render(request, "opd/lama_consent_print.html", {
         "appointment":   appointment,
         "consultation":  consultation,
+    })
+
+
+@login_required
+def referral_letter_print(request, appointment_id):
+    appointment = get_object_or_404(
+        Appointment.objects.select_related("patient", "doctor"),
+        id=appointment_id,
+    )
+    consultation = get_object_or_404(Consultation, appointment=appointment)
+    return render(request, "opd/referral_letter_print.html", {
+        "appointment":  appointment,
+        "consultation": consultation,
+        "printed_on":   timezone.now(),
     })
 
 
@@ -3773,6 +3794,100 @@ bullet points.
         return JsonResponse({
             'consent_en': parsed.get('consent_en', '').strip(),
             'consent_hi': parsed.get('consent_hi', '').strip(),
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def generate_referral_letter(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+    if not settings.AI_FEATURES_ENABLED:
+        return JsonResponse({'error': 'AI features are not configured on this system.'})
+    import json
+    data = json.loads(request.body)
+
+    appointment_id = data.get('appointment_id')
+    appointment = get_object_or_404(
+        Appointment.objects.select_related("patient", "doctor"),
+        id=appointment_id,
+    )
+    patient = appointment.patient
+
+    referred_to = data.get('referred_to', '').strip()
+    reason = data.get('reason', '').strip()
+    urgency = data.get('urgency', '').strip()
+    diagnosis = data.get('diagnosis', '').strip()
+    clinical_summary = data.get('clinical_summary', '').strip()
+
+    if not referred_to or not reason:
+        return JsonResponse({'error': 'Referred To and Reason for Referral are both required'}, status=400)
+
+    patient_age = f"{patient.age_years} Yrs" if patient.age_years else "age not on record"
+
+    try:
+        client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model='gpt-4o-mini',
+            max_tokens=500,
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "referral_letter",
+                    "strict": True,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "letter_text": {"type": "string"},
+                        },
+                        "required": ["letter_text"],
+                        "additionalProperties": False,
+                    },
+                },
+            },
+            messages=[
+                {
+                    'role': 'system',
+                    'content': (
+                        "You are a senior Indian physician drafting a formal, concise "
+                        "referral letter body to a fellow doctor/hospital for a hospital "
+                        "record. Always return ONLY valid JSON. No explanation."
+                    ),
+                },
+                {
+                    'role': 'user',
+                    'content': f"""
+Patient: {patient.full_name}, {patient_age}, {patient.gender}, UHID {patient.uhid}
+Diagnosis: {diagnosis or 'not specified'}
+Clinical summary (complaints / examination): {clinical_summary or 'not specified'}
+Reason for referral: {reason}
+Urgency: {urgency or 'routine'}
+Referring to: {referred_to}
+Referring doctor: {appointment.doctor.full_name}
+
+Write "letter_text": the BODY of a formal referral letter, 4-6 sentences,
+professional medical tone, third person for the patient. It must:
+- identify the patient by name, age and sex, and briefly the presenting
+  clinical picture / diagnosis
+- state the reason this patient is being referred, incorporating the
+  urgency naturally into the wording (e.g. "requires urgent evaluation" /
+  "may be seen on a routine basis" / "requires emergency management")
+- request the receiving doctor/facility to kindly evaluate and manage the
+  patient further, and offer to share any further records/reports needed
+
+Do NOT include a salutation ("Dear Doctor,"), a closing ("Yours
+sincerely,"), or a signature line -- only the paragraph body text, since
+those are added separately by the letter template. Plain paragraph text,
+no markdown, no bullet points, no headings.
+""",
+                },
+            ],
+        )
+        raw = response.choices[0].message.content or "{}"
+        parsed = json.loads(raw)
+        return JsonResponse({
+            'letter_text': parsed.get('letter_text', '').strip(),
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
