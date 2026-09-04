@@ -3007,13 +3007,14 @@ def construction_expense_list(request):
 
 
 # ─────────────────────────────────────────────────────────────
-# CONSTRUCTION MEDIA (PHOTOS & VIDEOS)
+# CONSTRUCTION MEDIA (PHOTOS, VIDEOS & DOCUMENTS)
 # ─────────────────────────────────────────────────────────────
 
 CONSTRUCTION_MEDIA_MAX_SIZE_MB = 500
 CONSTRUCTION_MEDIA_ALLOWED_EXTENSIONS = tuple(
     f".{ext}" for ext in
-    ['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'jpg', 'jpeg', 'png', 'webp', 'heic']
+    ['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'jpg', 'jpeg', 'png', 'webp', 'heic',
+     'pdf', 'doc', 'docx', 'dwg', 'dxf']
 )
 
 

@@ -1,3 +1,4 @@
+import os
 from encrypted_model_fields.fields import EncryptedCharField
 from auditlog.registry import auditlog
 from django.db import models
@@ -1626,10 +1627,11 @@ class ConstructionExpense(models.Model):
         verbose_name_plural = 'Construction Expenses'
 
 
-# ===================== CONSTRUCTION MEDIA (PHOTOS & VIDEOS) =====================
+# ===================== CONSTRUCTION MEDIA (PHOTOS, VIDEOS & DOCUMENTS) =====================
 
-CONSTRUCTION_MEDIA_VIDEO_EXTENSIONS = ['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp']
-CONSTRUCTION_MEDIA_PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'heic']
+CONSTRUCTION_MEDIA_VIDEO_EXTENSIONS    = ['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp']
+CONSTRUCTION_MEDIA_PHOTO_EXTENSIONS    = ['jpg', 'jpeg', 'png', 'webp', 'heic']
+CONSTRUCTION_MEDIA_DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'dwg', 'dxf']
 
 
 def construction_media_upload_path(instance, filename):
@@ -1637,12 +1639,16 @@ def construction_media_upload_path(instance, filename):
 
 
 class ConstructionMedia(models.Model):
-    MEDIA_TYPE_CHOICES = [('video', 'Video'), ('photo', 'Photo')]
+    MEDIA_TYPE_CHOICES = [('video', 'Video'), ('photo', 'Photo'), ('document', 'Document')]
 
     file        = models.FileField(
         upload_to=construction_media_upload_path,
         validators=[FileExtensionValidator(
-            allowed_extensions=CONSTRUCTION_MEDIA_VIDEO_EXTENSIONS + CONSTRUCTION_MEDIA_PHOTO_EXTENSIONS
+            allowed_extensions=(
+                CONSTRUCTION_MEDIA_VIDEO_EXTENSIONS
+                + CONSTRUCTION_MEDIA_PHOTO_EXTENSIONS
+                + CONSTRUCTION_MEDIA_DOCUMENT_EXTENSIONS
+            )
         )],
     )
     media_type  = models.CharField(max_length=10, choices=MEDIA_TYPE_CHOICES, blank=True)
@@ -1653,11 +1659,20 @@ class ConstructionMedia(models.Model):
     def save(self, *args, **kwargs):
         if not self.media_type and self.file:
             ext = self.file.name.rsplit('.', 1)[-1].lower()
-            self.media_type = 'photo' if ext in CONSTRUCTION_MEDIA_PHOTO_EXTENSIONS else 'video'
+            if ext in CONSTRUCTION_MEDIA_PHOTO_EXTENSIONS:
+                self.media_type = 'photo'
+            elif ext in CONSTRUCTION_MEDIA_DOCUMENT_EXTENSIONS:
+                self.media_type = 'document'
+            else:
+                self.media_type = 'video'
         super().save(*args, **kwargs)
 
     def __str__(self):
         return self.caption or f"Construction {self.get_media_type_display()} {self.pk}"
+
+    @property
+    def filename(self):
+        return os.path.basename(self.file.name)
 
     class Meta:
         ordering            = ['-uploaded_at']
