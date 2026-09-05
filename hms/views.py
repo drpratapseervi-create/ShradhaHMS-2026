@@ -511,7 +511,11 @@ def start_consultation(request, appointment_id):
                         )
 
                 messages.success(request, "Consultation saved successfully.")
+                if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return JsonResponse({"success": True})
                 return redirect("hms:start_consultation", appointment_id=appointment.id)
+        elif request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"success": False, "error": "Please check the form for errors."}, status=400)
     else:
         form = ConsultationForm(instance=consultation)
 

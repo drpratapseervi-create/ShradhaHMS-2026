@@ -546,6 +546,19 @@
     transition: all 0.2s;
     display: flex; align-items: center; gap: 6px;
 }
+.btn-next {
+    background: linear-gradient(135deg, #0891b2, #0e7490);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    padding: 9px 22px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+}
+.btn-next:disabled { opacity: 0.65; cursor: not-allowed; }
 .btn-print:hover { background: #fff; }
 
 /* ── AI Section ── */
@@ -1657,6 +1670,7 @@ html { scroll-behavior: smooth; }
 <!-- ═══ ACTION BAR ═══ -->
 <div class="action-bar">
     <button type="submit" class="btn-save">💾 Save Consultation</button>
+    <button type="button" id="next-tab-btn" class="btn-next" onclick="goToNextTab()">Next ➜</button>
     <a href="{% url 'hms:consultation_pdf' appointment.id %}" target="_blank" class="btn-print">
         🖨️ Print OPD Sheet
     </a>
@@ -3249,12 +3263,81 @@ function switchConsultTab(tabName) {
         autoGrowLamaConsentFields();
     }
     if (tabName === 'referral') ensureSectionExpanded('sec-referral');
+    updateNextButtonUI();
     return false; // we've already switched the panel — skip the native #anchor jump
 }
 
 document.addEventListener('DOMContentLoaded', function () {
     switchConsultTab('vitals');
 });
+
+/* ── "Next" button: save the form via AJAX, then advance to the next tab ── */
+function getTabOrder() {
+    return Array.prototype.map.call(
+        document.querySelectorAll('.section-nav a[data-tab]'),
+        function (a) { return a.dataset.tab; }
+    );
+}
+
+function updateNextButtonUI() {
+    var btn = document.getElementById('next-tab-btn');
+    if (!btn) return;
+    var order = getTabOrder();
+    var current = document.querySelector('.section-nav a.active');
+    var currentTab = current ? current.dataset.tab : order[0];
+    var idx = order.indexOf(currentTab);
+    var isLast = (idx === -1) || (idx === order.length - 1);
+    btn.textContent = isLast ? '✅ Finish' : 'Next ➜';
+    btn.dataset.isLast = isLast ? '1' : '';
+}
+
+function saveConsultationAjax(onSuccess, onError) {
+    var form = document.getElementById('consultation-form');
+    var data = new FormData(form);
+    fetch(window.location.href, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: data,
+    })
+    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); })
+    .then(function (result) {
+        if (!result.ok || !result.data.success) {
+            throw new Error((result.data && result.data.error) || 'Could not save the consultation.');
+        }
+        showToast('✅ Consultation saved successfully.', '#16a34a');
+        if (onSuccess) onSuccess();
+    })
+    .catch(function (err) {
+        showToast('⚠️ ' + err.message, '#dc3545');
+        if (onError) onError(err);
+    });
+}
+
+function goToNextTab() {
+    var btn = document.getElementById('next-tab-btn');
+    if (!btn || btn.disabled) return;
+    var order = getTabOrder();
+    var current = document.querySelector('.section-nav a.active');
+    var currentTab = current ? current.dataset.tab : order[0];
+    var idx = order.indexOf(currentTab);
+    var isLast = (idx === -1) || (idx === order.length - 1);
+
+    btn.disabled = true;
+    var prevLabel = btn.textContent;
+    btn.textContent = 'Saving…';
+
+    saveConsultationAjax(function () {
+        btn.disabled = false;
+        if (!isLast) {
+            switchConsultTab(order[idx + 1]); // also refreshes the button label
+        } else {
+            btn.textContent = prevLabel;
+        }
+    }, function () {
+        btn.disabled = false;
+        btn.textContent = prevLabel;
+    });
+}
 
 /* ── Collapsible section: click the header to expand / collapse ── */
 function toggleSection(headEl) {
