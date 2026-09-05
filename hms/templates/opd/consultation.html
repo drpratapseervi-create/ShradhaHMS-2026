@@ -731,6 +731,50 @@
 
         @media print {    ← this line already exists, add ABOVE it
 }
+
+/* ── Sticky section-jump nav ── */
+html { scroll-behavior: smooth; }
+.sec { scroll-margin-top: 64px; }
+.section-nav {
+    position: sticky;
+    top: 0;
+    z-index: 500;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin: 10px 0 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.section-nav a {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.section-nav a:hover {
+    background: #0891b2;
+    color: #fff;
+    border-color: #0891b2;
+}
+.section-nav a.active {
+    background: #0891b2;
+    color: #fff;
+    border-color: #0891b2;
+}
+/* Tab panels: only the active one is shown, JS toggles which */
+[data-tab] { display: none; }
+[data-tab].tab-active { display: block; }
 </style>
 <style>
    /* all your existing CSS */
@@ -890,8 +934,29 @@
 </table>
 </div>
 
+<!-- ═══ SECTION JUMP NAV ═══ -->
+<nav class="section-nav" aria-label="Jump to section">
+    <a href="#sec-vitals" data-tab="vitals" onclick="return switchConsultTab('vitals', this);">Vitals</a>
+    <a href="#sec-complaints" data-tab="complaints" onclick="return switchConsultTab('complaints', this);">Complaints</a>
+    <a href="#sec-examination" data-tab="examination" onclick="return switchConsultTab('examination', this);">Examination</a>
+    <a href="#sec-past-history" data-tab="past-history" onclick="return switchConsultTab('past-history', this);">Past Hx</a>
+    <a href="#sec-surgical-history" data-tab="surgical-history" onclick="return switchConsultTab('surgical-history', this);">Surgical Hx</a>
+    <a href="#sec-diagnosis" data-tab="diagnosis" onclick="return switchConsultTab('diagnosis', this);">Diagnosis</a>
+    <a href="#sec-investigations" data-tab="investigations" onclick="return switchConsultTab('investigations', this);">Investigations</a>
+    <a href="#sec-prescription" data-tab="prescription" onclick="return switchConsultTab('prescription', this);">Prescription</a>
+    <a href="#sec-procedures" data-tab="procedures" onclick="return switchConsultTab('procedures', this);">Procedures</a>
+    <a href="#sec-advice" data-tab="advice" onclick="return switchConsultTab('advice', this);">Advice</a>
+    <a href="#sec-diet" data-tab="diet" onclick="return switchConsultTab('diet', this);">Diet</a>
+    <a href="#sec-followup" data-tab="followup" onclick="return switchConsultTab('followup', this);">Follow-up</a>
+    <a href="#sec-lama" data-tab="lama" onclick="return switchConsultTab('lama', this);">LAMA</a>
+    <a href="#sec-referral" data-tab="referral" onclick="return switchConsultTab('referral', this);">Referral</a>
+    <a href="#sec-labs" data-tab="labs" onclick="return switchConsultTab('labs', this);">Labs</a>
+    {% if ai_enabled %}<a href="#sec-ai-assist" data-tab="ai-assist" onclick="return switchConsultTab('ai-assist', this);">AI Assist</a>{% endif %}
+    <a href="#sec-radiology" data-tab="radiology" onclick="return switchConsultTab('radiology', this);">Radiology</a>
+</nav>
+
 <!-- ═══ VITAL SIGNS ═══ -->
-<div class="sec">
+<div class="sec" id="sec-vitals" data-tab="vitals">
     <div class="sec-head sh-teal">❤️ Vital Signs</div>
     <div class="sec-body">
         <div class="vitals-grid">
@@ -937,7 +1002,7 @@
 </div>
 
 <!-- ═══ CHIEF COMPLAINTS ═══ -->
-<div class="sec">
+<div class="sec" id="sec-complaints" data-tab="complaints">
     <div class="sec-head sh-amber">
         <span>🤒 Chief Complaints</span>
     </div>
@@ -962,7 +1027,7 @@
 </div>
 
 <!-- ═══ EXAMINATION ═══ -->
-<div class="sec">
+<div class="sec" id="sec-examination" data-tab="examination">
     <div class="sec-head sh-purple">
         <span>🔬 Examination Findings</span>
     </div>
@@ -987,7 +1052,7 @@
 </div>
 
 <!-- ═══ PAST HISTORY ═══ -->
-<div class="sec">
+<div class="sec" id="sec-past-history" data-tab="past-history">
     <div class="sec-head sh-rose">
         <span>🩺 Past History</span>
     </div>
@@ -1008,7 +1073,7 @@
 </div>
 
 <!-- ═══ SURGICAL HISTORY ═══ -->
-<div class="sec">
+<div class="sec" id="sec-surgical-history" data-tab="surgical-history">
     <div class="sec-head sh-cyan">
         <span>🔪 Surgical History</span>
     </div>
@@ -1033,7 +1098,7 @@
 </div>
 
 <!-- ═══ CLINICAL DIAGNOSIS ═══ -->
-<div class="sec">
+<div class="sec" id="sec-diagnosis" data-tab="diagnosis">
     <div class="sec-head sh-indigo">📋 Clinical Diagnosis</div>
     <div class="sec-body">
         <input class="diagnosis-input" type="text" name="diagnosis_text"
@@ -1043,7 +1108,7 @@
 </div>
 
 <!-- ═══ ICD-10 ═══ -->
-<div class="sec">
+<div class="sec" id="sec-icd10" data-tab="diagnosis">
     <div class="sec-head sh-green" style="display:flex;align-items:center;justify-content:space-between;">
     <span>🏷️ ICD-10 Code</span>
         <span style="font-size:10px;font-weight:400;opacity:0.85;">⟺ Drag pills to reorder</span>
@@ -1095,7 +1160,7 @@
 </div>
 
 <!-- ═══ INVESTIGATIONS ═══ -->
-<div class="sec">
+<div class="sec" id="sec-investigations" data-tab="investigations">
     <div class="sec-head sh-green">🧪 Investigations / Laboratory Tests</div>
     <div class="sec-body">
         <div class="cb-grid">
@@ -1121,7 +1186,7 @@
 </div>
 
 <!-- ═══ QUICK MEDICINE SELECT ═══ -->
-<div style="margin-bottom:10px;">
+<div style="margin-bottom:10px;" data-tab="prescription">
   <div style="font-size:12px;font-weight:700;color:#007676;margin-bottom:6px;">⚡ Quick Select — Medicines (from Drug Master)</div>
 
   {% if drug_masters %}
@@ -1179,7 +1244,7 @@
 </div>
 
 <!-- ═══ PRESCRIPTION ═══ -->
-<div class="sec">
+<div class="sec" id="sec-prescription" data-tab="prescription">
     <div class="sec-head sh-blue" style="display:flex;align-items:center;justify-content:space-between;"><span>💊 Prescription</span>
         {% if ai_enabled %}
         <button type="button" id="rx-ai-btn" onclick="generateAIMedicines()" style="background:#fff;color:#2563eb;border:1px solid #93c5fd;border-radius:6px;padding:3px 12px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">🤖 AI Suggest Medicines</button>
@@ -1288,7 +1353,7 @@
 </div>
 
 <!-- ═══ PROCEDURES PERFORMED TODAY ═══ -->
-<div class="sec">
+<div class="sec" id="sec-procedures" data-tab="procedures">
     <div class="sec-head" style="background:linear-gradient(135deg,#0891b2,#0e7490);color:#fff;">🩹 Procedures Performed Today</div>
     <div class="sec-body">
         <div class="ch-grid" style="margin-bottom:10px;">
@@ -1302,7 +1367,7 @@
 </div>
 
 <!-- ═══ ADVICE ═══ -->
-<div class="sec">
+<div class="sec" id="sec-advice" data-tab="advice">
     <div class="sec-head" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;display:flex;align-items:center;justify-content:space-between;">
         <span>💬 Advice to Patient</span>
         <button type="button" onclick="openManage('advice')" style="background:#e0f2fe;border:1px solid #0284c7;color:#0369a1;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;">⚙️ Manage</button>
@@ -1326,7 +1391,7 @@
 </div>
 
 <!-- ═══ DIET ═══ -->
-<div class="sec">
+<div class="sec" id="sec-diet" data-tab="diet">
     <div class="sec-head" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;display:flex;align-items:center;justify-content:space-between;">
         <span>🥗 Diet Advice</span>
         <button type="button" onclick="openManage('diet')" style="background:#dcfce7;border:1px solid #16a34a;color:#15803d;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;">⚙️ Manage</button>
@@ -1354,7 +1419,7 @@
 </div>
 
 <!-- ═══ FOLLOW-UP ═══ -->
-<div class="sec">
+<div class="sec" id="sec-followup" data-tab="followup">
     <div class="sec-head" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;">📅 Follow-up</div>
     <div class="sec-body">
         <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
@@ -1382,7 +1447,7 @@
 
 <!-- ═══ REFUSAL OF ADMISSION / LAMA CONSENT  +  REFERRAL NOTE ═══ -->
 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
-<div class="sec" style="flex:1;min-width:320px;">
+<div class="sec" id="sec-lama" data-tab="lama" style="flex:1;min-width:320px;">
     <div class="sec-head is-collapsible" style="background:linear-gradient(135deg,#b91c1c,#991b1b);color:#fff;" onclick="toggleSection(this)"><span class="sec-chevron">▸</span>⚠️ Refusal of Admission / LAMA Consent</div>
     <div class="sec-body" style="display:none;">
         <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#333;cursor:pointer;">
@@ -1453,7 +1518,7 @@
     </div>
 </div>
 
-<div class="sec" style="flex:1;min-width:320px;">
+<div class="sec" id="sec-referral" data-tab="referral" style="flex:1;min-width:320px;">
     <div class="sec-head is-collapsible" style="background:linear-gradient(135deg,#0369a1,#075985);color:#fff;" onclick="toggleSection(this)"><span class="sec-chevron">▸</span>↗️ Referral Note</div>
     <div class="sec-body" style="display:none;">
         <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#333;cursor:pointer;">
@@ -1508,7 +1573,7 @@
 </div>
 
 <!-- ═══ QUICK LAB VALUES ═══ -->
-<div class="sec">
+<div class="sec" id="sec-labs" data-tab="labs">
     <div class="sec-head sh-teal" style="display:flex;align-items:center;justify-content:space-between;">
         <span>🧪 Quick Lab Values</span>
         <span style="font-size:10px;font-weight:400;opacity:0.85;">Manual entry — outside/patient-reported, not linked to Lab Billing</span>
@@ -1601,7 +1666,7 @@
 
 <!-- ═══ AI CLINICAL ASSIST ═══ -->
 {% if ai_enabled %}
-<div class="sec" style="margin-top:14px; border: 2px solid #e0e0e0;">
+<div class="sec" id="sec-ai-assist" data-tab="ai-assist" style="margin-top:14px; border: 2px solid #e0e0e0;">
     <div class="sec-head sh-teal" style="padding:10px 16px;">
         <span>🧠</span> AI Clinical Assist
         <span style="margin-left:auto; font-size:10px; font-weight:400; opacity:0.8;">Powered by OpenAI</span>
@@ -1702,7 +1767,7 @@
 {% endif %}
 
 <!-- ═══ RADIOLOGY IMAGES ═══ -->
-<div class="sec" style="margin-top:12px;">
+<div class="sec" id="sec-radiology" data-tab="radiology" style="margin-top:12px;">
     <div class="sec-head sh-indigo">🩻 Radiology / Medical Images</div>
     <div class="sec-body">
         {% if appointment.patient.medical_images.all %}
@@ -3152,6 +3217,44 @@ function generateAIMedicines() {
         btn.innerHTML = '\U0001f916 AI Suggest Medicines';
     });
 }
+
+/* ── Consultation form: tabbed sections (sticky nav switches which panel
+   shows, instead of scrolling to it) ── */
+function ensureSectionExpanded(secId) {
+    var sec = document.getElementById(secId);
+    if (!sec) return;
+    var head = sec.querySelector('.sec-head.is-collapsible');
+    if (!head) return;
+    var body = head.nextElementSibling;
+    if (body && body.classList.contains('sec-body') && body.style.display === 'none') {
+        toggleSection(head);
+    }
+}
+
+function switchConsultTab(tabName) {
+    document.querySelectorAll('[data-tab]').forEach(function (el) {
+        el.classList.toggle('tab-active', el.dataset.tab === tabName);
+    });
+    document.querySelectorAll('.section-nav a').forEach(function (a) {
+        a.classList.toggle('active', a.dataset.tab === tabName);
+    });
+    // LAMA/Referral start collapsed by default — expand automatically when
+    // their tab is selected so switching to it doesn't look empty.
+    if (tabName === 'lama') {
+        ensureSectionExpanded('sec-lama');
+        // Re-measure regardless of whether it was already expanded — the
+        // consent textareas' scrollHeight reads 0 while this whole tab
+        // panel was display:none, so their auto-grow height needs
+        // recalculating now that the panel is actually visible.
+        autoGrowLamaConsentFields();
+    }
+    if (tabName === 'referral') ensureSectionExpanded('sec-referral');
+    return false; // we've already switched the panel — skip the native #anchor jump
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    switchConsultTab('vitals');
+});
 
 /* ── Collapsible section: click the header to expand / collapse ── */
 function toggleSection(headEl) {
