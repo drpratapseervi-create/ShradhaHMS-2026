@@ -1185,20 +1185,18 @@
         {% endif %}
     </div>
     <div class="sec-body">
-        <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; align-items:center;">
-            <button type="button" class="btn-add-rx" onclick="addRxRow()">➕ Add Medicine</button>
-            <button type="button" class="btn-add-rx" onclick="openSaveTemplate()" style="background:#e6f4f4;border-color:#007676;color:#007676;">💾 Save as Template</button>
-            <button type="button" class="btn-add-rx" onclick="openLoadTemplate()" style="background:#fff8e6;border-color:#f0a500;color:#835a00;">⚙️ Manage Templates</button>
-        </div>
-
         <div style="margin-bottom:14px;">
             <div style="font-size:11px;font-weight:700;color:#835a00;margin-bottom:6px;letter-spacing:0.3px;">⚡ Quick Select — Prescription Templates</div>
-            <input type="text" id="tmpl-quick-search" placeholder="🔍 Search templates…" oninput="filterQuickTemplates()"
-                   style="width:100%;margin-bottom:6px;padding:7px 10px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;">
             <div id="tmpl-pill-container" style="display:flex;flex-wrap:wrap;gap:5px;min-height:32px;padding:4px;border:1px dashed #fde68a;border-radius:8px;">
                 <span style="font-size:11px;color:#94a3b8;font-style:italic;">Loading templates…</span>
             </div>
             <div style="font-size:10px;color:#aaa;margin-top:4px;">💡 Click a template to load its medicines — click ✕ on a pill to delete it</div>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; align-items:center;">
+            <button type="button" class="btn-add-rx" onclick="addRxRow()">➕ Add Medicine</button>
+            <button type="button" class="btn-add-rx" onclick="openSaveTemplate()" style="background:#e6f4f4;border-color:#007676;color:#007676;">💾 Save as Template</button>
+            <button type="button" class="btn-add-rx" onclick="openLoadTemplate()" style="background:#fff8e6;border-color:#f0a500;color:#835a00;">⚙️ Manage Templates</button>
         </div>
 
         <table class="rx-table">
@@ -1443,27 +1441,10 @@
                 </div>
             </div>
 
-            <div style="margin-top:14px;">
-                <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Signature</label>
-                <div style="border:1px solid #ccc;border-radius:7px;overflow:hidden;">
-                    <canvas id="lama-sig-canvas" width="700" height="160" style="width:100%;height:160px;display:block;background:#fff;touch-action:none;cursor:crosshair;"></canvas>
-                </div>
-                <div style="margin-top:6px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
-                    <button type="button" onclick="clearLamaSignature()" style="background:#f1f1f1;color:#333;border:1px solid #ccc;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">Clear Signature</button>
-                    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#555;cursor:pointer;">
-                        <input type="checkbox" id="lama-sig-fallback-toggle" onchange="toggleLamaSigFallback()" {% if consultation.lama_signed_name %}checked{% endif %}> Can't sign here — use typed name instead
-                    </label>
-                </div>
-                <div id="lama-sig-fallback" style="display:{% if consultation.lama_signed_name %}block{% else %}none{% endif %};margin-top:8px;max-width:320px;">
-                    <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Typed Name (in lieu of signature)</label>
-                    <input type="text" name="lama_signed_name" id="id_lama_signed_name" value="{{ consultation.lama_signed_name|default:'' }}" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 12px;font-size:13px;">
-                </div>
-                <input type="hidden" name="lama_signature_data" id="id_lama_signature_data" value="{{ consultation.lama_signature_data|default:'' }}">
-            </div>
-
-            <div style="margin-top:14px;">
+            <div style="margin-top:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                <button type="submit" style="background:#b91c1c;color:#fff;border:none;border-radius:6px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;">💾 Save</button>
                 <a href="{% url 'hms:lama_consent_print' appointment.id %}" target="_blank" style="background:#1e293b;color:#fff;text-decoration:none;border-radius:6px;padding:8px 16px;font-size:12px;font-weight:600;">🖨️ Print LAMA Consent Sheet</a>
-                <span style="font-size:11px;color:#888;margin-left:8px;">Save the consultation first so the print sheet reflects the latest text.</span>
+                <span style="font-size:11px;color:#888;">Save the consultation first so the print sheet reflects the latest text.</span>
             </div>
         </div>
     </div>
@@ -3102,11 +3083,6 @@ function toggleLamaSection() {
 }
 document.addEventListener('DOMContentLoaded', autofillLamaDiagnosis);
 
-function toggleLamaSigFallback() {
-    var checked = document.getElementById('lama-sig-fallback-toggle').checked;
-    document.getElementById('lama-sig-fallback').style.display = checked ? 'block' : 'none';
-}
-
 /* ── Referral Note ── */
 function toggleReferralSection() {
     var checked = document.getElementById('id_referral_flag').checked;
@@ -3220,60 +3196,6 @@ function generateLamaConsent() {
     });
 }
 
-/* ── LAMA signature pad ── */
-(function() {
-    var canvas = document.getElementById('lama-sig-canvas');
-    if (!canvas) return;
-    var ctx = canvas.getContext('2d');
-    ctx.strokeStyle = '#111';
-    ctx.lineWidth = 2;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    var drawing = false, lastX = 0, lastY = 0;
-
-    function pointFromEvent(e) {
-        var rect = canvas.getBoundingClientRect();
-        var scaleX = canvas.width / rect.width;
-        var scaleY = canvas.height / rect.height;
-        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        var clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
-    }
-    function start(e) {
-        drawing = true;
-        var p = pointFromEvent(e);
-        lastX = p.x; lastY = p.y;
-        e.preventDefault();
-    }
-    function move(e) {
-        if (!drawing) return;
-        var p = pointFromEvent(e);
-        ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
-        ctx.lineTo(p.x, p.y);
-        ctx.stroke();
-        lastX = p.x; lastY = p.y;
-        e.preventDefault();
-    }
-    function end() {
-        if (!drawing) return;
-        drawing = false;
-        document.getElementById('id_lama_signature_data').value = canvas.toDataURL('image/png');
-    }
-    canvas.addEventListener('mousedown', start);
-    canvas.addEventListener('mousemove', move);
-    window.addEventListener('mouseup', end);
-    canvas.addEventListener('touchstart', start, { passive: false });
-    canvas.addEventListener('touchmove', move, { passive: false });
-    canvas.addEventListener('touchend', end);
-})();
-
-function clearLamaSignature() {
-    var canvas = document.getElementById('lama-sig-canvas');
-    if (!canvas) return;
-    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-    document.getElementById('id_lama_signature_data').value = '';
-}
 </script>
 
 <!-- ═══ SCROLL TO TOP ═══ -->
