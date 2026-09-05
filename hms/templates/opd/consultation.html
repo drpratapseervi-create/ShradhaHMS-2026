@@ -1411,11 +1411,11 @@
 
             <div style="margin-top:12px;">
                 <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Consent Text (English)</label>
-                <textarea name="lama_consent_en" id="id_lama_consent_en" rows="4" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Generated consent paragraph will appear here — editable before saving.">{{ consultation.lama_consent_en|default:'' }}</textarea>
+                <textarea name="lama_consent_en" id="id_lama_consent_en" rows="1" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:none;overflow:hidden;" placeholder="Generated consent paragraph will appear here — editable before saving.">{{ consultation.lama_consent_en|default:'' }}</textarea>
             </div>
             <div style="margin-top:12px;">
                 <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">सहमति पाठ (Consent Text — Hindi)</label>
-                <textarea name="lama_consent_hi" id="id_lama_consent_hi" rows="4" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="हिंदी अनुवाद यहाँ दिखेगा — सहेजने से पहले संपादन योग्य।">{{ consultation.lama_consent_hi|default:'' }}</textarea>
+                <textarea name="lama_consent_hi" id="id_lama_consent_hi" rows="1" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:none;overflow:hidden;" placeholder="हिंदी अनुवाद यहाँ दिखेगा — सहेजने से पहले संपादन योग्य।">{{ consultation.lama_consent_hi|default:'' }}</textarea>
             </div>
 
             <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;">
@@ -3054,7 +3054,27 @@ function toggleSection(headEl) {
     body.style.display = willShow ? '' : 'none';
     var chev = headEl.querySelector('.sec-chevron');
     if (chev) chev.textContent = willShow ? '▾' : '▸';
+    if (willShow) autoGrowLamaConsentFields();
 }
+
+/* ── Auto-growing textareas (LAMA consent text) ── */
+function autoGrowTextarea(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+}
+function autoGrowLamaConsentFields() {
+    autoGrowTextarea(document.getElementById('id_lama_consent_en'));
+    autoGrowTextarea(document.getElementById('id_lama_consent_hi'));
+}
+document.addEventListener('DOMContentLoaded', function() {
+    ['id_lama_consent_en', 'id_lama_consent_hi'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        autoGrowTextarea(el);
+        el.addEventListener('input', function() { autoGrowTextarea(el); });
+    });
+});
 
 /* ── Shared: current diagnosis (ICD tags, falling back to free-text diagnosis) ── */
 function getMainDiagnosisSummary() {
@@ -3079,7 +3099,10 @@ function autofillLamaDiagnosis() {
 function toggleLamaSection() {
     var checked = document.getElementById('id_lama_declined').checked;
     document.getElementById('lama-section-body').style.display = checked ? 'block' : 'none';
-    if (checked) autofillLamaDiagnosis();
+    if (checked) {
+        autofillLamaDiagnosis();
+        autoGrowLamaConsentFields();
+    }
 }
 document.addEventListener('DOMContentLoaded', autofillLamaDiagnosis);
 
@@ -3185,6 +3208,7 @@ function generateLamaConsent() {
         if (data.error) { throw new Error(data.error); }
         document.getElementById('id_lama_consent_en').value = data.consent_en || '';
         document.getElementById('id_lama_consent_hi').value = data.consent_hi || '';
+        autoGrowLamaConsentFields();
     })
     .catch(function(err) {
         errBox.textContent = '⚠️ ' + err.message;
