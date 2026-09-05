@@ -1494,9 +1494,10 @@
                 <textarea name="referral_letter_text" id="id_referral_letter_text" rows="6" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="Generated referral letter body will appear here — editable before saving.">{{ consultation.referral_letter_text|default:'' }}</textarea>
             </div>
 
-            <div style="margin-top:14px;">
-                <a href="{% url 'hms:referral_letter_print' appointment.id %}" target="_blank" style="background:#0369a1;color:#fff;text-decoration:none;border-radius:6px;padding:8px 16px;font-size:12px;font-weight:600;">🖨️ Print / Download Referral Letter</a>
-                <span style="font-size:11px;color:#888;margin-left:8px;">Save the consultation first so the letter reflects the latest text.</span>
+            <div style="margin-top:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                <button type="button" id="referral-save-btn" onclick="saveReferralNote()" style="background:#0369a1;color:#fff;border:none;border-radius:6px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;">💾 Save</button>
+                <a href="{% url 'hms:referral_letter_print' appointment.id %}" target="_blank" style="background:#1e293b;color:#fff;text-decoration:none;border-radius:6px;padding:8px 16px;font-size:12px;font-weight:600;">🖨️ Print / Download Referral Letter</a>
+                <span id="referral-save-status" style="font-size:11px;color:#888;"></span>
             </div>
         </div>
     </div>
@@ -3170,6 +3171,37 @@ function generateReferralLetter() {
     .finally(function() {
         btn.disabled = false;
         loading.style.display = 'none';
+    });
+}
+
+function saveReferralNote() {
+    var btn = document.getElementById('referral-save-btn');
+    var status = document.getElementById('referral-save-status');
+    btn.disabled = true;
+    if (status) { status.style.color = '#888'; status.textContent = 'Saving…'; }
+
+    fetch('/consultation/{{ appointment.id }}/referral/save/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({
+            referral_flag: document.getElementById('id_referral_flag').checked,
+            referral_to: document.getElementById('id_referral_to').value,
+            referral_urgency: document.getElementById('id_referral_urgency').value,
+            referral_reason: document.getElementById('id_referral_reason').value,
+            referral_letter_text: document.getElementById('id_referral_letter_text').value,
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (!data.success) throw new Error(data.error || 'Could not save referral note.');
+        if (status) { status.style.color = '#16a34a'; status.textContent = '✅ Saved'; }
+        showToast('✅ Referral note saved', '#0369a1');
+    })
+    .catch(function(err) {
+        if (status) { status.style.color = '#dc2626'; status.textContent = '⚠️ ' + err.message; }
+    })
+    .finally(function() {
+        btn.disabled = false;
     });
 }
 

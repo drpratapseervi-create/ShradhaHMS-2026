@@ -583,6 +583,27 @@ def start_consultation(request, appointment_id):
         "ai_enabled": settings.AI_FEATURES_ENABLED,
     })
 
+
+@login_required
+@role_required("doctor", "admin")
+def save_referral_note(request, appointment_id):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    appointment = get_object_or_404(Appointment, id=appointment_id)
+    consultation, _ = Consultation.objects.get_or_create(appointment=appointment)
+    data = json.loads(request.body)
+    consultation.referral_flag = bool(data.get("referral_flag"))
+    consultation.referral_to = (data.get("referral_to") or "").strip()
+    consultation.referral_urgency = (data.get("referral_urgency") or "").strip()
+    consultation.referral_reason = (data.get("referral_reason") or "").strip()
+    consultation.referral_letter_text = (data.get("referral_letter_text") or "").strip()
+    consultation.save(update_fields=[
+        "referral_flag", "referral_to", "referral_urgency",
+        "referral_reason", "referral_letter_text",
+    ])
+    return JsonResponse({"success": True})
+
+
 # ======================================================
 # CONSULTATION PDF
 # ======================================================

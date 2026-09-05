@@ -33,6 +33,7 @@ urlpatterns = [
     path("consultation/<int:appointment_id>/lama-consent/print/", views.lama_consent_print, name="lama_consent_print"),
     path("generate-lama-consent/", views.generate_lama_consent, name="generate_lama_consent"),
     path("consultation/<int:appointment_id>/referral/pdf/", views.referral_letter_print, name="referral_letter_print"),
+    path("consultation/<int:appointment_id>/referral/save/", views.save_referral_note, name="save_referral_note"),
     path("generate-referral-letter/", views.generate_referral_letter, name="generate_referral_letter"),
     path("ai-full-opd/", views.ai_full_opd, name="ai_full_opd"),
     path('prescriptions/template/save/',          views.save_prescription_template,  name='save_prescription_template'),
