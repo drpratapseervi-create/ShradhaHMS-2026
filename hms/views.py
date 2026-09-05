@@ -2608,7 +2608,145 @@ def ai_full_opd(request):
 
         return JsonResponse({"result": result_text})
 
-        from django.shortcuts import render
+
+@login_required
+@role_required("doctor", "admin")
+def ai_clinical_review(request, appointment_id):
+    """Second-opinion style AI review built from the FULL saved clinical
+    context of a consultation (patient demographics, history, diagnosis,
+    investigations, current prescription) — pulled automatically from the
+    DB rather than requiring manual entry."""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    if not settings.AI_FEATURES_ENABLED:
+        return JsonResponse({"error": "AI features are not configured on this system."})
+
+    appointment = get_object_or_404(
+        Appointment.objects.select_related("patient"), id=appointment_id
+    )
+    patient = appointment.patient
+    consultation, _ = Consultation.objects.get_or_create(appointment=appointment)
+
+    def field(value):
+        return (value or "").strip()
+
+    residency = ", ".join(
+        p for p in [patient.city, patient.district, patient.state] if p
+    ) or "Not recorded"
+
+    complaints = list(consultation.symptoms.values_list("name", flat=True))
+    if field(consultation.chief_complaints):
+        complaints.append(field(consultation.chief_complaints))
+    if field(consultation.custom_symptoms):
+        complaints.append(field(consultation.custom_symptoms))
+
+    exam_findings = list(consultation.signs.values_list("name", flat=True))
+    if field(consultation.examination):
+        exam_findings.append(field(consultation.examination))
+    if field(consultation.custom_signs):
+        exam_findings.append(field(consultation.custom_signs))
+
+    past_history = list(consultation.past_history.values_list("name", flat=True))
+    surgical_history = list(consultation.surgical_history.values_list("name", flat=True))
+
+    diagnosis_parts = []
+    if field(consultation.diagnosis_text):
+        diagnosis_parts.append(field(consultation.diagnosis_text))
+    diagnosis_parts += [
+        f"{icd.code} - {icd.description}" for icd in consultation.icd_codes.all()
+    ]
+
+    investigations_advised = list(consultation.investigations.values_list("name", flat=True))
+    if field(consultation.custom_investigations):
+        investigations_advised.append(field(consultation.custom_investigations))
+
+    qlv = consultation.quick_lab_values or {}
+    qlv_labels = {
+        "hb": "Hb", "tlc": "TLC", "platelet": "Platelet", "rbs": "RBS",
+        "creatinine": "Creatinine", "urea": "Urea", "sgot": "SGOT", "sgpt": "SGPT",
+        "tsh": "TSH", "typhoid": "Typhoid", "mp_test": "MP", "esr": "ESR",
+    }
+    result_parts = []
+    for key, label in qlv_labels.items():
+        val = field(qlv.get(key))
+        if val:
+            result_parts.append(f"{label}: {val}")
+    other_label = field(qlv.get("other_label"))
+    other_value = field(qlv.get("other_value"))
+    if other_label and other_value:
+        result_parts.append(f"{other_label}: {other_value}")
+    if field(consultation.usg_findings):
+        result_parts.append(f"USG: {field(consultation.usg_findings)}")
+
+    rx_lines = [
+        f"{p.medicine} {p.dose} {p.frequency} x {p.duration}"
+        + (f" ({p.instructions})" if p.instructions else "")
+        for p in consultation.prescriptions.all()
+    ]
+
+    context_block = (
+        f"Patient: {patient.age if patient.age is not None else 'age not recorded'} "
+        f"year old {patient.gender}, resident of {residency}.\n\n"
+        f"Chief Complaints / Symptoms: {', '.join(complaints) or 'None recorded'}\n"
+        f"Examination Findings: {', '.join(exam_findings) or 'None recorded'}\n"
+        f"Past History: {', '.join(past_history) or 'None recorded'}\n"
+        f"Surgical History: {', '.join(surgical_history) or 'None recorded'}\n"
+        f"Diagnosis (incl. ICD-10): {', '.join(diagnosis_parts) or 'Not yet entered'}\n"
+        f"Investigations Advised: {', '.join(investigations_advised) or 'None advised'}\n"
+        f"Investigation Results: {', '.join(result_parts) or 'No results entered yet'}\n"
+        f"Current Prescription: {'; '.join(rx_lines) or 'No medicines prescribed yet'}"
+    )
+
+    system_prompt = (
+        "You are a clinical decision-support assistant giving a second opinion to the "
+        "treating doctor in an Indian OPD/IPD setting. You are NOT diagnosing the "
+        "patient or replacing the doctor's judgment. Compare the case against standard "
+        "clinical guidelines for this presentation and note anything that seems missing "
+        "or worth considering — e.g. a commonly-indicated investigation that hasn't been "
+        "ordered, a red-flag symptom not addressed, or a drug interaction/dosing concern "
+        "in the current prescription. Suggest additions to the treatment plan only if "
+        "genuinely relevant given the data provided. Every point MUST be phrased as an "
+        "advisory suggestion for the doctor to consider (e.g. 'Consider also checking...', "
+        "'Note: possible interaction between X and Y') — never as a definitive correction, "
+        "diagnosis, or instruction. If nothing seems missing, say so briefly instead of "
+        "inventing concerns. Return ONLY valid JSON matching the given schema."
+    )
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        max_tokens=900,
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "clinical_second_opinion",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "summary": {"type": "string"},
+                        "considerations": {"type": "array", "items": {"type": "string"}},
+                        "treatment_suggestions": {"type": "array", "items": {"type": "string"}},
+                    },
+                    "required": ["summary", "considerations", "treatment_suggestions"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": context_block},
+        ],
+    )
+    result_text = response.choices[0].message.content or "{}"
+    try:
+        review = json.loads(result_text)
+    except ValueError:
+        return JsonResponse({"error": "AI response could not be parsed."}, status=502)
+
+    return JsonResponse({"success": True, "review": review, "context_used": context_block})
+
+
+from django.shortcuts import render
 from django.http import HttpResponse
 import csv
 import openpyxl

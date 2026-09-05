@@ -645,7 +645,10 @@
 .ai-card-treatment { background:#fff !important; border-left-color:#ddd; }
 .ai-card-rx        { background:#ecfeff !important; border-left-color:#06b6d4; }
 .ai-card-advice    { background:#fff !important; border-left-color:#0ea5e9; }
-.ai-card-redflag   { background:#fff1f2 !important; border-left-color:#f43f5e; }}
+.ai-card-redflag   { background:#fff1f2 !important; border-left-color:#f43f5e; }
+.ai-card-consider  { background:#eff6ff !important; border-left-color:#3b82f6; }
+.ai-card-suggest   { background:#f0fdf4 !important; border-left-color:#16a34a; }
+.ai-card-context   { background:#f8fafc !important; border-left-color:#94a3b8; }}
 
 /* ── Radiology ── */
 .radio-img-wrap {
@@ -1604,6 +1607,44 @@
         <span style="margin-left:auto; font-size:10px; font-weight:400; opacity:0.8;">Powered by OpenAI</span>
     </div>
     <div class="sec-body">
+        <div style="margin-bottom:12px;padding:8px 12px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;font-size:11px;color:#92400e;font-weight:600;">
+            ⚠️ AI-generated suggestions are for reference only and do not replace clinical judgment.
+        </div>
+
+        <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px dashed #e0e0e0;">
+            <div style="font-size:12px;font-weight:700;color:#333;margin-bottom:6px;">🩺 Full Consultation Review</div>
+            <div style="font-size:11px;color:#777;margin-bottom:8px;">
+                Reads the saved consultation automatically — patient age/sex/residency, complaints, exam findings,
+                history, diagnosis (ICD-10), investigations &amp; results, and current prescription. Save the
+                consultation first so the review reflects the latest data.
+            </div>
+            <button class="ai-btn" id="ai-review-btn" type="button" onclick="runClinicalReview()">
+                🩺 Full Consultation AI Review
+            </button>
+            <div class="ai-loading" id="ai-review-loading">⏳ &nbsp;Reviewing full consultation, please wait…</div>
+            <div class="ai-error"   id="ai-review-error"></div>
+            <div class="ai-panel" id="ai-review-panel">
+                <div class="ai-card ai-card-consider">
+                    <div class="ai-card-title">🔎 Summary</div>
+                    <div id="ai-review-summary"></div>
+                </div>
+                <div class="ai-card ai-card-consider">
+                    <div class="ai-card-title">🤔 Worth Considering</div>
+                    <ul id="ai-review-considerations"></ul>
+                </div>
+                <div class="ai-card ai-card-suggest">
+                    <div class="ai-card-title">💊 Possible Additions to Treatment Plan</div>
+                    <ul id="ai-review-treatment"></ul>
+                </div>
+                <details class="ai-card ai-card-context">
+                    <summary class="ai-card-title" style="cursor:pointer;">📄 Clinical context sent to AI</summary>
+                    <pre id="ai-review-context" style="white-space:pre-wrap;font-family:inherit;font-size:11px;margin:6px 0 0;"></pre>
+                </details>
+            </div>
+        </div>
+
+        <div style="font-size:12px;font-weight:700;color:#333;margin-bottom:2px;">✍️ Quick Check (manual entry)</div>
+        <div style="font-size:11px;color:#777;margin-bottom:4px;">For a quick check on specific values without pulling the full consultation context.</div>
         <textarea class="ai-inv-input" id="investigation_results" name="ai_investigation_input" form="consultation-form" rows="2"
             placeholder="Enter investigation results here (e.g. Hb-6 gm, RBS-400 mg/dl, TLC-11000…)">{{ consultation.ai_investigation_input|default:'' }}</textarea>
         <div style="margin-top:10px;">
@@ -1647,9 +1688,9 @@
                 <ul id="ai-redflag"></ul>
             </div>
         </div>
-        <textarea id="ai-result" name="ai_notes" form="consultation-form" style="display:none">{{ consultation.ai_notes|default:'' }}</textarea>
-        <input type="hidden" id="ai-probable-field" name="ai_probable_diagnosis" form="consultation-form" value="{{ consultation.ai_probable_diagnosis|default:'' }}">
-        <input type="hidden" id="ai-required-field" name="ai_required_investigations" form="consultation-form" value="{{ consultation.ai_required_investigations|default:'' }}">
+        <textarea id="ai-result" name="ai_notes" form="consultation-form" style="display:none"></textarea>
+        <input type="hidden" id="ai-probable-field" name="ai_probable_diagnosis" form="consultation-form" value="">
+        <input type="hidden" id="ai-required-field" name="ai_required_investigations" form="consultation-form" value="">
     </div>
 </div>
 {% else %}
@@ -2249,15 +2290,80 @@ function runFullAI() {
     });
 }
 
-/* ── Restore saved AI Clinical Assist output on reload ── */
-document.addEventListener("DOMContentLoaded", function () {
-    const savedNotes = document.getElementById("ai-result");
-    if (savedNotes && savedNotes.value.trim()) {
-        parseAndRender(savedNotes.value);
-        const warning = document.getElementById("ai-draft-warning");
-        if (warning) warning.style.display = "block";
+/* ── Full Consultation AI Review (pulls saved clinical context automatically) ── */
+function runClinicalReview() {
+    const btn     = document.getElementById("ai-review-btn");
+    const loading = document.getElementById("ai-review-loading");
+    const errBox  = document.getElementById("ai-review-error");
+    const panel   = document.getElementById("ai-review-panel");
+
+    btn.disabled = true;
+    btn.innerHTML = "⏳ Reviewing…";
+    loading.style.display = "block";
+    errBox.style.display  = "none";
+    panel.style.display   = "none";
+
+    fetch("{% url 'hms:ai_clinical_review' appointment.id %}", {
+        method: "POST",
+        headers: { "X-CSRFToken": CSRF },
+    })
+    .then(res => res.json().then(data => ({ ok: res.ok, data: data })))
+    .then(({ ok, data }) => {
+        if (!ok || data.error) throw new Error(data.error || "Server error");
+        renderClinicalReview(data.review, data.context_used);
+    })
+    .catch(err => {
+        errBox.textContent = "⚠️ AI review failed: " + err.message;
+        errBox.style.display = "block";
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = "🩺 Full Consultation AI Review";
+        loading.style.display = "none";
+    });
+}
+
+function renderClinicalReview(review, contextUsed) {
+    review = review || {};
+    document.getElementById("ai-review-summary").textContent = review.summary || "";
+
+    const considList = document.getElementById("ai-review-considerations");
+    considList.innerHTML = "";
+    const considerations = review.considerations || [];
+    if (considerations.length) {
+        considerations.forEach(function (item) {
+            const li = document.createElement("li");
+            li.textContent = item;
+            considList.appendChild(li);
+        });
+    } else {
+        const li = document.createElement("li");
+        li.textContent = "Nothing additional flagged.";
+        li.style.color = "#888";
+        considList.appendChild(li);
     }
-});
+
+    const treatList = document.getElementById("ai-review-treatment");
+    treatList.innerHTML = "";
+    const suggestions = review.treatment_suggestions || [];
+    if (suggestions.length) {
+        suggestions.forEach(function (item) {
+            const li = document.createElement("li");
+            li.textContent = item;
+            treatList.appendChild(li);
+        });
+    } else {
+        const li = document.createElement("li");
+        li.textContent = "No additions suggested.";
+        li.style.color = "#888";
+        treatList.appendChild(li);
+    }
+
+    const ctxBox = document.getElementById("ai-review-context");
+    if (ctxBox) ctxBox.textContent = contextUsed || "";
+
+    document.getElementById("ai-review-panel").style.display = "block";
+}
 
 /* ── Quick Lab Values → AI Clinical Assist auto-link ── */
 (function () {
