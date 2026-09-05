@@ -1,10 +1,11 @@
 import os
+import re
 from encrypted_model_fields.fields import EncryptedCharField
 from auditlog.registry import auditlog
 from django.db import models
 from django.core.validators import RegexValidator, FileExtensionValidator
 from django.utils import timezone
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from django.contrib.auth.models import User
 from django.conf import settings
 from django.db.models.signals import post_save
@@ -1673,6 +1674,36 @@ class ConstructionMedia(models.Model):
     @property
     def filename(self):
         return os.path.basename(self.file.name)
+
+    _FILENAME_DATE_RE = re.compile(r'(\d{4})-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(\d{2})')
+
+    @property
+    def display_date(self):
+        """The real capture date embedded in imported WhatsApp filenames
+        (e.g. '...VIDEO-2026-05-29-09-40-36.mov'), falling back to
+        uploaded_at for files that don't carry that pattern."""
+        match = self._FILENAME_DATE_RE.search(self.filename)
+        if match:
+            year, month, day, hour, minute, second = (int(g) for g in match.groups())
+            try:
+                naive = datetime(year, month, day, hour, minute, second)
+                return timezone.make_aware(naive, timezone.get_current_timezone())
+            except ValueError:
+                pass
+        return self.uploaded_at
+
+    @property
+    def file_size_display(self):
+        try:
+            size = self.file.size
+        except (OSError, ValueError):
+            return ""
+        size = float(size)
+        for unit in ('B', 'KB', 'MB', 'GB'):
+            if size < 1024 or unit == 'GB':
+                return f"{size:.0f} {unit}" if unit == 'B' else f"{size:.1f} {unit}"
+            size /= 1024
+        return f"{size:.1f} GB"
 
     class Meta:
         ordering            = ['-uploaded_at']

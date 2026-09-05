@@ -35,32 +35,114 @@
     border: 1px solid #2d3f4f !important;
     border-radius: 6px;
   }
-  .video-item {
-    background: #1e2a35 !important;
+
+  /* Collapsible media sections (Videos / Photos / Documents) */
+  .media-section {
+    background: #1a2634 !important;
     border: 1px solid #2d3f4f !important;
     border-radius: 6px;
     overflow: hidden;
   }
-  .video-item video,
-  .video-item img {
-    width: 100%;
-    max-height: 220px;
-    object-fit: cover;
-    background: #000;
-    display: block;
+  .media-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: #152230 !important;
+    cursor: pointer;
+    user-select: none;
   }
-  .video-item .video-meta {
-    padding: 8px 10px;
+  .media-section-title {
+    font-size: 14px;
+    font-weight: 600;
     color: #d0dce8;
   }
-  .video-item .video-caption {
-    font-size: 13px;
-    font-weight: 500;
-    color: #e0ecf8;
+  .media-section-count {
+    font-size: 11px;
+    color: #8aaec8;
+    background: #1e2a35;
+    border: 1px solid #2d3f4f;
+    border-radius: 10px;
+    padding: 1px 8px;
   }
-  .video-item .video-timestamp {
+  .media-section-chevron {
+    color: #7a9ab0;
+    transition: transform 0.2s ease;
+  }
+  .media-section-header[aria-expanded="false"] .media-section-chevron {
+    transform: rotate(-90deg);
+  }
+  .media-list {
+    max-height: 560px;
+    overflow-y: auto;
+  }
+  .media-row {
+    display: flex;
+    gap: 12px;
+    padding: 10px 14px;
+    border-top: 1px solid #2d3f4f;
+    align-items: center;
+    background: #1e2a35;
+  }
+  .media-row:first-child { border-top: none; }
+  .media-row:hover { background: #243342; }
+  .media-row-preview {
+    flex: 0 0 200px;
+    width: 200px;
+  }
+  .media-row-preview video,
+  .media-row-preview img {
+    width: 100%;
+    height: 112px;
+    object-fit: cover;
+    background: #000;
+    border-radius: 4px;
+    display: block;
+  }
+  .media-doc-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 112px;
+    background: #0f1a24;
+    border-radius: 4px;
+    color: #4da6e8;
+    text-decoration: none;
+    font-size: 28px;
+  }
+  .media-row-info {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .media-row-filename {
+    font-size: 12px;
+    font-family: monospace;
+    color: #e0ecf8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .media-row-meta {
     font-size: 11px;
     color: #7a9ab0;
+    display: flex;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .media-row-caption {
+    font-size: 12px;
+    color: #b8ccdc;
+    margin-top: 4px;
+  }
+  .media-row-actions {
+    flex: 0 0 auto;
+  }
+  .media-list-empty {
+    padding: 20px;
+    text-align: center;
+    color: #5a7a8a;
+    font-size: 13px;
   }
 </style>
 {% endblock %}
@@ -122,43 +204,9 @@
         </div>
       </form>
 
-      <div class="row g-3">
-        {% for item in media_items %}
-        <div class="col-md-4">
-          <div class="video-item">
-            {% if item.media_type == "photo" %}
-              <a href="{{ item.file.url }}" target="_blank"><img src="{{ item.file.url }}" alt="{{ item.caption|default:'Construction photo' }}"></a>
-            {% elif item.media_type == "document" %}
-              <a href="{{ item.file.url }}" target="_blank" class="d-flex flex-column align-items-center justify-content-center text-decoration-none"
-                 style="height:150px;background:#152230">
-                <i class="fas fa-file-alt fa-3x mb-2" style="color:#4da6e8"></i>
-                <span style="font-size:12px;color:#8aaec8;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ item.filename }}">{{ item.filename }}</span>
-              </a>
-            {% else %}
-              <video controls preload="metadata" src="{{ item.file.url }}"></video>
-            {% endif %}
-            <div class="video-meta d-flex align-items-start justify-content-between">
-              <div>
-                <div class="video-caption">{{ item.caption|default:"Untitled" }}</div>
-                <div class="video-timestamp">{{ item.uploaded_at|date:"d M Y, h:i A" }}{% if item.uploaded_by %} &middot; {{ item.uploaded_by.get_full_name|default:item.uploaded_by.username }}{% endif %}</div>
-              </div>
-              <form method="POST" action="{% url 'hms:construction_media_delete' item.pk %}"
-                    onsubmit="return confirm('Delete this file?')">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size:11px" title="Delete">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-        {% empty %}
-        <div class="col-12 text-center py-3" style="color:#5a7a8a">
-          <i class="fas fa-film fa-2x mb-2 d-block" style="color:#3d5060"></i>
-          No photos, videos, or documents uploaded yet.
-        </div>
-        {% endfor %}
-      </div>
+      {% include "hms/construction/_media_section.html" with section_id="mediaSectionVideos" icon="fa-video" title="Videos" items=media_videos kind="video" %}
+      {% include "hms/construction/_media_section.html" with section_id="mediaSectionPhotos" icon="fa-image" title="Photos" items=media_photos kind="photo" %}
+      {% include "hms/construction/_media_section.html" with section_id="mediaSectionDocs" icon="fa-file-alt" title="Construction Maps / Documents" items=media_documents kind="document" %}
     </div>
   </div>
 

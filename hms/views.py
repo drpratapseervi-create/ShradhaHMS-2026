@@ -2991,6 +2991,11 @@ def construction_expense_list(request):
         count=Count("id"),
     )
 
+    all_media = list(ConstructionMedia.objects.select_related("uploaded_by").order_by("uploaded_at"))
+    media_videos   = sorted((m for m in all_media if m.media_type == "video"),    key=lambda m: m.display_date)
+    media_photos   = sorted((m for m in all_media if m.media_type == "photo"),    key=lambda m: m.display_date)
+    media_documents = sorted((m for m in all_media if m.media_type == "document"), key=lambda m: m.display_date)
+
     return render(request, "hms/construction/expense_list.html", {
         "expenses": qs,
         "totals": totals,
@@ -3001,7 +3006,9 @@ def construction_expense_list(request):
         "f_head": head, "f_area": area, "f_status": status,
         "f_paid_by": paid_by, "f_date_from": date_from,
         "f_date_to": date_to, "f_q": q,
-        "media_items": ConstructionMedia.objects.select_related("uploaded_by").order_by("-uploaded_at"),
+        "media_videos": media_videos,
+        "media_photos": media_photos,
+        "media_documents": media_documents,
         "media_max_size_mb": CONSTRUCTION_MEDIA_MAX_SIZE_MB,
     })
 

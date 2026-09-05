@@ -1,0 +1,57 @@
+{% comment %}
+Renders one collapsible Construction Media section (Videos / Photos / Documents).
+Expected context: section_id, icon, title, items, kind ("video"|"photo"|"document").
+{% endcomment %}
+<div class="media-section mb-3">
+  <div class="media-section-header" data-bs-toggle="collapse" data-bs-target="#{{ section_id }}"
+       role="button" aria-expanded="true" aria-controls="{{ section_id }}">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fas {{ icon }}" style="color:#4da6e8"></i>
+      <span class="media-section-title">{{ title }}</span>
+      <span class="media-section-count">{{ items|length }}</span>
+    </div>
+    <i class="fas fa-chevron-down media-section-chevron"></i>
+  </div>
+  <div class="collapse show" id="{{ section_id }}">
+    <div class="media-list">
+      {% for item in items %}
+      <div class="media-row">
+        <div class="media-row-preview">
+          {% if kind == "photo" %}
+            <a href="{{ item.file.url }}" target="_blank"><img src="{{ item.file.url }}" alt="{{ item.caption|default:'Construction photo' }}"></a>
+          {% elif kind == "document" %}
+            <a href="{{ item.file.url }}" target="_blank" class="media-doc-icon"><i class="fas fa-file-alt"></i></a>
+          {% else %}
+            <video controls preload="metadata" src="{{ item.file.url }}"></video>
+          {% endif %}
+        </div>
+        <div class="media-row-info">
+          <div class="media-row-filename" title="{{ item.filename }}">{{ item.filename }}</div>
+          <div class="media-row-meta">
+            <span>{{ item.file_size_display }}</span>
+            <span>&middot;</span>
+            <span>{{ item.display_date|date:"d M Y, h:i A" }}</span>
+          </div>
+          {% if item.caption %}
+          <div class="media-row-caption">{{ item.caption }}</div>
+          {% endif %}
+        </div>
+        <div class="media-row-actions">
+          <form method="POST" action="{% url 'hms:construction_media_delete' item.pk %}"
+                onsubmit="return confirm('Delete this file?')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size:11px" title="Delete">
+              <i class="fas fa-trash"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+      {% empty %}
+      <div class="media-list-empty">
+        <i class="fas fa-inbox mb-1 d-block"></i>
+        No {{ title|lower }} uploaded yet.
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
