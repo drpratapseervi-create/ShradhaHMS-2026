@@ -8,13 +8,15 @@ Shradha HMS — a Django 5.2 Hospital Management System for Shradha Hospital & M
 
 ## Environment & commands
 
-Windows/PowerShell dev environment. Virtualenv lives at `.venv` (there is also a stray `.venv_new` — ignore it unless told otherwise, `.venv` is the one used by `.vscode/tasks.json`).
+Windows/PowerShell dev environment. Virtualenv lives at `.venv_new` — **`.venv` is broken** (its `pyvenv.cfg` points to a stale interpreter path from a different machine and fails to launch); use `.venv_new` for everything (`manage.py runserver`/`makemigrations`/`migrate`/`check`, one-off scripts, etc.) until `.venv` is fixed or replaced.
 
-**There is no `requirements.txt` or `pyproject.toml` in the repo.** Installed packages must be inferred from `.venv\Lib\site-packages` or `pip freeze` — check before assuming a package is available, and if you add a new dependency, install it into `.venv` and tell the user there's no manifest tracking it.
+**There is no `requirements.txt` or `pyproject.toml` in the repo.** Installed packages must be inferred from `.venv_new\Lib\site-packages` or `pip freeze` — check before assuming a package is available, and if you add a new dependency, install it into `.venv_new` and tell the user there's no manifest tracking it.
+
+**Day-to-day dev server: `manage.py runserver` (auto-reloads on file changes — the whole process restarts on save), not `waitress`.** `waitress` (`python -m waitress --port=8000 ShradhaHMS.wsgi:application`) has no autoreload at all — it silently serves pre-edit code indefinitely until manually killed and restarted, which has caused confusing "my fix isn't showing up" sessions where the server, DB, and code were all actually fine and the only problem was a long-lived waitress process nobody restarted. Only use waitress when explicitly simulating a production-style run; for normal development/testing use `runserver` instead. Even with `runserver`'s autoreload, after any code change explicitly confirm the server actually restarted (don't just assume it) — Django's `TEMPLATES[0]['OPTIONS']` doesn't set `'loaders'` here, so the template engine wraps loaders in a caching loader per-process regardless of `DEBUG`; this is harmless with `runserver` (a fresh process reloads everything) but is exactly the mechanism that makes a long-lived `waitress` process go stale.
 
 ```powershell
 # activate venv + run dev server (same as the "Run Django Server" VS Code task)
-.\.venv\Scripts\Activate.ps1; python manage.py runserver
+.\.venv_new\Scripts\Activate.ps1; python manage.py runserver
 
 # migrations
 python manage.py makemigrations
