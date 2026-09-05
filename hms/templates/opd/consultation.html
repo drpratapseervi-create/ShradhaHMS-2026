@@ -337,6 +337,31 @@
 .icd-cat-tab:hover { background: #fff; border-color: #0891b2; }
 .icd-cat-tab.active { background: #0891b2; border-color: #0891b2; color: #fff; }
 
+.tmpl-pill {
+    background: #fafafa !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #334155 !important;
+    border-radius: 7px !important;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.tmpl-pill:hover {
+    background: #fff !important;
+    border-color: #f0a500 !important;
+}
+.tmpl-pill-del {
+    color: #aaa;
+    font-size: 11px;
+    font-weight: 900;
+    line-height: 1;
+}
+.tmpl-pill-del:hover { color: #dc2626; }
+
 /* ── Previous visit date tabs ── */
 .visit-tabs-row {
     display: flex;
@@ -1160,6 +1185,22 @@
         {% endif %}
     </div>
     <div class="sec-body">
+        <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; align-items:center;">
+            <button type="button" class="btn-add-rx" onclick="addRxRow()">➕ Add Medicine</button>
+            <button type="button" class="btn-add-rx" onclick="openSaveTemplate()" style="background:#e6f4f4;border-color:#007676;color:#007676;">💾 Save as Template</button>
+            <button type="button" class="btn-add-rx" onclick="openLoadTemplate()" style="background:#fff8e6;border-color:#f0a500;color:#835a00;">⚙️ Manage Templates</button>
+        </div>
+
+        <div style="margin-bottom:14px;">
+            <div style="font-size:11px;font-weight:700;color:#835a00;margin-bottom:6px;letter-spacing:0.3px;">⚡ Quick Select — Prescription Templates</div>
+            <input type="text" id="tmpl-quick-search" placeholder="🔍 Search templates…" oninput="filterQuickTemplates()"
+                   style="width:100%;margin-bottom:6px;padding:7px 10px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;">
+            <div id="tmpl-pill-container" style="display:flex;flex-wrap:wrap;gap:5px;min-height:32px;padding:4px;border:1px dashed #fde68a;border-radius:8px;">
+                <span style="font-size:11px;color:#94a3b8;font-style:italic;">Loading templates…</span>
+            </div>
+            <div style="font-size:10px;color:#aaa;margin-top:4px;">💡 Click a template to load its medicines — click ✕ on a pill to delete it</div>
+        </div>
+
         <table class="rx-table">
             <thead>
                 <tr>
@@ -1214,11 +1255,6 @@
                 </tr>
             </tbody>
         </table>
-        <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; align-items:center;">
-            <button type="button" class="btn-add-rx" onclick="addRxRow()">➕ Add Medicine</button>
-            <button type="button" class="btn-add-rx" onclick="openSaveTemplate()" style="background:#e6f4f4;border-color:#007676;color:#007676;">💾 Save as Template</button>
-            <button type="button" class="btn-add-rx" onclick="openLoadTemplate()" style="background:#fff8e6;border-color:#f0a500;color:#835a00;">📂 Load Template</button>
-        </div>
     </div>
 </div>
 
@@ -1239,8 +1275,8 @@
 
 <div id="tmpl-load-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;">
     <div style="background:#1e2235;border:1px solid #2d3148;border-radius:14px;padding:26px;width:560px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.45);">
-        <div style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">📂 Load Prescription Template</div>
-        <div style="font-size:12px;color:#8892a4;margin-bottom:14px;">Select a template to load into prescription</div>
+        <div style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">⚙️ Manage Prescription Templates</div>
+        <div style="font-size:12px;color:#8892a4;margin-bottom:14px;">Load or delete a saved template — same templates as the quick-select pills above</div>
         <input type="text" id="tmpl-search" placeholder="🔍 Search templates..." oninput="filterTemplates()"
                style="width:100%;margin-bottom:10px;padding:9px 12px;background:#1a1d27;border:1px solid #2d3148;border-radius:7px;font-size:13px;color:#e2e8f0;">
         <div id="tmpl-list" style="max-height:320px;overflow-y:auto;border:1px solid #2d3148;border-radius:8px;"></div>
@@ -2361,12 +2397,58 @@ function doSaveTemplate() {
         if (d.success) {
             closeTmplModal('tmpl-save-modal');
             showToast('✅ Template "' + d.name + '" ' + (d.created ? 'saved!' : 'updated!'), '#007676');
+            loadQuickTemplates();
         } else {
             alert('Error: ' + (d.error || 'Could not save template'));
         }
     })
     .catch(function() { alert('Network error — please try again.'); });
 }
+
+function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+}
+
+function loadQuickTemplates() {
+    var container = document.getElementById('tmpl-pill-container');
+    fetch('/prescriptions/template/list/')
+    .then(r => r.json())
+    .then(function(d) {
+        allTemplates = d.templates || [];
+        filterQuickTemplates();
+    })
+    .catch(function() {
+        if (container) container.innerHTML = '<span style="font-size:11px;color:#dc2626;font-style:italic;">Could not load templates.</span>';
+    });
+}
+
+function renderQuickTemplatePills(templates) {
+    var container = document.getElementById('tmpl-pill-container');
+    if (!container) return;
+    if (!templates.length) {
+        container.innerHTML = '<span style="font-size:11px;color:#94a3b8;font-style:italic;">No templates found — use "Save as Template" above.</span>';
+        return;
+    }
+    container.innerHTML = templates.map(function(t) {
+        var safeName = escapeHtml(t.name);
+        return '<button type="button" class="tmpl-pill" data-id="' + t.id + '" title="Load \'' + safeName + '\'" ' +
+            'onclick="loadTemplate(' + t.id + ',\'' + t.name.replace(/'/g, "\\'").replace(/"/g, '&quot;') + '\')">' +
+            safeName +
+            '<span class="tmpl-pill-del" title="Delete template" onclick="event.stopPropagation();deleteTemplate(' + t.id + ')">✕</span>' +
+            '</button>';
+    }).join('');
+}
+
+function filterQuickTemplates() {
+    var input = document.getElementById('tmpl-quick-search');
+    var q = input ? input.value.toLowerCase() : '';
+    var filtered = allTemplates.filter(function(t){ return t.name.toLowerCase().includes(q); });
+    renderQuickTemplatePills(filtered);
+}
+
+document.addEventListener('DOMContentLoaded', loadQuickTemplates);
 
 function openLoadTemplate() {
     document.getElementById('tmpl-search').value = '';
@@ -2436,6 +2518,7 @@ function deleteTemplate(id) {
         if (d.success) {
             allTemplates = allTemplates.filter(function(t){ return t.id !== id; });
             renderTemplateList(allTemplates);
+            filterQuickTemplates();
             showToast('🗑 Template deleted', '#dc3545');
         }
     });
