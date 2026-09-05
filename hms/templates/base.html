@@ -493,6 +493,7 @@ hr { border-color: #2d3148 !important; }
 
 <div class="main-layout">
 
+{% block sidebar %}
 <!-- SIDEBAR -->
 <div class="sidebar">
 
@@ -613,6 +614,7 @@ class="menu-btn {% if request.resolver_match.url_name == 'all_reports' %}active{
 <i class="fa-solid fa-layer-group"></i> All Reports
 </a>
 </div>
+{% endblock %}
 
 <!-- MAIN CONTENT -->
 <div class="content">

@@ -327,7 +327,7 @@
             <td><span class="time-badge">{{ appt.time }}</span></td>
             <td style="white-space:nowrap;">
                 <div class="appt-action-group">
-                    <a href="{% url 'hms:start_consultation' appt.id %}"
+                    <a href="{% url 'hms:start_consultation' appt.id %}" target="_blank"
                        class="btn-start-left{% if appt.consultation %} btn-start-seen{% endif %}">{% if appt.consultation %}View{% else %}Start{% endif %}</a>
                     <button class="btn-chevron"
                             data-appt-id="{{ appt.id }}"
@@ -381,7 +381,7 @@
     <a class="dd-item" id="dd-advance" href="#"><span class="di">💰</span> Advance Deposit</a>
     <div class="dd-divider"></div>
     <div class="dd-section">Clinical</div>
-    <a class="dd-item" id="dd-consult" href="#"><span class="di">🩺</span> Consultation</a>
+    <a class="dd-item" id="dd-consult" href="#" target="_blank"><span class="di">🩺</span> Consultation</a>
     <a class="dd-item" id="dd-admit" href="#"><span class="di">🏥</span> Admission</a>
     <a class="dd-item" id="dd-upload" href="#"><span class="di">📁</span> Upload Medical Records</a>
     <div class="dd-divider"></div>
