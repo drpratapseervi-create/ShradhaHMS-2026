@@ -4,7 +4,7 @@ Expected context: section_id, icon, title, items, kind ("video"|"photo"|"documen
 {% endcomment %}
 <div class="media-section mb-3">
   <div class="media-section-header" data-bs-toggle="collapse" data-bs-target="#{{ section_id }}"
-       role="button" aria-expanded="true" aria-controls="{{ section_id }}">
+       role="button" aria-expanded="false" aria-controls="{{ section_id }}">
     <div class="d-flex align-items-center gap-2">
       <i class="fas {{ icon }}" style="color:#4da6e8"></i>
       <span class="media-section-title">{{ title }}</span>
@@ -12,7 +12,7 @@ Expected context: section_id, icon, title, items, kind ("video"|"photo"|"documen
     </div>
     <i class="fas fa-chevron-down media-section-chevron"></i>
   </div>
-  <div class="collapse show" id="{{ section_id }}">
+  <div class="collapse" id="{{ section_id }}">
     <div class="media-list">
       {% for item in items %}
       <div class="media-row">

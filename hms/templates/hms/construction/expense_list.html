@@ -443,4 +443,37 @@
   </div>
 
 </div>
+
+<script>
+(function () {
+  var SECTION_IDS = ['mediaSectionVideos', 'mediaSectionPhotos', 'mediaSectionDocs'];
+  var STORAGE_PREFIX = 'constructionMediaSection:';
+
+  function getStored(id) {
+    try { return window.localStorage.getItem(STORAGE_PREFIX + id); } catch (e) { return null; }
+  }
+  function setStored(id, value) {
+    try { window.localStorage.setItem(STORAGE_PREFIX + id, value); } catch (e) { /* storage unavailable */ }
+  }
+
+  // Restore each section's open/closed state (default stays collapsed if nothing stored).
+  SECTION_IDS.forEach(function (id) {
+    var target = document.getElementById(id);
+    if (!target) return;
+    if (getStored(id) === 'open') {
+      target.classList.add('show');
+      var header = document.querySelector('[data-bs-target="#' + id + '"]');
+      if (header) header.setAttribute('aria-expanded', 'true');
+    }
+  });
+
+  // Persist whatever the user toggles, per section, independently.
+  document.addEventListener('shown.bs.collapse', function (e) {
+    if (SECTION_IDS.indexOf(e.target.id) !== -1) setStored(e.target.id, 'open');
+  });
+  document.addEventListener('hidden.bs.collapse', function (e) {
+    if (SECTION_IDS.indexOf(e.target.id) !== -1) setStored(e.target.id, 'closed');
+  });
+})();
+</script>
 {% endblock %}
