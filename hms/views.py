@@ -954,6 +954,130 @@ def icd_search(request):
 
 
 # ======================================================
+# AI-ASSISTED ICD-10 SEARCH (AJAX)
+# ======================================================
+@login_required
+def ai_icd_suggest(request):
+    """Free-text diagnosis description -> AI-suggested ICD-10 code(s).
+
+    The AI is only used to interpret plain/colloquial language into likely
+    WHO ICD-10 codes; the actual codes/descriptions returned to the frontend
+    always come from our own ICDCode table (matched by code, dots ignored),
+    never from the AI's own text, so a suggestion can always be looked up
+    and added exactly like a manual search-box selection.
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+    if not settings.AI_FEATURES_ENABLED:
+        return JsonResponse({"error": "AI features are not configured on this system."})
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid request"}, status=400)
+
+    text = (data.get("text") or "").strip()
+    if not text:
+        return JsonResponse({"error": "Please describe the diagnosis first."}, status=400)
+
+    try:
+        client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            max_tokens=400,
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "icd_suggestions",
+                    "strict": True,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "suggestions": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "code": {"type": "string"},
+                                        "description": {"type": "string"},
+                                    },
+                                    "required": ["code", "description"],
+                                    "additionalProperties": False,
+                                },
+                            },
+                        },
+                        "required": ["suggestions"],
+                        "additionalProperties": False,
+                    },
+                },
+            },
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a medical coding assistant for an Indian hospital. "
+                        "Always return ONLY valid JSON. No explanation."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": f"""
+A doctor typed this plain-language diagnosis description, which may use
+colloquial or informal terms rather than exact medical terminology:
+
+"{text}"
+
+List the most likely WHO ICD-10 code(s) for this, most likely first
+(at most 5). For each, give the standard ICD-10 code and its official
+short clinical description.
+
+Return JSON format:
+{{
+  "suggestions": [
+    {{ "code": "", "description": "" }}
+  ]
+}}
+""",
+                },
+            ],
+        )
+        result = json.loads(response.choices[0].message.content or "{}")
+    except Exception as e:
+        return JsonResponse({"error": f"AI request failed: {e}"}, status=502)
+
+    # Only ever return codes that actually exist in our own ICDCode table —
+    # match with dots stripped, since WHO-standard formatting ("K80.20")
+    # doesn't always match how a code happens to be stored here ("K8020").
+    import re
+    from django.db.models import Value, CharField
+    from django.db.models.functions import Replace
+
+    def normalize(code):
+        return re.sub(r"[^A-Za-z0-9]", "", code or "").upper()
+
+    matched = []
+    seen_ids = set()
+    for s in (result.get("suggestions") or [])[:5]:
+        norm = normalize(s.get("code"))
+        if not norm:
+            continue
+        icd = ICDCode.objects.annotate(
+            code_norm=Replace("code", Value("."), Value(""), output_field=CharField())
+        ).filter(code_norm__iexact=norm).first()
+        if icd and icd.id not in seen_ids:
+            seen_ids.add(icd.id)
+            matched.append({"id": icd.id, "code": icd.code, "description": icd.description})
+
+    if not matched:
+        return JsonResponse({
+            "suggestions": [],
+            "error": "AI couldn't find a matching code in our ICD-10 database for that description. Try rephrasing, or use the search box above.",
+        })
+
+    return JsonResponse({"suggestions": matched})
+
+
+# ======================================================
 # GET DOCTORS (AJAX)
 # ======================================================
 @login_required

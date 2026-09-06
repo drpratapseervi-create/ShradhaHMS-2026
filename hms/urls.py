@@ -60,6 +60,7 @@ urlpatterns = [
     # ── SEARCH (AJAX) ──────────────────────────────────
     path("medicine-search/", views.medicine_search, name="medicine_search"),
     path("icd-search/", views.icd_search, name="icd_search"),
+    path("icd-ai-suggest/", views.ai_icd_suggest, name="ai_icd_suggest"),
 
     # ── LAB ────────────────────────────────────────────
     path("lab/billing/", views.lab_billing_direct, name="lab_billing_direct"),
