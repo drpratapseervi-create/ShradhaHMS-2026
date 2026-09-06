@@ -622,6 +622,20 @@ def consultation_pdf(request, appointment_id):
     def _lines(txt):
         return [ln.strip() for ln in (txt or "").splitlines() if ln.strip()]
 
+    prescriptions = list(Prescription.objects.filter(consultation=consultation))
+    # Prescription.atc_code is a snapshot taken at prescribing time (so a later
+    # edit to DrugMaster doesn't rewrite history); prescriptions saved before
+    # that snapshot existed have it blank, so fall back to a live DrugMaster
+    # lookup by name for display only, without overwriting the stored snapshot.
+    missing = [p for p in prescriptions if not p.atc_code]
+    if missing:
+        drug_atc_by_name = {
+            name.lower(): atc for name, atc in
+            DrugMaster.objects.filter(atc_code__gt="").values_list("name", "atc_code")
+        }
+        for p in missing:
+            p.atc_code = drug_atc_by_name.get(p.medicine.strip().lower(), "")
+
     return render(request, "opd/consultation_pdf.html", {
         "appointment":           appointment,
         "consultation":          consultation,
@@ -632,7 +646,7 @@ def consultation_pdf(request, appointment_id):
         "custom_symptoms":       _lines(consultation.custom_symptoms),
         "custom_signs":          _lines(consultation.custom_signs),
         "investigations":        consultation.investigations.all(),
-        "prescriptions":         Prescription.objects.filter(consultation=consultation),
+        "prescriptions":         prescriptions,
     })
 
 
