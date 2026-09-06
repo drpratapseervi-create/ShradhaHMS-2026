@@ -76,7 +76,8 @@
     margin: 0; font-size: 18px; font-weight: 700; color: #1a1a1a;
     letter-spacing: -0.3px;
 }
-.opd-header p { margin: 2px 0 0; font-size: 12px; color: #1a1a1a; }
+.opd-header p { margin: 0; font-size: 12px; color: #1a1a1a; }
+.opd-header-patient { font-size: 15px; font-weight: 700; color: #0891b2; }
 
 /* ── Section Card ── */
 .sec {
@@ -839,9 +840,9 @@ html { scroll-behavior: smooth; }
 
 <!-- ── Header ── -->
 <div class="opd-header">
-    <div>
+    <div style="display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; min-width:0;">
         <h1>OPD Consultation</h1>
-        <p>{{ appointment.patient.full_name }} &nbsp;·&nbsp; {{ appointment.date }} &nbsp;·&nbsp; Dr. {{ appointment.doctor.full_name }}</p>
+        <p>— <span class="opd-header-patient">{{ appointment.patient.full_name }}</span> &nbsp;·&nbsp; {{ appointment.date }} &nbsp;·&nbsp; Dr. {{ appointment.doctor.full_name }}</p>
     </div>
 </div>
 
@@ -950,28 +951,9 @@ html { scroll-behavior: smooth; }
 <form method="post" id="consultation-form">
 {% csrf_token %}
 
-<!-- ═══ PATIENT DETAILS ═══ -->
-<div class="opd-card">
-<div class="opd-card-title">Patient Details</div>
-<table class="opd-table">
-<tr>
-<td class="opd-label">Patient Name</td><td>{{ appointment.patient.full_name }}</td>
-<td class="opd-label">Age / Sex</td><td>{{ appointment.patient.age }} / {{ appointment.patient.gender }}</td>
-</tr>
-<tr>
-<td class="opd-label">UHID</td><td>{{ appointment.patient.uhid }}</td>
-<td class="opd-label">Mobile</td><td>{{ appointment.patient.mobile_no }}</td>
-</tr>
-<tr>
-<td class="opd-label">Address</td><td>{{ appointment.patient.address }}</td>
-<td class="opd-label">Consultant</td><td>{{ appointment.doctor.full_name }}</td>
-</tr>
-<tr>
-<td class="opd-label">Date</td><td>{{ appointment.date }}</td>
-<td class="opd-label">Time</td><td>{{ appointment.time }}</td>
-</tr>
-</table>
-</div>
+<!-- Patient Details table intentionally hidden on-screen — redundant with the
+     header line above (name · date · doctor). Still shown in full on the
+     printed OPD Sheet (opd/consultation_pdf.html), which is untouched. -->
 
 <!-- ═══ TAB COLUMN + SECTION CONTENT ═══ -->
 <div class="consult-layout">
