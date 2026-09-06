@@ -745,27 +745,43 @@
         @media print {    ← this line already exists, add ABOVE it
 }
 
-/* ── Sticky section-jump nav ── */
+/* ── Sidebar-style section-jump nav ── */
 html { scroll-behavior: smooth; }
 .sec { scroll-margin-top: 64px; }
+
+/* Two-column layout: vertical tab column (left) + section content (right) */
+.consult-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+.consult-content {
+    flex: 1 1 auto;
+    min-width: 0; /* let wide tables inside sections shrink instead of overflowing the column */
+}
 .section-nav {
     position: sticky;
-    top: 0;
+    top: 10px;
     z-index: 500;
+    flex: 0 0 180px;
+    width: 180px;
+    max-height: calc(100vh - 20px);
+    overflow-y: auto;
     background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 8px 10px;
+    padding: 8px;
     margin: 10px 0 14px;
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 4px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 .section-nav a {
-    display: inline-block;
-    padding: 5px 12px;
-    border-radius: 20px;
+    display: block;
+    padding: 7px 12px;
+    border-radius: 8px;
     background: #f1f5f9;
     color: #334155;
     font-size: 12px;
@@ -773,6 +789,8 @@ html { scroll-behavior: smooth; }
     text-decoration: none;
     border: 1px solid #e2e8f0;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .section-nav a:hover {
@@ -784,6 +802,17 @@ html { scroll-behavior: smooth; }
     background: #0891b2;
     color: #fff;
     border-color: #0891b2;
+}
+/* Below tablet width, drop back to a horizontal wrapping tab bar above the content */
+@media (max-width: 860px) {
+    .consult-layout { flex-direction: column; }
+    .section-nav {
+        position: static;
+        width: 100%;
+        max-height: none;
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
 }
 /* Tab panels: only the active one is shown, JS toggles which */
 [data-tab] { display: none; }
@@ -947,6 +976,9 @@ html { scroll-behavior: smooth; }
 </table>
 </div>
 
+<!-- ═══ TAB COLUMN + SECTION CONTENT ═══ -->
+<div class="consult-layout">
+
 <!-- ═══ SECTION JUMP NAV ═══ -->
 <nav class="section-nav" aria-label="Jump to section">
     <a href="#sec-vitals" data-tab="vitals" onclick="return switchConsultTab('vitals', this);">Vitals</a>
@@ -967,6 +999,8 @@ html { scroll-behavior: smooth; }
     {% if ai_enabled %}<a href="#sec-ai-assist" data-tab="ai-assist" onclick="return switchConsultTab('ai-assist', this);">AI Assist</a>{% endif %}
     <a href="#sec-radiology" data-tab="radiology" onclick="return switchConsultTab('radiology', this);">Radiology</a>
 </nav>
+
+<div class="consult-content">
 
 <!-- ═══ VITAL SIGNS ═══ -->
 <div class="sec" id="sec-vitals" data-tab="vitals">
@@ -1676,8 +1710,6 @@ html { scroll-behavior: smooth; }
     </a>
 </div>
 
-</form>
-
 <!-- ═══ AI CLINICAL ASSIST ═══ -->
 {% if ai_enabled %}
 <div class="sec" id="sec-ai-assist" data-tab="ai-assist" style="margin-top:14px; border: 2px solid #e0e0e0;">
@@ -1801,6 +1833,11 @@ html { scroll-behavior: smooth; }
         {% endif %}
     </div>
 </div>
+
+</div><!-- end consult-content -->
+</div><!-- end consult-layout -->
+
+</form>
 
 </div><!-- end opd-wrap -->
 
