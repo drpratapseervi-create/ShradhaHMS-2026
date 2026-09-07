@@ -855,6 +855,9 @@ html { scroll-behavior: smooth; }
         {% endfor %}
     </div>
     {% endif %}
+    <a href="{% url 'hms:patient_create' %}" class="btn-print" style="white-space:nowrap;">
+        🏠 Home &nbsp;/&nbsp; New Patient
+    </a>
 </div>
 
 {% if previous_visits %}

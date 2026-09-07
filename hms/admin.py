@@ -153,7 +153,9 @@ class InvestigationParameterInline(admin.TabularInline):
 # ===================== INVESTIGATION =====================
 @admin.register(Investigation)
 class InvestigationAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "category")
+    list_display = ("id", "name", "category", "price")
+    list_display_links = ("name",)
+    list_editable = ("price",)
     list_filter = ("category",)
     search_fields = ("name",)
     inlines = [InvestigationParameterInline]
