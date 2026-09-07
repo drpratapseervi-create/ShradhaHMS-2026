@@ -510,9 +510,12 @@ def start_consultation(request, appointment_id):
                             atc_code=atc_codes[i] if i < len(atc_codes) else "",
                         )
 
-                messages.success(request, "Consultation saved successfully.")
                 if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    # AJAX auto-save (e.g. the "Next" button) shows its own JS toast —
+                    # a Django message here would never be rendered/consumed and would
+                    # just accumulate in the session until the next full page load.
                     return JsonResponse({"success": True})
+                messages.success(request, "Consultation saved successfully.")
                 return redirect("hms:start_consultation", appointment_id=appointment.id)
         elif request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return JsonResponse({"success": False, "error": "Please check the form for errors."}, status=400)
