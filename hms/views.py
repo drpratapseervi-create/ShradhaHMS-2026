@@ -421,6 +421,7 @@ def start_consultation(request, appointment_id):
                 obj.referral_flag = bool(request.POST.get("referral_flag"))
                 obj.referral_to = request.POST.get("referral_to", "").strip()
                 obj.referral_reason = request.POST.get("referral_reason", "").strip()
+                obj.referral_type = request.POST.get("referral_type", "investigation").strip()
                 obj.referral_urgency = request.POST.get("referral_urgency", "").strip()
                 obj.referral_letter_text = request.POST.get("referral_letter_text", "").strip()
 
@@ -603,10 +604,11 @@ def save_referral_note(request, appointment_id):
     consultation.referral_to = (data.get("referral_to") or "").strip()
     consultation.referral_urgency = (data.get("referral_urgency") or "").strip()
     consultation.referral_reason = (data.get("referral_reason") or "").strip()
+    consultation.referral_type = (data.get("referral_type") or "investigation").strip()
     consultation.referral_letter_text = (data.get("referral_letter_text") or "").strip()
     consultation.save(update_fields=[
         "referral_flag", "referral_to", "referral_urgency",
-        "referral_reason", "referral_letter_text",
+        "referral_reason", "referral_type", "referral_letter_text",
     ])
     return JsonResponse({"success": True})
 
@@ -4189,11 +4191,31 @@ def generate_referral_letter(request):
     urgency = data.get('urgency', '').strip()
     diagnosis = data.get('diagnosis', '').strip()
     clinical_summary = data.get('clinical_summary', '').strip()
+    referral_type = data.get('referral_type', 'investigation').strip() or 'investigation'
 
     if not referred_to or not reason:
         return JsonResponse({'error': 'Referred To and Reason for Referral are both required'}, status=400)
 
     patient_age = f"{patient.age_years} Yrs" if patient.age_years else "age not on record"
+
+    if referral_type == 'treatment':
+        type_instruction = (
+            "This is a TREATMENT REFERRAL — the patient is being referred to a "
+            "specialist for ongoing evaluation and management of their condition "
+            "by that specialist, not just a single test. The letter must:\n"
+            "- request the receiving specialist to take over/share in the ongoing "
+            "  evaluation and clinical management of the patient's condition\n"
+            "- avoid framing this as a request for one specific test/procedure to "
+            "  be performed and reported back -- focus on continuity of care"
+        )
+    else:
+        type_instruction = (
+            "This is an INVESTIGATION REFERRAL — the patient is being referred "
+            "to get a specific test/scan/procedure done. The letter must:\n"
+            "- clearly request that the specific test/procedure be performed\n"
+            "- request that the findings/report be shared back with the "
+            "  referring doctor for further management"
+        )
 
     try:
         client = OpenAI(api_key=settings.OPENAI_API_KEY)
@@ -4235,6 +4257,8 @@ Urgency: {urgency or 'routine'}
 Referring to: {referred_to}
 Referring doctor: {appointment.doctor.full_name}
 
+{type_instruction}
+
 Write "letter_text": the BODY of a formal referral letter, 4-6 sentences,
 professional medical tone, third person for the patient. It must:
 - identify the patient by name, age and sex, and briefly the presenting
@@ -4242,8 +4266,9 @@ professional medical tone, third person for the patient. It must:
 - state the reason this patient is being referred, incorporating the
   urgency naturally into the wording (e.g. "requires urgent evaluation" /
   "may be seen on a routine basis" / "requires emergency management")
-- request the receiving doctor/facility to kindly evaluate and manage the
-  patient further, and offer to share any further records/reports needed
+- follow the referral-type instruction above for what exactly is being
+  requested of the receiving doctor/facility, and offer to share any
+  further records/reports needed
 
 Do NOT include a salutation ("Dear Doctor,"), a closing ("Yours
 sincerely,"), or a signature line -- only the paragraph body text, since

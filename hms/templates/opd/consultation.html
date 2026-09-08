@@ -1583,6 +1583,13 @@ html { scroll-behavior: smooth; }
                     <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Referred To (Doctor / Hospital)</label>
                     <input type="text" name="referral_to" id="id_referral_to" value="{{ consultation.referral_to|default:'' }}" placeholder="e.g. Dr. Sharma, City Hospital" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 12px;font-size:13px;">
                 </div>
+                <div style="flex:1;min-width:180px;">
+                    <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Referral Type</label>
+                    <select name="referral_type" id="id_referral_type" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 10px;font-size:13px;">
+                        <option value="investigation" {% if consultation.referral_type == "investigation" or not consultation.referral_type %}selected{% endif %}>Investigation Referral</option>
+                        <option value="treatment"     {% if consultation.referral_type == "treatment" %}selected{% endif %}>Treatment Referral</option>
+                    </select>
+                </div>
                 <div style="flex:1;min-width:160px;">
                     <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Urgency</label>
                     <select name="referral_urgency" id="id_referral_urgency" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 10px;font-size:13px;">
@@ -3506,6 +3513,7 @@ function generateReferralLetter() {
     var referredTo = document.getElementById('id_referral_to').value.trim();
     var reason = document.getElementById('id_referral_reason').value.trim();
     var urgency = document.getElementById('id_referral_urgency').value;
+    var referralType = document.getElementById('id_referral_type').value;
     if (!referredTo || !reason) {
         alert('Please fill in Referred To and Reason for Referral first.');
         return;
@@ -3544,6 +3552,7 @@ function generateReferralLetter() {
             referred_to: referredTo,
             reason: reason,
             urgency: urgency,
+            referral_type: referralType,
             diagnosis: diagnosis,
             clinical_summary: clinicalSummary
         })
@@ -3577,6 +3586,7 @@ function saveReferralNote() {
             referral_to: document.getElementById('id_referral_to').value,
             referral_urgency: document.getElementById('id_referral_urgency').value,
             referral_reason: document.getElementById('id_referral_reason').value,
+            referral_type: document.getElementById('id_referral_type').value,
             referral_letter_text: document.getElementById('id_referral_letter_text').value,
         })
     })
