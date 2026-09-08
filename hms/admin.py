@@ -36,6 +36,7 @@ from .models import (
     SurgicalHistory,
     AdviceOption,
     DietAdviceOption,
+    FollowUpNotePhrase,
 
     # Pharmacy
     DrugMaster,
@@ -250,6 +251,15 @@ class AdviceOptionAdmin(admin.ModelAdmin):
 @admin.register(DietAdviceOption)
 class DietAdviceOptionAdmin(admin.ModelAdmin):
     list_display = ("id", "text", "is_active", "sort_order")
+    list_filter = ("is_active",)
+    search_fields = ("text",)
+
+
+# ===================== FOLLOW-UP NOTE PHRASE =====================
+@admin.register(FollowUpNotePhrase)
+class FollowUpNotePhraseAdmin(admin.ModelAdmin):
+    list_display = ("id", "text", "is_active", "sort_order")
+    list_editable = ("is_active", "sort_order")
     list_filter = ("is_active",)
     search_fields = ("text",)
 

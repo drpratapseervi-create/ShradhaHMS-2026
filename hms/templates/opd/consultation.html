@@ -1485,9 +1485,11 @@ html { scroll-behavior: smooth; }
                 </div>
             </div>
         </div>
-        <div style="margin-top:10px;">
+        <div style="margin-top:10px;position:relative;">
             <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Follow-up Notes</label>
             <textarea name="follow_up_notes" id="id_follow_up_notes" rows="2" autocomplete="off" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="e.g. Review after surgery, Check BP, Repeat blood test…">{{ consultation.follow_up_notes|default:'' }}</textarea>
+            <div id="followup-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:2px;background:#fff;border:1px solid #ccc;border-radius:7px;box-shadow:0 4px 10px rgba(0,0,0,0.12);z-index:20;max-height:160px;overflow-y:auto;"></div>
+            <script type="application/json" id="followup-phrases-data">{{ followup_phrases_json|safe }}</script>
         </div>
     </div>
 </div>
@@ -2954,6 +2956,45 @@ function setFollowUp(n, unit) {
     var yyyy=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
     document.getElementById('id_follow_up_date').value=yyyy+'-'+mm+'-'+dd;
 }
+
+/* ── Follow-up Notes: predictive suggestions ── */
+(function() {
+    var dataEl = document.getElementById('followup-phrases-data');
+    var PHRASES = dataEl ? JSON.parse(dataEl.textContent || '[]') : [];
+    var textarea = document.getElementById('id_follow_up_notes');
+    var box = document.getElementById('followup-suggestions');
+    if (!textarea || !box || !PHRASES.length) return;
+
+    function hideSuggestions() { box.style.display = 'none'; box.innerHTML = ''; }
+
+    function showSuggestions() {
+        var typed = textarea.value.trim().toLowerCase();
+        if (!typed) { hideSuggestions(); return; }
+        var matches = PHRASES.filter(function(p) { return p.toLowerCase().indexOf(typed) !== -1; });
+        if (!matches.length) { hideSuggestions(); return; }
+        box.innerHTML = matches.map(function(p) {
+            return '<div class="followup-suggestion" style="padding:7px 12px;font-size:13px;cursor:pointer;" ' +
+                'onmousedown="event.preventDefault();"' +
+                '>' + p.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+        }).join('');
+        Array.prototype.forEach.call(box.querySelectorAll('.followup-suggestion'), function(el, i) {
+            el.addEventListener('mouseover', function() { el.style.background = '#f1f5f9'; });
+            el.addEventListener('mouseout', function() { el.style.background = ''; });
+            el.addEventListener('click', function() {
+                textarea.value = matches[i];
+                hideSuggestions();
+                textarea.focus();
+            });
+        });
+        box.style.display = 'block';
+    }
+
+    textarea.addEventListener('input', showSuggestions);
+    textarea.addEventListener('focus', showSuggestions);
+    textarea.addEventListener('blur', function() {
+        setTimeout(hideSuggestions, 150);
+    });
+})();
 
 /* ══ SAVE ROW TO DRUG MASTER ══ */
 function saveRowToDrugMaster(btn) {

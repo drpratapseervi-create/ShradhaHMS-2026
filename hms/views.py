@@ -38,7 +38,7 @@ from .models import (
     Patient, Doctor, Department, Appointment, Consultation, Prescription,
     Investigation, InvestigationCategory, InvestigationBill, InvestigationBillItem,
     InvestigationResult, InvestigationParameter, ICDCode, DrugMaster, VillageMaster,
-    Symptom, Sign, PastHistory, SurgicalHistory, AdviceOption, DietAdviceOption, MedicalImage, BillItem, PatientService,
+    Symptom, Sign, PastHistory, SurgicalHistory, AdviceOption, DietAdviceOption, FollowUpNotePhrase, MedicalImage, BillItem, PatientService,
     DischargeBill, DischargeBillItem, ProcedureItem, ProcedureBill, ProcedureBillItem,
     IPDAdvance, OTBooking, OTNotes,                        # ← OT models here
     InventoryItem, StockIn, StockOut, Supplier,            # ← Inventory models here
@@ -582,6 +582,9 @@ def start_consultation(request, appointment_id):
         "surgical_histories": SurgicalHistory.objects.filter(is_active=True),
         "advice_options": AdviceOption.objects.filter(is_active=True),
         "diet_options": DietAdviceOption.objects.filter(is_active=True),
+        "followup_phrases_json": json.dumps(
+            list(FollowUpNotePhrase.objects.filter(is_active=True).values_list("text", flat=True))
+        ).replace("<", "\\u003c"),
         "medical_images": MedicalImage.objects.filter(
             consultation=consultation
         ).order_by("-created_at"),
