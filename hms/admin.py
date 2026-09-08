@@ -153,11 +153,12 @@ class InvestigationParameterInline(admin.TabularInline):
 # ===================== INVESTIGATION =====================
 @admin.register(Investigation)
 class InvestigationAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "category", "price")
+    list_display = ("id", "name", "category", "price", "sort_order")
     list_display_links = ("name",)
-    list_editable = ("price",)
+    list_editable = ("price", "sort_order")
     list_filter = ("category",)
     search_fields = ("name",)
+    ordering = ("sort_order", "category", "name")
     inlines = [InvestigationParameterInline]
 
 
@@ -204,17 +205,21 @@ class InvestigationParameterAdmin(admin.ModelAdmin):
 # ===================== SYMPTOM =====================
 @admin.register(Symptom)
 class SymptomAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "department", "is_active")
+    list_display = ("id", "name", "department", "is_active", "sort_order")
+    list_editable = ("sort_order",)
     list_filter = ("department", "is_active")
     search_fields = ("name",)
+    ordering = ("sort_order", "name")
 
 
 # ===================== SIGN =====================
 @admin.register(Sign)
 class SignAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "department", "is_active")
+    list_display = ("id", "name", "department", "is_active", "sort_order")
+    list_editable = ("sort_order",)
     list_filter = ("department", "is_active")
     search_fields = ("name",)
+    ordering = ("sort_order", "name")
 
 
 # ===================== PAST HISTORY =====================

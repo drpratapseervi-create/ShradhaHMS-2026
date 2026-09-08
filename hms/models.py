@@ -430,9 +430,10 @@ class Investigation(models.Model):
         max_length=20, blank=True, null=True,
         help_text="LOINC panel code e.g. '58410-2' for CBC"
     )
+    sort_order = models.IntegerField(default=9999, blank=True)
 
     class Meta:
-        ordering = ["category__dept_code", "name"]
+        ordering = ["sort_order", "category__dept_code", "name"]
 
     def __str__(self):
         return f"{self.name} ({self.category.name})"
@@ -575,6 +576,10 @@ class Symptom(models.Model):
         Department, on_delete=models.CASCADE, related_name="symptoms"
     )
     is_active = models.BooleanField(default=True)
+    sort_order = models.IntegerField(default=9999, blank=True)
+
+    class Meta:
+        ordering = ["sort_order", "name"]
 
     def __str__(self):
         return self.name
@@ -587,6 +592,10 @@ class Sign(models.Model):
         Department, on_delete=models.CASCADE, related_name="signs"
     )
     is_active = models.BooleanField(default=True)
+    sort_order = models.IntegerField(default=9999, blank=True)
+
+    class Meta:
+        ordering = ["sort_order", "name"]
 
     def __str__(self):
         return self.name

@@ -570,14 +570,14 @@ def start_consultation(request, appointment_id):
         "form":         form,
         "previous_visits": previous_visits,
         "previous_visits_json": json.dumps(previous_visits).replace("<", "\\u003c"),
-        "investigations": Investigation.objects.filter(is_active=True),
+        "investigations": Investigation.objects.filter(is_active=True).order_by("sort_order", "name"),
         "prescriptions":  prescriptions,
         "symptoms": Symptom.objects.filter(
             department=appointment.department, is_active=True
-        ),
+        ).order_by("sort_order", "name"),
         "signs": Sign.objects.filter(
             department=appointment.department, is_active=True
-        ),
+        ).order_by("sort_order", "name"),
         "past_histories": PastHistory.objects.filter(is_active=True),
         "surgical_histories": SurgicalHistory.objects.filter(is_active=True),
         "advice_options": AdviceOption.objects.filter(is_active=True),
