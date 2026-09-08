@@ -195,6 +195,10 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
             {% if not consultation.diagnosis_text and not consultation.icd_codes.all %}-{% endif %}
         </td>
     </tr>
+    <tr>
+        <td class="lbl">Reason for Referral</td>
+        <td colspan="3">{{ consultation.referral_reason|default:"-"|linebreaksbr }}</td>
+    </tr>
 </table>
 
 <div class="salutation">Dear Doctor,</div>
