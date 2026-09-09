@@ -37,6 +37,7 @@ urlpatterns = [
     path("generate-referral-letter/", views.generate_referral_letter, name="generate_referral_letter"),
     path("ai-full-opd/", views.ai_full_opd, name="ai_full_opd"),
     path("consultation/<int:appointment_id>/ai-clinical-review/", views.ai_clinical_review, name="ai_clinical_review"),
+    path("consultation/transcribe/", views.transcribe_dictation, name="transcribe_dictation"),
     path('prescriptions/template/save/',          views.save_prescription_template,  name='save_prescription_template'),
     path('prescriptions/template/list/',          views.list_prescription_templates,  name='list_prescription_templates'),
     path('prescriptions/template/load/<int:pk>/', views.load_prescription_template,   name='load_prescription_template'),

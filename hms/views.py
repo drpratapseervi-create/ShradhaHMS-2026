@@ -4092,6 +4092,46 @@ def generate_diet(request):
 
 
 @login_required
+def transcribe_dictation(request):
+    """Voice dictation for the OPD free-text fields.
+
+    Accepts a short browser-recorded audio clip (multipart field ``audio``),
+    sends it to the OpenAI Whisper API and returns the transcript. The front
+    end appends this text to whichever field was focused when recording began.
+
+    No ``language=`` is passed on purpose: Whisper auto-detects, which is what
+    keeps mixed Hindi/English ("Hinglish") dictation working instead of being
+    forced to English-only.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+    if not settings.AI_FEATURES_ENABLED:
+        return JsonResponse({'error': 'AI features are not configured on this system.'})
+
+    audio = request.FILES.get('audio')
+    if not audio:
+        return JsonResponse({'error': 'No audio received'}, status=400)
+    # Whisper's hard limit is 25 MB. Our clips are a few seconds of speech, so
+    # anything near that is almost certainly a mistake; reject early.
+    if audio.size > 25 * 1024 * 1024:
+        return JsonResponse({'error': 'Audio clip too large (max 25 MB).'}, status=400)
+    if audio.size < 1024:
+        return JsonResponse({'error': 'Nothing was recorded — try again.'}, status=400)
+
+    try:
+        client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        result = client.audio.transcriptions.create(
+            model='whisper-1',
+            file=(audio.name or 'dictation.webm', audio.read(), audio.content_type or 'audio/webm'),
+            response_format='text',
+        )
+        text = (result if isinstance(result, str) else getattr(result, 'text', '') or '').strip()
+        return JsonResponse({'text': text})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
 def generate_lama_consent(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST only'}, status=405)

@@ -3741,4 +3741,250 @@ function generateLamaConsent() {
 })();
 </script>
 
+{% if ai_enabled %}
+<!-- ═══ VOICE DICTATION (Whisper) — one floating panel: dictate → copy → paste anywhere ═══ -->
+<style>
+/* NOTE: base.html has `.content > * { width:100% !important; max-width:100% !important }`
+   which stretches any direct child of .content to full width. This dock is a
+   direct child of .content, so without the !important width/left resets below it
+   was rendered 100vw wide and shoved to the left edge (mostly off-screen).
+   The init script also re-parents #voice-dock to <body> as a second safeguard. */
+#voice-dock {
+    position: fixed !important;
+    right: 20px !important;
+    bottom: 20px !important;
+    left: auto !important;
+    top: auto !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 2147483000;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+#voice-fab {
+    width: 58px !important; height: 58px !important;
+    max-width: 58px !important; min-width: 0 !important;
+    border-radius: 50%; border: none;
+    background: #4f46e5; color: #fff; font-size: 24px; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.12s, background 0.15s;
+}
+#voice-fab:hover { background: #4338ca; }
+#voice-fab:active { transform: scale(0.92); }
+#voice-fab.is-recording { background: #dc2626; animation: voiceDockPulse 1s ease-in-out infinite; }
+#voice-fab.is-busy { background: #d97706; }
+@keyframes voiceDockPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.5); }
+    50%      { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
+}
+#voice-panel {
+    position: absolute; right: 0; bottom: 62px; width: 320px;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.22); overflow: hidden;
+}
+#voice-panel[hidden] { display: none; }
+.vp-head {
+    display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+    background: #eef2ff; border-bottom: 1px solid #e2e8f0;
+    font-size: 12px; font-weight: 700; color: #3730a3;
+}
+.vp-head .vp-close { margin-left: auto; border: none; background: transparent; font-size: 16px; line-height: 1; cursor: pointer; color: #6366f1; }
+.vp-body { padding: 12px; }
+.vp-row { display: flex; gap: 8px; align-items: center; }
+.vp-btn {
+    border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 7px;
+    padding: 7px 12px; font-size: 12px; font-weight: 600; cursor: pointer; color: #334155;
+}
+.vp-btn:hover { background: #eef2ff; border-color: #6366f1; }
+.vp-btn.primary { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+.vp-btn.primary.is-recording { background: #dc2626; border-color: #dc2626; }
+.vp-btn:disabled { opacity: 0.55; cursor: default; }
+.vp-status { font-size: 11px; font-weight: 600; color: #64748b; margin: 8px 0 6px; min-height: 14px; }
+.vp-status.rec  { color: #dc2626; }
+.vp-status.busy { color: #d97706; }
+.vp-status.err  { color: #b91c1c; }
+.vp-status.ok   { color: #15803d; }
+#voice-transcript {
+    width: 100%; height: 120px; border: 1px solid #cbd5e1; border-radius: 8px;
+    padding: 8px 10px; font-size: 13px; font-family: inherit; resize: vertical; line-height: 1.4;
+    background: #fff !important; color: #0f172a !important;   /* beat base.html's global dark textarea rule */
+}
+#voice-transcript::placeholder { color: #94a3b8 !important; }
+.vp-hint { font-size: 10px; color: #94a3b8; margin-top: 6px; line-height: 1.4; }
+</style>
+<div id="voice-dock">
+    <div id="voice-panel" hidden>
+        <div class="vp-head">
+            <span>🎙️ Voice Dictation</span>
+            <button type="button" class="vp-close" title="Close">&times;</button>
+        </div>
+        <div class="vp-body">
+            <div class="vp-row">
+                <button type="button" id="voice-rec" class="vp-btn primary">● Start</button>
+                <button type="button" id="voice-copy" class="vp-btn">Copy</button>
+                <button type="button" id="voice-clear" class="vp-btn">Clear</button>
+            </div>
+            <div class="vp-status" id="voice-status">Tap Start and speak — Hindi, English or both.</div>
+            <textarea id="voice-transcript" placeholder="Dictated text builds up here across bursts. Then Copy and paste into any field."></textarea>
+            <div class="vp-hint">Each clip (max 60s) goes to Whisper; text accumulates here. Nothing is inserted into any field automatically — you copy-paste where you want it.</div>
+        </div>
+    </div>
+    <button type="button" id="voice-fab" title="Voice dictation">🎙️</button>
+</div>
+<script>
+/* Single floating dictation panel. Records short clips, sends each to the
+   Whisper endpoint (hms:transcribe_dictation), and appends the transcript
+   into one shared box for the doctor to copy-paste. Mixed Hindi/English is
+   handled server-side (no forced language). */
+(function () {
+    "use strict";
+    var dock = document.getElementById('voice-dock');
+    // base.html stretches every direct child of .content to 100% width. Pull the
+    // dock out to <body> so it stays a fixed 58px FAB anchored bottom-right.
+    if (dock && dock.parentNode !== document.body) document.body.appendChild(dock);
+
+    var fab = document.getElementById('voice-fab');
+    var panel = document.getElementById('voice-panel');
+    var recBtn = document.getElementById('voice-rec');
+    var copyBtn = document.getElementById('voice-copy');
+    var clearBtn = document.getElementById('voice-clear');
+    var statusEl = document.getElementById('voice-status');
+    var ta = document.getElementById('voice-transcript');
+    var closeBtn = panel.querySelector('.vp-close');
+
+    var TRANSCRIBE_URL = "{% url 'hms:transcribe_dictation' %}";
+    var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    var CSRF = csrfEl ? csrfEl.value : "";
+    var MAX_CLIP_MS = 60000;
+
+    var supported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+
+    function setStatus(msg, kind) {
+        statusEl.textContent = msg;
+        statusEl.className = 'vp-status' + (kind ? ' ' + kind : '');
+    }
+    function openPanel() {
+        panel.hidden = false;
+        try { localStorage.setItem('voiceDockOpen', '1'); } catch (e) {}
+        if (!supported) { setStatus('Mic unavailable here — needs HTTPS or localhost.', 'err'); recBtn.disabled = true; }
+    }
+    function closePanel() {
+        panel.hidden = true;
+        try { localStorage.setItem('voiceDockOpen', '0'); } catch (e) {}
+    }
+    fab.addEventListener('click', function () { if (panel.hidden) openPanel(); else closePanel(); });
+    closeBtn.addEventListener('click', closePanel);
+    try { if (localStorage.getItem('voiceDockOpen') === '1') openPanel(); } catch (e) {}
+
+    var mediaRecorder = null, chunks = [], stream = null, autoStop = null, mime = '', recording = false;
+
+    function pickMime() {
+        var c = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4', 'audio/aac'];
+        for (var i = 0; i < c.length; i++) { if (MediaRecorder.isTypeSupported(c[i])) return c[i]; }
+        return '';
+    }
+    function extFor(m) {
+        if (m.indexOf('webm') >= 0) return 'webm';
+        if (m.indexOf('ogg') >= 0) return 'ogg';
+        if (m.indexOf('mp4') >= 0 || m.indexOf('aac') >= 0) return 'm4a';
+        return 'webm';
+    }
+    function releaseStream() {
+        if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+    }
+    function appendTranscript(text) {
+        text = (text || '').trim();
+        if (!text) return;
+        var cur = ta.value;
+        ta.value = (cur && !/\s$/.test(cur)) ? cur + ' ' + text : cur + text;
+        ta.scrollTop = ta.scrollHeight;
+    }
+    function idleUI() {
+        recording = false;
+        recBtn.classList.remove('is-recording');
+        recBtn.textContent = '● Start';
+        recBtn.disabled = false;
+        fab.classList.remove('is-recording', 'is-busy');
+    }
+
+    async function start() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (err) {
+            if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) {
+                setStatus('Mic blocked — allow it from the address-bar icon, then retry.', 'err');
+            } else if (err && err.name === 'NotFoundError') {
+                setStatus('No microphone found. Connect a headset and retry.', 'err');
+            } else {
+                setStatus('Could not open mic: ' + ((err && err.message) || err), 'err');
+            }
+            return;
+        }
+        mime = pickMime();
+        chunks = [];
+        try {
+            mediaRecorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+        } catch (e) { mediaRecorder = new MediaRecorder(stream); }
+        mime = mediaRecorder.mimeType || mime || 'audio/webm';
+
+        mediaRecorder.ondataavailable = function (e) { if (e.data && e.data.size > 0) chunks.push(e.data); };
+        mediaRecorder.onstop = function () {
+            releaseStream();
+            clearTimeout(autoStop);
+            var blob = new Blob(chunks, { type: mime });
+            if (blob.size < 1200) { setStatus('Nothing recorded — hold a moment longer.', 'err'); idleUI(); return; }
+            upload(blob);
+        };
+        mediaRecorder.start();
+        recording = true;
+        recBtn.classList.add('is-recording');
+        recBtn.textContent = '■ Stop';
+        fab.classList.add('is-recording');
+        setStatus('🎙️ Listening… tap Stop when done.', 'rec');
+        autoStop = setTimeout(function () { setStatus('Reached 60s — stopping.', 'err'); stop(); }, MAX_CLIP_MS);
+    }
+    function stop() {
+        if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+    }
+    function upload(blob) {
+        recBtn.disabled = true;
+        fab.classList.remove('is-recording');
+        fab.classList.add('is-busy');
+        setStatus('⏳ Transcribing…', 'busy');
+        var fd = new FormData();
+        fd.append('audio', blob, 'dictation.' + extFor(mime));
+        fetch(TRANSCRIBE_URL, { method: 'POST', headers: { 'X-CSRFToken': CSRF }, body: fd })
+            .then(function (r) { return r.json().catch(function () { return { error: 'Bad server response (' + r.status + ')' }; }); })
+            .then(function (data) {
+                if (data && data.text) {
+                    appendTranscript(data.text);
+                    setStatus('✓ Added. Keep dictating, or Copy.', 'ok');
+                } else {
+                    setStatus((data && data.error) ? data.error : 'Transcription failed.', 'err');
+                }
+            })
+            .catch(function (err) { setStatus('Network error: ' + ((err && err.message) || err), 'err'); })
+            .finally(idleUI);
+    }
+
+    recBtn.addEventListener('click', function () {
+        if (!supported) return;
+        if (recording) stop(); else start();
+    });
+    copyBtn.addEventListener('click', function () {
+        if (!ta.value.trim()) { setStatus('Nothing to copy yet.', 'err'); return; }
+        var done = function () { setStatus('📋 Copied — paste into any field.', 'ok'); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(ta.value).then(done).catch(function () { ta.select(); document.execCommand('copy'); done(); });
+        } else {
+            ta.select(); document.execCommand('copy'); done();
+        }
+    });
+    clearBtn.addEventListener('click', function () { ta.value = ''; setStatus('Cleared.', ''); ta.focus(); });
+})();
+</script>
+{% endif %}
 {% endblock %}
