@@ -20,6 +20,13 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'change-me-in-dev')
 DEBUG      = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes')
 ALLOWED_HOSTS = ["*"]
 
+# Extra HTTPS origins allowed to send unsafe (POST) requests. Needed when the
+# app is reached over https on a non-default origin — e.g. the local self-signed
+# HTTPS dev server used for iPhone/LAN testing. Comma-separated in the env.
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()
+]
+
 # Jazzmin's "add related" (+) popups load the target admin page inside a
 # same-origin iframe modal. Django's own default is X_FRAME_OPTIONS='DENY',
 # which blocks that iframe entirely (Chrome renders it as a plain

@@ -20,6 +20,10 @@ staticfiles/
 static/
 media/
 
+# Local self-signed HTTPS dev server cert/key (dev_https.py) - never commit the key
+dev-cert.pem
+dev-key.pem
+
 # IDE / OS
 .vscode/
 .idea/
