@@ -929,6 +929,11 @@ Discharge Bill
 </select>
 <p style="color:#64748b; font-size:12px; margin-top:4px;">Prefills the fields below from a standard procedure template — review and edit before saving.</p>
 
+{{ discharge_autofill|json_script:"discharge-autofill-data" }}
+<button type="button" id="discharge-autofill-btn" class="print-btn" style="margin-left:0; margin-top:6px; cursor:pointer;">↧ Load from patient record</button>
+<span id="discharge-autofill-msg" style="color:#64748b; font-size:12px; margin-left:10px;"></span>
+<p style="color:#64748b; font-size:12px; margin-top:4px;">Fills <b>empty</b> Diagnosis, Chief Complaints, Investigations (Hb/TLC/Platelet/RBS/HIV/HBsAg/USG), Procedure Performed, Treatment Given and Treatment on Discharge from what's already recorded on this IPD file (Diagnosis, Symptoms, Investigations, Medication, Progress Notes &amp; Treatment tabs), plus a default template sentence for Condition at Discharge. Never overwrites text you've already entered — review and edit before saving. Runs automatically when this tab is opened.</p>
+
 <form method="POST" id="discharge-summary-form">
 
 {% csrf_token %}
@@ -948,23 +953,23 @@ Discharge Bill
 
 <label>Investigations</label>
 <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
-  <div><label style="font-size:11px;">Hb</label><input type="text" name="inv_hb" class="form-control" value="{{ admission.inv_hb }}"></div>
-  <div><label style="font-size:11px;">TLC</label><input type="text" name="inv_tlc" class="form-control" value="{{ admission.inv_tlc }}"></div>
-  <div><label style="font-size:11px;">Platelet Count</label><input type="text" name="inv_platelet_count" class="form-control" value="{{ admission.inv_platelet_count }}"></div>
-  <div><label style="font-size:11px;">RBS (mg/dl)</label><input type="text" name="inv_rbs" class="form-control" value="{{ admission.inv_rbs }}"></div>
-  <div><label style="font-size:11px;">HIV</label><input type="text" name="inv_hiv" class="form-control" value="{{ admission.inv_hiv }}"></div>
-  <div><label style="font-size:11px;">HbsAg</label><input type="text" name="inv_hbsag" class="form-control" value="{{ admission.inv_hbsag }}"></div>
-  <div><label style="font-size:11px;">USG</label><input type="text" name="inv_usg" class="form-control" value="{{ admission.inv_usg }}"></div>
+  <div><label style="font-size:11px;">Hb</label><input type="text" name="inv_hb" id="discharge-inv-hb" class="form-control" value="{{ admission.inv_hb }}"></div>
+  <div><label style="font-size:11px;">TLC</label><input type="text" name="inv_tlc" id="discharge-inv-tlc" class="form-control" value="{{ admission.inv_tlc }}"></div>
+  <div><label style="font-size:11px;">Platelet Count</label><input type="text" name="inv_platelet_count" id="discharge-inv-platelet-count" class="form-control" value="{{ admission.inv_platelet_count }}"></div>
+  <div><label style="font-size:11px;">RBS (mg/dl)</label><input type="text" name="inv_rbs" id="discharge-inv-rbs" class="form-control" value="{{ admission.inv_rbs }}"></div>
+  <div><label style="font-size:11px;">HIV</label><input type="text" name="inv_hiv" id="discharge-inv-hiv" class="form-control" value="{{ admission.inv_hiv }}"></div>
+  <div><label style="font-size:11px;">HbsAg</label><input type="text" name="inv_hbsag" id="discharge-inv-hbsag" class="form-control" value="{{ admission.inv_hbsag }}"></div>
+  <div><label style="font-size:11px;">USG</label><input type="text" name="inv_usg" id="discharge-inv-usg" class="form-control" value="{{ admission.inv_usg }}"></div>
 </div>
 
 <label>Procedure Performed</label>
 <textarea name="procedure_done" id="discharge-procedure-done" class="form-control">{{ admission.procedure_done }}</textarea>
 
-<label>Course in Hospital</label>
+<label>Treatment Given</label>
 <textarea name="course_in_hospital" id="discharge-course-in-hospital" class="form-control">{{ admission.course_in_hospital }}</textarea>
 
 <label>Condition at Discharge</label>
-<textarea name="condition_at_discharge" class="form-control">{{ admission.condition_at_discharge }}</textarea>
+<textarea name="condition_at_discharge" id="discharge-condition-at-discharge" class="form-control" placeholder="Describe the patient's condition at discharge.">{{ admission.condition_at_discharge }}</textarea>
 
 <label>Treatment on Discharge</label>
 <textarea name="treatment_on_discharge" id="discharge-treatment-on-discharge" class="form-control">{{ admission.treatment_on_discharge }}</textarea>
@@ -1177,6 +1182,64 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         select.value = '';
     });
+});
+
+/* ── Discharge Summary: Load from patient record (auto-fill empty fields only) ── */
+document.addEventListener('DOMContentLoaded', function() {
+    var dataEl = document.getElementById('discharge-autofill-data');
+    if (!dataEl) return;
+
+    var data;
+    try { data = JSON.parse(dataEl.textContent) || {}; } catch (e) { return; }
+
+    // autofill key  ->  form field element id
+    var autofillMap = {
+        diagnosis:              'discharge-diagnosis',
+        chief_complaint:        'discharge-chief-complaints',
+        course_in_hospital:     'discharge-course-in-hospital',
+        inv_hb:                 'discharge-inv-hb',
+        inv_tlc:                'discharge-inv-tlc',
+        inv_platelet_count:     'discharge-inv-platelet-count',
+        inv_rbs:                'discharge-inv-rbs',
+        inv_hiv:                'discharge-inv-hiv',
+        inv_hbsag:              'discharge-inv-hbsag',
+        inv_usg:                'discharge-inv-usg',
+        procedure_done:         'discharge-procedure-done',
+        treatment_on_discharge: 'discharge-treatment-on-discharge',
+        condition_at_discharge: 'discharge-condition-at-discharge'
+    };
+
+    // Writes each prefill value into its field only when that field is still blank,
+    // so a doctor's own text is never clobbered (mirrors "Load Template" intent).
+    function applyAutofill() {
+        var filled = 0, available = 0;
+        Object.keys(autofillMap).forEach(function(key) {
+            var val = (data[key] || '').toString();
+            if (!val.trim()) return;
+            available++;
+            var el = document.getElementById(autofillMap[key]);
+            if (el && el.value.trim() === '') { el.value = val; filled++; }
+        });
+        return { filled: filled, available: available };
+    }
+
+    applyAutofill();
+
+    var btn = document.getElementById('discharge-autofill-btn');
+    var msg = document.getElementById('discharge-autofill-msg');
+    if (btn) {
+        btn.addEventListener('click', function() {
+            var r = applyAutofill();
+            if (!msg) return;
+            if (r.available === 0) {
+                msg.textContent = 'Nothing recorded yet to load.';
+            } else if (r.filled === 0) {
+                msg.textContent = 'All fields already have text — nothing to fill.';
+            } else {
+                msg.textContent = 'Filled ' + r.filled + ' empty field' + (r.filled === 1 ? '' : 's') + ' — review before saving.';
+            }
+        });
+    }
 });
 
 function openTab(evt, tabName){

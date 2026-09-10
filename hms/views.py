@@ -1620,7 +1620,7 @@ def ipd_patient_file(request, admission_id):
         InvestigationBillItem.objects
         .filter(bill__admission=admission)
         .select_related("investigation__category", "bill")
-        .prefetch_related("results")
+        .prefetch_related("results", "results__parameter")
         .order_by("-id")
     )
     ordered_investigation_ids = {item.investigation_id for item in ordered_investigations}
@@ -1628,6 +1628,188 @@ def ipd_patient_file(request, admission_id):
 
     # Optional helper: converts text back to a list so boxes stay checked on refresh
     saved_symptoms_list = [s.strip() for s in admission.symptoms.split(",")] if admission.symptoms else []
+
+    # ── Discharge Summary: prefill values pulled from the rest of this IPD file ──
+    # Feeds the "Load from patient record" button + the empty-field autofill on the
+    # Discharge tab. Purely advisory: the JS only writes these into blank fields and
+    # never touches text the doctor has already entered/saved (same rule as the
+    # existing "Load Template" dropdown, which stays untouched).
+
+    # Chief Complaints  ←  Symptoms tab: the discrete Chief-Complaint checkboxes
+    # (Fever / Cough / …) plus any short custom entries added via "+ Add new
+    # symptom". The descriptive clinical-findings prose keeps feeding "Signs &
+    # Symptoms" only, so any comma-fragment that reads like a sentence is dropped.
+    _CC_OPTIONS = {
+        "fever", "cough", "body ache", "body pain", "throat pain", "sore throat",
+        "loss of appetite", "fatigue", "lethargy", "fatigue/lethargy",
+        "abdominal pain", "nausea", "vomiting", "nausea/vomiting",
+    }
+
+    def _chief_complaints(text):
+        items = [s.strip() for s in (text or "").split(",") if s.strip()]
+        if not items:
+            return ""
+        looks_like_prose = any(len(it) > 45 or ". " in it or it.endswith(".") for it in items)
+        keep = [it for it in items if it.lower() in _CC_OPTIONS] if looks_like_prose else items
+        return ", ".join(keep)
+
+    chief_complaint_prefill = _chief_complaints(admission.symptoms)
+    if not chief_complaint_prefill:
+        for _h in symptom_history:
+            chief_complaint_prefill = _chief_complaints(_h.symptoms)
+            if chief_complaint_prefill:
+                break
+
+    # Investigations  ←  matching ordered-investigation results (by investigation /
+    # parameter name). Each field: (exact-match names, substring-match names,
+    # substring names that DISqualify a row). Left blank when nothing matches.
+    _INV_MATCH = {
+        "inv_hb":             (("hb",), ("haemoglobin", "hemoglobin"), ("a1c", "glycat")),
+        "inv_tlc":            (("tlc",), ("total leukocyte", "total leucocyte", "total wbc", "wbc count"), ()),
+        "inv_platelet_count": (("plt", "platelet count"), ("platelet count", "platelets"), ()),
+        "inv_rbs":            (("rbs",),
+                               ("random blood sugar", "blood sugar random", "sugar random",
+                                "sugar (random)", "sugar - random", "random blood glucose",
+                                "glucose random", "glucose (random)"),
+                               ("fasting", "prandial", "ppbs", "fbs")),
+        "inv_hiv":            (("hiv",), ("hiv", "anti hiv", "anti-hiv"), ()),
+        "inv_hbsag":          (("hbsag",), ("hbsag", "hbs ag", "hepatitis b surface", "australia antigen"), ()),
+        "inv_usg":            (("usg",), ("usg", "ultrasound", "ultrasonograph", "sonograph"), ()),
+    }
+    inv_prefill = {f: "" for f in _INV_MATCH}
+    for _item in ordered_investigations:
+        _inv_name = (_item.investigation.name or "").strip().lower()
+        for _res in _item.results.all():
+            _val = (_res.value or "").strip()
+            if not _val:
+                continue
+            _names = (_inv_name, (_res.parameter.name or "").strip().lower())
+            for _field, (_exact, _contains, _exclude) in _INV_MATCH.items():
+                if inv_prefill[_field]:
+                    continue
+                if any(bad in n for bad in _exclude for n in _names):
+                    continue
+                if any(n in _exact for n in _names) or any(sub in n for sub in _contains for n in _names):
+                    inv_prefill[_field] = _val
+
+    # Procedure Performed / Treatment on Discharge  ←  Treatment tab history
+    # (treatment_history is newest-first; join oldest-first so it reads in order)
+    _tr = [h.treatment_plan.strip() for h in treatment_history if h.treatment_plan and h.treatment_plan.strip()]
+    treatment_prefill = "\n".join(reversed(_tr)) if _tr else (admission.treatment_plan or "").strip()
+
+    # Treatment Given  ←  a narrative built from the inpatient Medication Chart
+    # (the treatment actually given during the stay, kept separate from Discharge
+    # Medications) followed by any Progress Notes (SOAP), chronological. Blank if
+    # neither exists.
+    import re
+
+    def _freq_words(raw):
+        """Normalise a frequency string ('(1-0-1) twice daily', 'TDS', 'OD', …)
+        into plain words, falling back to the raw string when unrecognised."""
+        f = (raw or "").strip()
+        if not f:
+            return ""
+        low = f.lower()
+        for phrase, words in (
+            ("thrice daily", "thrice daily"), ("three times", "thrice daily"),
+            ("twice daily", "twice daily"), ("two times", "twice daily"),
+            ("four times", "four times daily"),
+            ("once daily", "once daily"), ("once a day", "once daily"),
+            ("every 6 hours", "every 6 hours"), ("every 8 hours", "every 8 hours"),
+            ("at bedtime", "at bedtime"), ("as needed", "as needed"),
+        ):
+            if phrase in low:
+                return words
+        abbr = {
+            "od": "once daily", "hs": "at bedtime", "qhs": "at bedtime",
+            "bd": "twice daily", "bid": "twice daily",
+            "tds": "thrice daily", "tid": "thrice daily",
+            "qid": "four times daily", "qds": "four times daily",
+            "sos": "as needed", "prn": "as needed", "stat": "immediately",
+            "q4h": "every 4 hours", "q6h": "every 6 hours",
+            "q8h": "every 8 hours", "q12h": "every 12 hours",
+        }
+        for tok in re.split(r"[^a-z0-9]+", low):
+            if tok in abbr:
+                return abbr[tok]
+        m = re.search(r"(\d)\s*-\s*(\d)\s*-\s*(\d)", low)
+        if m:
+            n = sum(1 for g in m.groups() if g != "0")
+            return {1: "once daily", 2: "twice daily", 3: "thrice daily",
+                    4: "four times daily"}.get(n, f)
+        return f
+
+    _med_segs, _routes, _is_abx = [], [], False
+    for m in medications:
+        dose = re.sub(r"\s*\([^)]*\)\s*$", "", (m.dose or "").strip()).strip()  # drop "(100 ml)" tail
+        seg = " ".join(x for x in (m.medicine_name, dose, m.route, _freq_words(m.frequency)) if x and x.strip())
+        seg = seg.strip()
+        if not seg:
+            continue
+        _med_segs.append(seg)
+        _routes.append((m.route or "").lower())
+        d = m.drug
+        if d and ((d.category or "").lower().startswith("antibiot")
+                  or (d.atc_code or "").upper().startswith("J01")):
+            _is_abx = True
+
+    def _join_natural(parts):
+        if len(parts) == 1:
+            return parts[0]
+        if len(parts) == 2:
+            return f"{parts[0]} and {parts[1]}"
+        return ", ".join(parts[:-1]) + f", and {parts[-1]}"
+
+    # diagnosis text for "for the management of …": strip any leading ICD code,
+    # trailing period, and lead lowercase unless it starts with an acronym
+    _dx = re.sub(r"^\s*[A-Za-z]\d[\w.]*\s*[:\-]\s*", "", (admission.diagnosis or "").strip()).strip().rstrip(".")
+    if _dx and not _dx[:2].isupper():
+        _dx = _dx[0].lower() + _dx[1:]
+
+    _course_parts = []
+    if _med_segs:
+        _all_iv = all("iv" in r for r in _routes if r) and any("iv" in r for r in _routes)
+        if _is_abx and _all_iv:
+            _lead = "Patient completed a course of intravenous antibiotics during admission consisting of "
+        elif _all_iv:
+            _lead = "Patient completed a course of intravenous medication during admission consisting of "
+        else:
+            _lead = "Patient was treated during admission with "
+        _sentence = _lead + _join_natural(_med_segs)
+        if _dx:
+            _sentence += f" for the management of {_dx}"
+        _course_parts.append(_sentence.rstrip() + ".")
+
+    _note_lines = []
+    for _n in admission.progress_notes.all().order_by("date_time"):
+        _bits = []
+        if (_n.subjective or "").strip(): _bits.append("S: " + _n.subjective.strip())
+        if (_n.assessment or "").strip(): _bits.append("A: " + _n.assessment.strip())
+        if (_n.plan or "").strip():       _bits.append("P: " + _n.plan.strip())
+        if _bits:
+            _note_lines.append(f"{timezone.localtime(_n.date_time):%d %b %Y} — " + "; ".join(_bits))
+    if _note_lines:
+        _course_parts.append("Progress:\n" + "\n".join(_note_lines))
+
+    course_prefill = "\n\n".join(_course_parts)
+
+    # Condition at Discharge  ←  a fixed default template sentence (NOT derived
+    # from patient data). Prefilled only into an empty field; the doctor edits or
+    # replaces it per patient.
+    condition_prefill = (
+        "Patient is hemodynamically stable, conscious, alert, and oriented; "
+        "surgical site healthy; pain controlled with oral medication."
+    )
+
+    discharge_autofill = {
+        "diagnosis":              (admission.diagnosis or "").strip(),
+        "chief_complaint":        chief_complaint_prefill,
+        "course_in_hospital":     course_prefill,
+        "procedure_done":         treatment_prefill,
+        "treatment_on_discharge": treatment_prefill,
+        "condition_at_discharge": condition_prefill,
+    }
+    discharge_autofill.update(inv_prefill)
 
     return render(request, "ipd/patient_file.html", {
         "admission":                admission,
@@ -1642,6 +1824,7 @@ def ipd_patient_file(request, admission_id):
         "available_investigations": available_investigations,
         "ordered_investigations":   ordered_investigations,
         "ordered_investigation_ids": ordered_investigation_ids,
+        "discharge_autofill":       discharge_autofill,
     })
 
 # ======================================================
