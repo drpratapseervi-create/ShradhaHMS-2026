@@ -504,11 +504,13 @@ class="menu-btn {% if request.resolver_match.url_name == 'dashboard' %}active{% 
 <i class="fa-solid fa-house"></i> Dashboard
 </a>
 
-<a href="/patients/new/" class="menu-btn">
+<a href="/patients/new/"
+class="menu-btn {% if request.resolver_match.url_name == 'patient_create' %}active{% endif %}">
 <i class="fa-solid fa-user-plus"></i> New Patient
 </a>
 
-<a href="/appointments/new/" class="menu-btn">
+<a href="/appointments/new/"
+class="menu-btn {% if request.resolver_match.url_name == 'appointment_create' %}active{% endif %}">
 <i class="fa-solid fa-calendar-check"></i> Appointment
 </a>
 

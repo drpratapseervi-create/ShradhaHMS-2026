@@ -1,26 +1,12 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Book Appointment | Shradha HMS</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+{% extends "base.html" %}
+{% block title %}Book Appointment | Shradha HMS{% endblock %}
+{% block content %}
+
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+
 <style>
-*{ box-sizing:border-box; margin:0; padding:0; }
-body{ font-family:'Segoe UI',sans-serif; background:#0d0d0d; color:#e2e8f0; }
-
-header{
-    background:linear-gradient(135deg,#005555,#007676);
-    color:white; padding:14px 30px;
-    display:flex; align-items:center; gap:14px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.5);
-}
-header img{ height:46px; background:white; padding:4px; border-radius:6px; }
-header h1{ font-size:20px; font-weight:700; margin:0; }
-header p{ font-size:12px; opacity:0.82; margin-top:2px; }
-
-.container{ max-width:800px; margin:28px auto 30px; padding:0 20px; }
+.container, .container *{ box-sizing:border-box; margin:0; padding:0; }
+.container{ max-width:800px; margin:0 auto; padding:0; }
 .card{ background:#111111; border-radius:14px; box-shadow:0 4px 24px rgba(0,0,0,0.7); overflow:hidden; border:1px solid #2a2a2a; }
 .card-header{
     background:linear-gradient(135deg,#005555,#007676);
@@ -38,35 +24,35 @@ header p{ font-size:12px; opacity:0.82; margin-top:2px; }
 .full{ grid-column:1/-1; }
 .span2{ grid-column:span 2; }
 
-label{ font-weight:600; font-size:13px; color:#8892a4; margin-bottom:5px; display:block; }
-input, select, textarea{
+.container label{ font-weight:600; font-size:13px; color:#8892a4; margin-bottom:5px; display:block; }
+.container input, .container select, .container textarea{
     width:100%; height:42px; padding:10px 12px;
     border-radius:7px; border:1px solid #2a2a2a;
     font-size:13px; font-family:'Segoe UI',sans-serif; color:#e2e8f0;
     background:#1a1a1a !important;
     transition:border-color .2s, box-shadow .2s;
 }
-input:focus, select:focus, textarea:focus{
+.container input:focus, .container select:focus, .container textarea:focus{
     background:#1a1a1a !important;
     border-color:#00b8a9 !important;
     outline:none;
     box-shadow:0 0 0 2px rgba(0,184,169,.2) !important;
     color:#e2e8f0 !important;
 }
-textarea{ height:42px; min-height:42px; resize:vertical; }
-input::placeholder, textarea::placeholder{ color:#444 !important; }
-option{ background:#1a1a1a; color:#e2e8f0; }
+.container textarea{ height:42px; min-height:42px; resize:vertical; }
+.container input::placeholder, .container textarea::placeholder{ color:#444 !important; }
+.container option{ background:#1a1a1a; color:#e2e8f0; }
 
 /* Browser autofill dark override */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-textarea:-webkit-autofill,
-textarea:-webkit-autofill:hover,
-textarea:-webkit-autofill:focus,
-select:-webkit-autofill,
-select:-webkit-autofill:hover,
-select:-webkit-autofill:focus {
+.container input:-webkit-autofill,
+.container input:-webkit-autofill:hover,
+.container input:-webkit-autofill:focus,
+.container textarea:-webkit-autofill,
+.container textarea:-webkit-autofill:hover,
+.container textarea:-webkit-autofill:focus,
+.container select:-webkit-autofill,
+.container select:-webkit-autofill:hover,
+.container select:-webkit-autofill:focus {
     -webkit-box-shadow: 0 0 0px 1000px #1a1a1a inset !important;
     -webkit-text-fill-color: #e2e8f0 !important;
     caret-color: #e2e8f0 !important;
@@ -75,7 +61,7 @@ select:-webkit-autofill:focus {
 }
 
 /* Date/time input dark */
-input[type=date], input[type=time]{
+.container input[type=date], .container input[type=time]{
     color-scheme: dark;
 }
 
@@ -98,7 +84,7 @@ input[type=date], input[type=time]{
     font-size:13px; color:#00b8a9; font-weight:600; display:none;
 }
 
-.btn{ padding:11px 22px; border-radius:8px; font-weight:700; border:none; cursor:pointer; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:.2s; }
+.container .btn{ padding:11px 22px; border-radius:8px; font-weight:700; border:none; cursor:pointer; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:.2s; }
 .btn-green{ background:#166534; color:#4ade80; border:1px solid #166534; } .btn-green:hover{ background:#14532d; color:#86efac; }
 .btn-teal{ background:#1e3a3a; color:#00b8a9; border:1px solid #00b8a9; } .btn-teal:hover{ background:#155555; color:#00d4c0; }
 .btn-gray{ background:#1e1e1e; color:#8892a4; border:1px solid #2a2a2a; } .btn-gray:hover{ background:#2a2a2a; color:#e2e8f0; }
@@ -138,19 +124,7 @@ input[type=date], input[type=time]{
 .select2-container--default .select2-results__option[aria-selected=true]{ background:#1e3a3a !important; color:#00b8a9 !important; }
 .select2-container--default .select2-selection--single .select2-selection__placeholder{ color:#444 !important; }
 .select2-container--default .select2-selection--single .select2-selection__clear{ color:#8892a4 !important; }
-
-footer{ text-align:center; padding:10px 0 20px; font-size:13px; color:#444; }
 </style>
-</head>
-<body>
-
-<header>
-    <img src="{% static 'hms/img/hospital_logo.jpg' %}" alt="">
-    <div>
-        <h1>Shradha Hospital Management System</h1>
-        <p>Pani Ki Do Tanki, Surajpole, Pali (Raj) | 9414122542</p>
-    </div>
-</header>
 
 <div class="container">
 <div class="card">
@@ -242,8 +216,6 @@ footer{ text-align:center; padding:10px 0 20px; font-size:13px; color:#444; }
 </div>
 </div>
 
-<footer>© 2026 Shradha Hospital • HMS Cloud Interface</footer>
-
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
@@ -293,5 +265,4 @@ if ($('#id_department').val()) {
     }
 });
 </script>
-</body>
-</html>
+{% endblock %}

@@ -1,18 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-
-<meta charset="UTF-8">
-<title>OPD Register</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+{% extends "base.html" %}
+{% block title %}OPD Register | Shradha HMS{% endblock %}
+{% block content %}
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 <style>
 
-*{box-sizing:border-box;margin:0;padding:0;}
+.opd-page, .opd-page *{box-sizing:border-box;margin:0;padding:0;}
 
-:root{
+.opd-page{
   --teal:#0d7a6e;
   --teal-dark:#095f55;
   --teal-light:#e6f5f3;
@@ -25,71 +21,26 @@
   --muted:#6b7a8d;
   --row-hover:#f5fbfa;
   --shadow:0 2px 8px rgba(13,122,110,0.08);
-}
 
-body{
   font-family:'DM Sans',sans-serif;
   background:var(--bg);
   color:var(--text);
-  min-height:100vh;
-  padding:0;
+  border-radius:10px;
+  overflow:visible;
 }
-
-/* ── Top bar ── */
-.topbar{
-  background:var(--teal);
-  padding:14px 28px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
-
-.topbar-title{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  color:#fff;
-}
-
-.topbar-title .icon{
-  width:32px;height:32px;
-  background:rgba(255,255,255,0.2);
-  border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:18px;
-}
-
-.topbar-title h1{
-  font-size:18px;
-  font-weight:600;
-  letter-spacing:0.01em;
-}
-
-.topbar-back{
-  display:flex;align-items:center;gap:6px;
-  color:rgba(255,255,255,0.85);
-  text-decoration:none;
-  font-size:13px;
-  padding:6px 12px;
-  border:1px solid rgba(255,255,255,0.3);
-  border-radius:6px;
-  transition:background 0.15s;
-}
-
-.topbar-back:hover{background:rgba(255,255,255,0.12);}
 
 /* ── Main content ── */
-.main{padding:24px 28px;}
+.opd-page .main{padding:24px 28px;}
 
 /* ── Stats row ── */
-.stats-row{
+.opd-page .stats-row{
   display:grid;
   grid-template-columns:repeat(3,1fr);
   gap:14px;
   margin-bottom:20px;
 }
 
-.stat-card{
+.opd-page .stat-card{
   background:var(--surface);
   border:1px solid var(--border);
   border-radius:12px;
@@ -100,7 +51,7 @@ body{
   box-shadow:var(--shadow);
 }
 
-.stat-icon{
+.opd-page .stat-icon{
   width:44px;height:44px;
   border-radius:10px;
   display:flex;align-items:center;justify-content:center;
@@ -108,16 +59,16 @@ body{
   flex-shrink:0;
 }
 
-.stat-icon.patients{background:#e6f5f3;}
-.stat-icon.collection{background:#fff8e6;}
-.stat-icon.date{background:#eef2ff;}
+.opd-page .stat-icon.patients{background:#e6f5f3;}
+.opd-page .stat-icon.collection{background:#fff8e6;}
+.opd-page .stat-icon.date{background:#eef2ff;}
 
-.stat-label{font-size:12px;color:var(--muted);font-weight:500;margin-bottom:2px;text-transform:uppercase;letter-spacing:0.05em;}
-.stat-value{font-size:22px;font-weight:600;color:var(--text);}
-.stat-value.money{color:var(--teal);}
+.opd-page .stat-label{font-size:12px;color:var(--muted);font-weight:500;margin-bottom:2px;text-transform:uppercase;letter-spacing:0.05em;}
+.opd-page .stat-value{font-size:22px;font-weight:600;color:var(--text);}
+.opd-page .stat-value.money{color:var(--teal);}
 
 /* ── Filter bar ── */
-.filter-bar{
+.opd-page .filter-bar{
   background:var(--surface);
   border:1px solid var(--border);
   border-radius:12px;
@@ -130,7 +81,7 @@ body{
   flex-wrap:wrap;
 }
 
-.filter-group{
+.opd-page .filter-group{
   display:flex;
   align-items:center;
   gap:8px;
@@ -138,36 +89,41 @@ body{
   min-width:180px;
 }
 
-.filter-group label{
+.opd-page .filter-group label{
   font-size:13px;
-  color:var(--muted);
+  color:var(--muted) !important;
   font-weight:500;
   white-space:nowrap;
 }
 
-.filter-group input{
+.opd-page .filter-group input,
+.opd-page input[type=text],
+.opd-page input[type=date]{
   width:100%;
   padding:8px 12px;
-  border:1px solid var(--border);
+  border:1px solid var(--border) !important;
   border-radius:8px;
   font-size:14px;
   font-family:'DM Sans',sans-serif;
-  color:var(--text);
-  background:var(--bg);
+  color:var(--text) !important;
+  background:var(--bg) !important;
   outline:none;
   transition:border 0.15s,box-shadow 0.15s;
 }
 
-.filter-group input:focus{
-  border-color:var(--teal);
-  box-shadow:0 0 0 3px rgba(13,122,110,0.1);
-  background:#fff;
+.opd-page input[type=text]:focus,
+.opd-page input[type=date]:focus{
+  border-color:var(--teal) !important;
+  box-shadow:0 0 0 3px rgba(13,122,110,0.1) !important;
+  background:#fff !important;
 }
 
-.filter-divider{width:1px;height:32px;background:var(--border);}
+.opd-page input::placeholder{ color:var(--muted) !important; }
+
+.opd-page .filter-divider{width:1px;height:32px;background:var(--border);}
 
 /* ── Table ── */
-.table-wrap{
+.opd-page .table-wrap{
   background:var(--surface);
   border:1px solid var(--border);
   border-radius:12px;
@@ -175,66 +131,69 @@ body{
   box-shadow:var(--shadow);
 }
 
-table{
+.opd-page table{
   border-collapse:collapse;
   width:100%;
+  color:var(--text);
 }
 
-thead{
+.opd-page thead{
   background:var(--teal);
 }
 
-th{
+.opd-page th{
   padding:11px 14px;
   font-size:12px;
   font-weight:600;
-  color:rgba(255,255,255,0.9);
+  color:rgba(255,255,255,0.9) !important;
   text-align:center;
   letter-spacing:0.06em;
   text-transform:uppercase;
   border:none;
+  background:var(--teal) !important;
 }
 
-tbody tr{
+.opd-page tbody tr{
   border-bottom:1px solid var(--border);
   transition:background 0.1s;
 }
 
-tbody tr:last-child{border-bottom:none;}
+.opd-page tbody tr:last-child{border-bottom:none;}
 
-tbody tr:hover{background:var(--row-hover);}
+.opd-page tbody tr:hover{background:var(--row-hover);}
+.opd-page tbody tr:hover td{background:var(--row-hover) !important;}
 
-td{
+.opd-page td{
   padding:10px 14px;
   font-size:13.5px;
   text-align:center;
   border:none;
-  color:var(--text);
+  color:var(--text) !important;
 }
 
 /* Receipt no */
-td:first-child{
+.opd-page td:first-child{
   font-family:'DM Mono',monospace;
   font-size:12px;
-  color:var(--muted);
+  color:var(--muted) !important;
   font-weight:500;
 }
 
 /* Date */
-td:nth-child(2){
+.opd-page td:nth-child(2){
   font-size:12.5px;
-  color:var(--muted);
+  color:var(--muted) !important;
 }
 
 /* Patient name */
-td:nth-child(3){
+.opd-page td:nth-child(3){
   font-weight:600;
   text-align:left;
-  color:var(--teal-dark);
+  color:var(--teal-dark) !important;
 }
 
 /* Age/Sex badge */
-td:nth-child(4) span{
+.opd-page td:nth-child(4) span{
   display:inline-block;
   background:var(--teal-light);
   color:var(--teal-dark);
@@ -245,29 +204,29 @@ td:nth-child(4) span{
 }
 
 /* Doctor */
-td:nth-child(5){
+.opd-page td:nth-child(5){
   font-weight:500;
 }
 
 /* Fee */
-td.fee{
+.opd-page td.fee{
   font-family:'DM Mono',monospace;
   font-size:13px;
   font-weight:600;
-  color:#1a5c52;
+  color:#1a5c52 !important;
 }
 
-td.fee::before{content:'₹';}
+.opd-page td.fee::before{content:'₹';}
 
 /* Empty row */
-.empty-row td{
+.opd-page .empty-row td{
   padding:40px;
-  color:var(--muted);
+  color:var(--muted) !important;
   font-size:15px;
 }
 
 /* Print link */
-.print-btn{
+.opd-page .print-btn{
   display:inline-flex;
   align-items:center;
   gap:5px;
@@ -283,13 +242,13 @@ td.fee::before{content:'₹';}
   letter-spacing:0.02em;
 }
 
-.print-btn:hover{
+.opd-page .print-btn:hover{
   background:var(--teal-mid);
   border-color:var(--teal);
 }
 
 /* ── Footer summary ── */
-.footer-summary{
+.opd-page .footer-summary{
   margin-top:18px;
   display:flex;
   align-items:center;
@@ -301,14 +260,14 @@ td.fee::before{content:'₹';}
   box-shadow:var(--shadow);
 }
 
-.summary-info{
+.opd-page .summary-info{
   font-size:14px;
   color:var(--muted);
 }
 
-.summary-info strong{color:var(--text);}
+.opd-page .summary-info strong{color:var(--text);}
 
-.summary-total{
+.opd-page .summary-total{
   font-size:18px;
   font-weight:700;
   color:var(--teal);
@@ -317,9 +276,9 @@ td.fee::before{content:'₹';}
 
 /* ── Responsive ── */
 @media(max-width:640px){
-  .main{padding:14px;}
-  .stats-row{grid-template-columns:1fr;}
-  .filter-divider{display:none;}
+  .opd-page .main{padding:14px;}
+  .opd-page .stats-row{grid-template-columns:1fr;}
+  .opd-page .filter-divider{display:none;}
 }
 
 </style>
@@ -368,18 +327,7 @@ window.onload = filterTable;
 
 </script>
 
-</head>
-
-<body>
-
-<!-- Top Bar -->
-<div class="topbar">
-  <div class="topbar-title">
-    <div class="icon">🏥</div>
-    <h1>OPD Register</h1>
-  </div>
-  <a href="/" class="topbar-back">← Back to Dashboard</a>
-</div>
+<div class="opd-page">
 
 <!-- Main -->
 <div class="main">
@@ -495,6 +443,8 @@ window.onload = filterTable;
 
 </div>
 
+</div>
+
 <script>
 
 function updateLabel(){
@@ -523,5 +473,4 @@ window.onload = function(){
 
 </script>
 
-</body>
-</html>
+{% endblock %}
