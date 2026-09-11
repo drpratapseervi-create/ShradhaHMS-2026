@@ -6,53 +6,97 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
 <style>
-body { font-family: Cambria, Georgia, serif; }
-.proc-page { padding: 10px 20px; max-width: 1000px; }
-h4 { margin-bottom: 4px; font-size: 18px; }
+.proc-page {
+  font-family: Cambria, Georgia, serif;
+  padding: 10px 20px;
+  max-width: 1000px;
+  color: #e2e8f0;
+}
+.proc-page h4 { margin-bottom: 4px; font-size: 18px; color: #e2e8f0; }
 
-.form-row { display:flex; gap:12px; margin-bottom:10px; align-items:flex-end; flex-wrap:wrap; }
-.form-group { display:flex; flex-direction:column; gap:3px; }
-.form-group label { font-size:12px; font-weight:bold; color:#333; }
-.form-group select, .form-group input {
-  padding:4px 8px; font-size:13px; border:1px solid #ccc;
+.proc-page .form-row { display:flex; gap:12px; margin-bottom:14px; align-items:flex-end; flex-wrap:wrap; }
+.proc-page .form-group { display:flex; flex-direction:column; gap:3px; }
+.proc-page .form-group label { font-size:12px; font-weight:bold; color:#8892a4 !important; }
+.proc-page .form-group select,
+.proc-page .form-group input,
+.proc-page .billing-bar select,
+.proc-page .billing-bar input {
+  padding:4px 8px; font-size:13px;
+  border:1px solid #2a2a2a !important;
   border-radius:4px; height:30px;
+  background:#1a1a1a !important;
+  color:#e2e8f0 !important;
+}
+.proc-page .form-group select:focus,
+.proc-page .form-group input:focus,
+.proc-page .billing-bar select:focus,
+.proc-page .billing-bar input:focus {
+  outline:none;
+  border-color:#00b8a9 !important;
+  box-shadow:0 0 0 2px rgba(0,184,169,0.15) !important;
 }
 
-.select2-container .select2-selection--single { height:30px !important; border:1px solid #ccc !important; border-radius:4px !important; }
-.select2-container--default .select2-selection--single .select2-selection__rendered { line-height:28px !important; font-size:13px; padding-left:8px; }
-.select2-container--default .select2-selection--single .select2-selection__arrow { height:28px !important; }
-.select2-results__option { font-size:13px; padding:5px 10px; }
-
-.section-title { font-size:13px; font-weight:bold; color:#e2e8f0; background:#252a40; border:1px solid #2d3148; border-bottom:none; padding:5px 8px; }
-
-table { border-collapse:collapse; width:100%; background:#1e2235; margin-bottom:0; }
-th, td { border:1px solid #2d3148; padding:5px 8px; font-size:13px; }
-th { background:#252a40; color:#e2e8f0; text-align:center; }
-td.center { text-align:center; }
-tbody tr:hover { background:#252a40; }
-tbody tr.row-selected td { background:#2d3148; color:#e2e8f0; font-weight:bold; }
-
-.billing-bar {
-  background:#1e2235; border:1px solid #2d3148; border-top:none;
-  padding:7px 12px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;
-  margin-bottom:10px;
+/* ── Select2 dark theme ── */
+.proc-page .select2-container .select2-selection--single {
+  height:30px !important; border:1px solid #2a2a2a !important; border-radius:4px !important;
+  background:#1a1a1a !important; display:flex; align-items:center;
 }
-.billing-bar label { font-size:12px; font-weight:bold; margin-right:4px; }
-.billing-bar select, .billing-bar input {
-  padding:4px 8px; font-size:13px; border:1px solid #ccc;
-  border-radius:4px; height:28px; width:120px;
+.proc-page .select2-container--default .select2-selection--single .select2-selection__rendered {
+  line-height:28px !important; font-size:13px; padding-left:8px; color:#e2e8f0 !important;
 }
-.total-display { margin-left:auto; font-size:14px; font-weight:bold; }
-.total-display .big { color:#0d6efd; font-size:20px; }
-.net-display { color:#198754; font-weight:bold; font-size:13px; }
+.proc-page .select2-container--default .select2-selection--single .select2-selection__arrow { height:28px !important; }
+.proc-page .select2-container--default .select2-selection--single .select2-selection__arrow b { border-color:#8892a4 transparent transparent transparent !important; }
+.proc-page .select2-container--default.select2-container--open .select2-selection--single,
+.proc-page .select2-container--default.select2-container--focus .select2-selection--single {
+  border-color:#00b8a9 !important; box-shadow:0 0 0 2px rgba(0,184,169,0.15) !important;
+}
+.select2-dropdown { background:#111111 !important; border:1px solid #2a2a2a !important; }
+.select2-search--dropdown { background:#111111 !important; padding:7px !important; }
+.select2-container--default .select2-search--dropdown .select2-search__field {
+  background:#1a1a1a !important; color:#e2e8f0 !important; border:1px solid #2a2a2a !important; border-radius:4px !important;
+}
+.select2-results__option { font-size:13px; padding:5px 10px; color:#e2e8f0 !important; background:#111111 !important; }
+.select2-container--default .select2-results__option--highlighted[aria-selected] { background:#00b8a9 !important; color:#000 !important; }
+.select2-container--default .select2-results__option[aria-selected=true] { background:#1e3a3a !important; color:#00b8a9 !important; }
+.select2-container--default .select2-selection--single .select2-selection__placeholder { color:#555 !important; }
 
-.submit-bar { border-top:1px solid #2d3148; padding:8px 0; text-align:right; }
-.btn-submit {
-  background:#198754; color:white; border:none;
-  padding:7px 28px; font-size:14px; font-family:Cambria,Georgia,serif;
-  border-radius:4px; cursor:pointer;
+/* ── Card: procedures table + billing bar ── */
+.proc-page .proc-card {
+  background:#111111; border:1px solid #2a2a2a; border-radius:10px;
+  box-shadow:0 2px 10px rgba(0,0,0,0.5); overflow:hidden;
 }
-.btn-submit:hover { background:#157347; }
+.proc-page .section-title {
+  font-size:12px; font-weight:700; color:#8892a4;
+  text-transform:uppercase; letter-spacing:0.5px;
+  background:#161616; border-bottom:1px solid #2a2a2a; padding:11px 16px;
+}
+
+.proc-page table { border-collapse:collapse; width:100%; background:#111111; margin-bottom:0; color:#e2e8f0; }
+.proc-page th, .proc-page td { border:none; border-bottom:1px solid #1e1e1e; padding:10px 16px; font-size:13px; }
+.proc-page th { background:#161616 !important; color:#8892a4 !important; text-align:center; text-transform:uppercase; letter-spacing:0.5px; font-size:11px; border-bottom:2px solid #2a2a2a; }
+.proc-page td.center { text-align:center; }
+.proc-page tbody tr:last-child td { border-bottom:none; }
+.proc-page tbody tr:nth-child(even) td { background:#111111; }
+.proc-page tbody tr:hover td { background:#1a1a1a !important; }
+.proc-page tbody tr.row-selected td { background:#1e3a3a !important; color:#00b8a9 !important; font-weight:bold; }
+
+.proc-page .billing-bar {
+  background:#161616; border-top:1px solid #2a2a2a;
+  padding:12px 16px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+}
+.proc-page .billing-bar label { font-size:12px; font-weight:bold; margin-right:4px; color:#8892a4 !important; }
+.proc-page .billing-bar select, .proc-page .billing-bar input { width:120px; }
+.proc-page .total-display { margin-left:auto; font-size:14px; font-weight:bold; color:#e2e8f0; }
+.proc-page .total-display .big { color:#00b8a9; font-size:20px; }
+.proc-page .net-display { color:#4ade80; font-weight:bold; font-size:13px; }
+
+.proc-page .submit-bar { padding:14px 0 0; text-align:right; }
+.proc-page .btn-submit {
+  background:#166534; color:#4ade80; border:1px solid #166534;
+  padding:9px 28px; font-size:14px; font-family:Cambria,Georgia,serif;
+  border-radius:6px; cursor:pointer; font-weight:700;
+}
+.proc-page .btn-submit:hover { background:#14532d; color:#86efac; }
 </style>
 
 <div class="proc-page">
@@ -102,6 +146,7 @@ tbody tr.row-selected td { background:#2d3148; color:#e2e8f0; font-weight:bold; 
       </div>
     </div>
 
+    <div class="proc-card">
     <div class="section-title">Select Procedures</div>
     <table>
       <thead>
@@ -146,6 +191,7 @@ tbody tr.row-selected td { background:#2d3148; color:#e2e8f0; font-weight:bold; 
         &nbsp;&nbsp;
         <span class="net-display">Net: ₹<span id="net">0.00</span></span>
       </div>
+    </div>
     </div>
 
     <div class="submit-bar">
