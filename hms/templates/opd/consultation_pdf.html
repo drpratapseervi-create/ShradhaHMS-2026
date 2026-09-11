@@ -98,6 +98,9 @@ body {
     display: block;
     width: 100%;
 }
+.sec-title-followup {
+    margin-top: 180px;
+}
 
 /* ── Tables ── */
 table {
@@ -188,8 +191,8 @@ th {
     font-weight: 400;
     font-size: 11px;
     line-height: 1.6;
-    padding: 5px 0;
-    margin: 16px 0 0 0;
+    padding: 0pc 0;
+    margin: 2px 0 0 0;
     text-align: left;
 }
 
@@ -386,7 +389,7 @@ table.print-shell > thead > tr > td {
 
 <!-- ── Chief Complaints ── -->
 <div class="sec-title">CHIEF COMPLAINTS</div>
-<div class="sec-body-text" style="padding:5px 0 5px 7px; text-align:left; font-size:11px;">
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;"></div>
 {% for c in chief_complaints_list %}{{ c.name }}{% if not forloop.last or custom_symptoms %} &nbsp;|&nbsp; {% endif %}{% endfor %}{% for line in custom_symptoms %}{{ line }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% endfor %}{% if not chief_complaints_list and not custom_symptoms %}None recorded{% endif %}
 </div>
 {% if consultation.chief_complaints %}
@@ -524,28 +527,22 @@ table.print-shell > thead > tr > td {
 <!-- ── Diet ── -->
 {% if consultation.diet_advice %}
 <div class="sec-title">DIET ADVICE</div>
-<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
+<div class="sec-body-text" style="padding:0; margin-top:2px; text-align:left; font-size:11px;"></div>
 {% for line in consultation.diet_advice.splitlines %}{{ line }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% endfor %}
 </div>
 {% endif %}
 
 <!-- ── Follow-up ── -->
 {% if consultation.follow_up_date or consultation.follow_up_notes %}
-<div class="sec-title">FOLLOW-UP</div>
-<div class="sec-body-text" style="padding:5px 0; font-size:11px; text-align:left;">
-    {% if consultation.follow_up_date %}
-        Follow up in surgery OPD on <strong>{{ consultation.follow_up_date|date:"d M Y" }}</strong> at <strong>10:00 AM</strong>. For prior appointment, call <strong>9414122542</strong>.
-    {% endif %}
-    {% if consultation.follow_up_notes %}
-        <br><strong>Notes:</strong> {{ consultation.follow_up_notes }}
-    {% endif %}
+<div class="emergency-notice" style="margin-top:4px;">
+{% if consultation.follow_up_date %}
+<strong>FOLLOW-UP</strong> - Follow up in surgery OPD on {{ consultation.follow_up_date|date:"d M Y" }} at 10:00 AM. For prior appointment, call 9414122542.
+{% endif %}
+{% if consultation.follow_up_notes %}
+<br><strong>Notes:</strong> {{ consultation.follow_up_notes }}
+{% endif %}
 </div>
 {% endif %}
-
-<!-- ── Emergency Instruction (standing, always printed) ── -->
-<div class="emergency-notice">
-<strong>In case of emergency</strong> — such as high-grade fever, headache, seizures, or abdominal pain — please come to the hospital immediately. For emergencies, call 9414122542.
-</div>
 
 <!-- ── Footer ── -->
 <div class="footer">
