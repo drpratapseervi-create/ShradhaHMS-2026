@@ -389,7 +389,7 @@ table.print-shell > thead > tr > td {
 
 <!-- ── Chief Complaints ── -->
 <div class="sec-title">CHIEF COMPLAINTS</div>
-<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;"></div>
+<div class="sec-body-text" style="padding:5px 0; text-align:left; font-size:11px;">
 {% for c in chief_complaints_list %}{{ c.name }}{% if not forloop.last or custom_symptoms %} &nbsp;|&nbsp; {% endif %}{% endfor %}{% for line in custom_symptoms %}{{ line }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% endfor %}{% if not chief_complaints_list and not custom_symptoms %}None recorded{% endif %}
 </div>
 {% if consultation.chief_complaints %}
@@ -527,7 +527,7 @@ table.print-shell > thead > tr > td {
 <!-- ── Diet ── -->
 {% if consultation.diet_advice %}
 <div class="sec-title">DIET ADVICE</div>
-<div class="sec-body-text" style="padding:0; margin-top:2px; text-align:left; font-size:11px;"></div>
+<div class="sec-body-text" style="padding:0; margin-top:2px; text-align:left; font-size:11px;">
 {% for line in consultation.diet_advice.splitlines %}{{ line }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% endfor %}
 </div>
 {% endif %}
