@@ -1077,8 +1077,20 @@ value="{{ admission.follow_up_date|date:'Y-m-d' }}">
 
 </table>
 
+<!-- Save/Print submit the discharge-summary-form above via the form=""
+     attribute, so they can sit here — below Discharge Medications —
+     without nesting inside the per-medicine forms in this section. -->
+<div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px;">
+<button type="submit" form="discharge-summary-form" class="save-btn">
+Save Discharge
+</button>
+
+<a href="{% url 'hms:discharge_pdf' admission.id %}" class="print-btn">
+Print Discharge
+</a>
 </div>
 
+</div>
 
 </div>
 
