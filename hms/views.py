@@ -1905,27 +1905,43 @@ def ipd_patient_file(request, admission_id):
         if _bits:
             _note_lines.append(f"{timezone.localtime(_n.date_time):%d %b %Y} — " + "; ".join(_bits))
 
-    # Course in Hospital stays linked to Procedure Performed: the same
-    # procedure_prefill computed above (structured Procedure entry, or its
-    # fallbacks) is quoted verbatim in a "the following procedure was
-    # performed …" statement confirming it was actually carried out, never
-    # just planned. No procedure text -> no procedure sentence. Nothing at
-    # all (no procedure, no progress notes) -> stays blank, same as before.
-    _procedure_for_course = procedure_prefill
-    _course_parts = []
-    if _procedure_for_course:
-        # A label + verbatim quote reads correctly whether Procedure
-        # Performed was typed as a short noun phrase ("Laparoscopic
-        # appendectomy") or already as a full sentence ("He underwent …
-        # anaesthesia.") — embedding either style mid-sentence instead
-        # produces a grammatically broken run-on for the latter case.
-        _proc_sentence = f"The following procedure was performed during the hospital stay: {_procedure_for_course}"
-        if not _proc_sentence.endswith((".", "!", "?")):
-            _proc_sentence += "."
-        _course_parts.append(_proc_sentence)
-    if _note_lines:
-        _course_parts.append("\n".join(_note_lines))
-    course_prefill = "\n\n".join(_course_parts)
+    # Course in Hospital: when a structured Procedure-tab entry exists, use
+    # the fixed admission -> procedure -> discharge narrative template
+    # (diagnosis from the Diagnosis tab, procedure/anaesthesia/date from the
+    # most recent Procedure-tab entry, pronoun from patient gender) instead
+    # of assembling fragments — this is the canonical "what happened" story
+    # for a surgical admission. Diagnosis is omitted gracefully if blank.
+    # With no structured Procedure entry, fall back to the previous dynamic
+    # assembly: a procedure-confirmation line built from whatever
+    # procedure_prefill resolves to (admission.procedure_done or Treatment
+    # tab history) plus the Progress Notes narrative — blank if neither
+    # exists.
+    _procedure_list_for_course = list(procedure_history)
+    if _procedure_list_for_course:
+        _proc = _procedure_list_for_course[0]  # most recent structured entry
+        _pronoun_lower = "she" if (admission.patient.gender or "").strip().lower().startswith("f") else "he"
+        _admitted_clause = f"Patient was admitted with diagnosis of {_dx} and underwent" if _dx else "Patient was admitted and underwent"
+        course_prefill = (
+            f"{_admitted_clause} {_proc.procedure_name} under {_proc.anaesthesia_type} "
+            f"anaesthesia on {_proc.procedure_date.strftime('%d %b %Y')}. Post operative "
+            f"{_pronoun_lower} did well & is being discharged in satisfactory condition."
+        )
+    else:
+        _procedure_for_course = procedure_prefill
+        _course_parts = []
+        if _procedure_for_course:
+            # A label + verbatim quote reads correctly whether Procedure
+            # Performed was typed as a short noun phrase ("Laparoscopic
+            # appendectomy") or already as a full sentence ("He underwent …
+            # anaesthesia.") — embedding either style mid-sentence instead
+            # produces a grammatically broken run-on for the latter case.
+            _proc_sentence = f"The following procedure was performed during the hospital stay: {_procedure_for_course}"
+            if not _proc_sentence.endswith((".", "!", "?")):
+                _proc_sentence += "."
+            _course_parts.append(_proc_sentence)
+        if _note_lines:
+            _course_parts.append("\n".join(_note_lines))
+        course_prefill = "\n\n".join(_course_parts)
 
     # Condition at Discharge  ←  a fixed default template sentence (NOT derived
     # from patient data). Prefilled only into an empty field; the doctor edits or
@@ -4520,7 +4536,22 @@ def ai_polish_discharge(request):
                     "strict": True,
                     "schema": {
                         "type": "object",
-                        "properties": {key: {"type": "string"} for key in DISCHARGE_POLISH_FIELDS},
+                        "properties": {
+                            key: (
+                                {
+                                    "type": "string",
+                                    "description": (
+                                        "Empty string if Procedure Performed is empty and this field's "
+                                        "own input is empty. Never mention a procedure or anaesthesia "
+                                        "unless Procedure Performed is non-empty — see the Course in "
+                                        "Hospital instructions for the exact two cases."
+                                    ),
+                                }
+                                if key == "course_in_hospital"
+                                else {"type": "string"}
+                            )
+                            for key in DISCHARGE_POLISH_FIELDS
+                        },
                         "required": DISCHARGE_POLISH_FIELDS,
                         "additionalProperties": False,
                     },
@@ -4548,34 +4579,53 @@ def ai_polish_discharge(request):
                         "with the exact values/units given (do not convert °F↔°C, and "
                         "do not add a unit that wasn't there). Never invent, guess, or "
                         "default a reading that is not present in the source text.\n\n"
-                        "Course in Hospital specifically: rewrite it as ONE coherent "
-                        "narrative paragraph (not a bulleted or dated fragment list) "
-                        "describing how the patient's condition evolved during the "
-                        "stay, using ONLY the information already present in this "
-                        "field's own text. Course in Hospital must stay linked to "
-                        "Procedure Performed (given below): if Procedure Performed is "
-                        "non-empty, this paragraph MUST include one clear statement, "
-                        "early on, that the named procedure was actually carried out — "
-                        "not merely planned — e.g. '...following which appendicectomy "
-                        "was performed...'. Quote the procedure exactly as written in "
-                        "the Procedure Performed field. If that field's own text "
-                        "explicitly states a date, you MUST carry that same date into "
-                        "this statement; if it does not state one, do not invent one. "
-                        "If Procedure Performed is empty, do not reference any "
-                        "procedure. Aside from that one confirmatory statement, do not "
-                        "otherwise import or repeat the diagnosis, procedure detail, or "
-                        "treatment information that belongs to the other fields below — "
-                        "this field is primarily about clinical progress over time, not "
-                        "a restatement of the whole case. Because of this link, Course "
-                        "in Hospital may end up non-empty even if its own input was "
-                        "empty, whenever Procedure Performed has content — that is "
-                        "expected, not an invented fact. IMPORTANT: if Course in "
-                        "Hospital's own input text is empty, output ONLY the "
-                        "procedure-confirmation statement itself and nothing else — do "
-                        "not add any recovery narrative, response-to-treatment "
-                        "language, or details borrowed from Condition at Discharge or "
-                        "any other field; there is no progress-note information to "
-                        "narrate, so don't invent any.\n\n"
+                        "Course in Hospital specifically — there are exactly two "
+                        "cases, check Procedure Performed FIRST to know which one "
+                        "applies:\n\n"
+                        "CASE 1 — Procedure Performed is EMPTY (this is the common "
+                        "case for a non-surgical/medical admission). You are FORBIDDEN "
+                        "from using the words \"underwent\" or \"anaesthesia\" anywhere "
+                        "in Course in Hospital, and forbidden from naming or implying "
+                        "any procedure, in this case — there is none, so mentioning one "
+                        "would be a fabrication. Instead: rewrite Course in Hospital's "
+                        "own input text (if any) as ONE coherent narrative paragraph "
+                        "describing how the patient's condition evolved, using ONLY "
+                        "information already present in that field's own text (e.g. "
+                        "progress notes). If that input is also empty, output an empty "
+                        "string for Course in Hospital — do not write anything.\n\n"
+                        "CASE 2 — Procedure Performed is NON-EMPTY. Output EXACTLY this "
+                        "fixed template, filling the brackets, and nothing else (no "
+                        "progress-note content, no details from Condition at Discharge "
+                        "or any other field):\n"
+                        "\"Patient was admitted with diagnosis of [diagnosis] and "
+                        "underwent [procedure name] under [anaesthesia type] anaesthesia "
+                        "on [date]. Post operative [he/she] did well & is being "
+                        "discharged in satisfactory condition.\"\n"
+                        "Fill the brackets ONLY from these exact sources — never invent "
+                        "any of them, and never leave a literal \"[...]\" placeholder in "
+                        "the output:\n"
+                        "- [procedure name], [anaesthesia type], [date]: parse them "
+                        "directly out of the Procedure Performed field's own text, which "
+                        "is normally phrased 'He/She underwent NAME under TYPE "
+                        "anaesthesia on DATE.' — extract NAME/TYPE/DATE from it exactly "
+                        "as written. If Procedure Performed does not clearly state a "
+                        "date, drop \"on [date]\" entirely rather than inventing one.\n"
+                        "- [he/she]: use whichever pronoun Procedure Performed's own "
+                        "text already uses (it was already derived from the patient's "
+                        "gender) — lowercase it for this mid-sentence use.\n"
+                        "- [diagnosis]: take it from the Diagnosis field, stripping any "
+                        "leading ICD-10 code (e.g. \"K29.70 - \") and lowercasing the "
+                        "first letter unless it's an acronym. If Diagnosis is empty, "
+                        "replace ONLY the opening sentence with \"Patient was admitted "
+                        "and underwent [procedure name] under [anaesthesia type] "
+                        "anaesthesia on [date].\" — the second sentence (\"Post operative "
+                        "[he/she] did well & is being discharged in satisfactory "
+                        "condition.\") is UNCHANGED and MUST still be included in full "
+                        "either way; never stop after the first sentence.\n"
+                        "In CASE 2, Course in Hospital may end up non-empty even if its "
+                        "own input was empty, purely because Procedure Performed has "
+                        "content — that is expected, not an invented fact; this is the "
+                        "ONLY field allowed to behave that way.\n\n"
                         "Absolute rule, overriding all of the above: do NOT invent, "
                         "add, remove, or alter any clinical fact — no diagnoses, "
                         "symptoms, findings, vital values, lab values, medicine names, "
@@ -4583,9 +4633,9 @@ def ai_polish_discharge(request):
                         "change in meaning. Only reword/reformat what is already "
                         "there. If a field's input is empty, return it as an empty "
                         "string — never fabricate content for a blank field — except "
-                        "Course in Hospital's procedure-confirmation statement as "
-                        "described above, which is sourced directly from the Procedure "
-                        "Performed field, not fabricated. Return ONLY valid JSON, one "
+                        "Course in Hospital's procedure template as described above, "
+                        "which is assembled directly from the Procedure Performed and "
+                        "Diagnosis fields, not fabricated. Return ONLY valid JSON, one "
                         "key per field, no explanation."
                     ),
                 },
@@ -4613,6 +4663,47 @@ def ai_polish_discharge(request):
             else:
                 allowed = bool(fields[key])
             result[key] = (parsed.get(key, "") or "").strip() if allowed else ""
+
+        # Deterministic safety net for Course in Hospital: gpt-4o-mini
+        # occasionally ignores the "don't mention a procedure when Procedure
+        # Performed is empty" instruction and either fabricates an
+        # anaesthesia/procedure mention out of nothing, or leaks a literal
+        # "[bracket placeholder]" from the template text in the prompt. Since
+        # we know deterministically when a procedure mention would be a
+        # fabrication (Procedure Performed is empty), catch it here rather
+        # than trust the model — fall back to the doctor's own original
+        # Course in Hospital text (untouched) if either happens.
+        if not fields["procedure_done"]:
+            ch_lower = result["course_in_hospital"].lower()
+            if "anaesthesia" in ch_lower or "underwent" in ch_lower or "[" in result["course_in_hospital"]:
+                result["course_in_hospital"] = fields["course_in_hospital"]
+        else:
+            # Case 2 (a procedure exists): the model occasionally drops the
+            # required closing sentence, truncating right after the date.
+            # Since the template is fixed and fully derivable from
+            # procedure_done + diagnosis, rebuild it ourselves whenever the
+            # model's own output doesn't comply, rather than trust a retry.
+            ch = result["course_in_hospital"]
+            if "satisfactory condition" not in ch.lower() or "[" in ch:
+                import re
+                m = re.match(
+                    r"(he|she)\s+underwent\s+(.+?)\s+under\s+(.+?)\s+anaesthesia\s+on\s+(.+?)\.?\s*$",
+                    (result["procedure_done"] or "").strip(),
+                    re.IGNORECASE,
+                )
+                if m:
+                    pronoun, name, anaesthesia, date = (g.strip() for g in m.groups())
+                    dx = re.sub(
+                        r"^\s*[A-Za-z]\d[\w.]*\s*[:\-]\s*", "", (result["diagnosis"] or "").strip()
+                    ).strip().rstrip(".")
+                    if dx and not dx[:2].isupper():
+                        dx = dx[0].lower() + dx[1:]
+                    lead = f"Patient was admitted with diagnosis of {dx} and underwent" if dx else "Patient was admitted and underwent"
+                    result["course_in_hospital"] = (
+                        f"{lead} {name} under {anaesthesia} anaesthesia on {date}. "
+                        f"Post operative {pronoun.lower()} did well & is being discharged in satisfactory condition."
+                    )
+
         return JsonResponse({'fields': result})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
