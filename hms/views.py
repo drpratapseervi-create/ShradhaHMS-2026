@@ -1510,6 +1510,48 @@ def procedure_performed_text(admission):
     return (admission.treatment_plan or "").strip()
 
 
+# Chief Complaints  ←  Symptoms tab: the discrete Chief-Complaint checkboxes
+# (Fever / Cough / …) plus any short custom entries added via "+ Add new
+# symptom". The descriptive clinical-findings prose keeps feeding "Signs &
+# Symptoms" only, so any comma-fragment that reads like a sentence is dropped.
+_CC_OPTIONS = {
+    "fever", "cough", "body ache", "body pain", "throat pain", "sore throat",
+    "loss of appetite", "fatigue", "lethargy", "fatigue/lethargy",
+    "abdominal pain", "nausea", "vomiting", "nausea/vomiting",
+}
+
+
+def _filter_chief_complaints(text):
+    items = [s.strip() for s in (text or "").split(",") if s.strip()]
+    if not items:
+        return ""
+    looks_like_prose = any(len(it) > 45 or ". " in it or it.endswith(".") for it in items)
+    keep = [it for it in items if it.lower() in _CC_OPTIONS] if looks_like_prose else items
+    return ", ".join(keep)
+
+
+def chief_complaint_text(admission):
+    """The single, authoritative "Chief Complaints" text for an admission —
+    shared by the Discharge tab and the printed PDF, mirroring
+    procedure_performed_text() above: the Symptoms tab's checked complaints
+    (filtered through _filter_chief_complaints) ALWAYS win when any exist,
+    even overriding whatever free text is already saved in
+    admission.chief_complaint, since that can go stale/wrong (e.g. leftover
+    placeholder text unrelated to what's actually checked on the Symptoms
+    tab). Falls back to the most recent Symptom-history snapshot, then to
+    that saved text, only when the Symptoms tab has nothing usable.
+    """
+    text = _filter_chief_complaints(admission.symptoms)
+    if not text:
+        for _h in admission.symptom_history.all().order_by("-recorded_at"):
+            text = _filter_chief_complaints(_h.symptoms)
+            if text:
+                break
+    if text:
+        return text
+    return (admission.chief_complaint or "").strip()
+
+
 # ======================================================
 # IPD PATIENT FILE
 # ======================================================
@@ -1721,30 +1763,12 @@ def ipd_patient_file(request, admission_id):
     # never touches text the doctor has already entered/saved (same rule as the
     # existing "Load Template" dropdown, which stays untouched).
 
-    # Chief Complaints  ←  Symptoms tab: the discrete Chief-Complaint checkboxes
-    # (Fever / Cough / …) plus any short custom entries added via "+ Add new
-    # symptom". The descriptive clinical-findings prose keeps feeding "Signs &
-    # Symptoms" only, so any comma-fragment that reads like a sentence is dropped.
-    _CC_OPTIONS = {
-        "fever", "cough", "body ache", "body pain", "throat pain", "sore throat",
-        "loss of appetite", "fatigue", "lethargy", "fatigue/lethargy",
-        "abdominal pain", "nausea", "vomiting", "nausea/vomiting",
-    }
-
-    def _chief_complaints(text):
-        items = [s.strip() for s in (text or "").split(",") if s.strip()]
-        if not items:
-            return ""
-        looks_like_prose = any(len(it) > 45 or ". " in it or it.endswith(".") for it in items)
-        keep = [it for it in items if it.lower() in _CC_OPTIONS] if looks_like_prose else items
-        return ", ".join(keep)
-
-    chief_complaint_prefill = _chief_complaints(admission.symptoms)
-    if not chief_complaint_prefill:
-        for _h in symptom_history:
-            chief_complaint_prefill = _chief_complaints(_h.symptoms)
-            if chief_complaint_prefill:
-                break
+    # Chief Complaints  ←  chief_complaint_text() (see its definition above
+    # this view): the Symptoms tab's checked complaints always win when any
+    # exist, overriding stale/mismatched text already saved in
+    # admission.chief_complaint. Shared with the printed PDF so the two can
+    # never disagree — same pattern as procedure_performed_text().
+    chief_complaint_prefill = chief_complaint_text(admission)
 
     # Investigations  ←  matching ordered-investigation results (by investigation /
     # parameter name). Each field: (exact-match names, substring-match names,
@@ -1964,6 +1988,7 @@ def ipd_patient_file(request, admission_id):
         "ordered_investigation_ids": ordered_investigation_ids,
         "discharge_autofill":       discharge_autofill,
         "procedure_done_display":   procedure_prefill,
+        "chief_complaint_display":  chief_complaint_prefill,
         "ai_enabled":               settings.AI_FEATURES_ENABLED,
     })
 
@@ -1981,7 +2006,8 @@ def discharge_pdf(request, admission_id):
         "ward":                   admission.ward,
         "bed":                    admission.bed,
         "medications":            medications,
-        "procedure_done_display": procedure_performed_text(admission),
+        "procedure_done_display":  procedure_performed_text(admission),
+        "chief_complaint_display": chief_complaint_text(admission),
     })
 
 
