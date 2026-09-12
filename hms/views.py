@@ -3782,14 +3782,31 @@ def usg_report_create(request, patient_id=None, bill_item_id=None):
     if bill_item:
         initial["bill_item"] = bill_item
 
-    form = USGReportForm(request.POST or None, initial=initial)
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+    # The tab layout's "Next" button auto-saves via AJAX before this report
+    # exists as a row yet — once the first auto-save creates it, later
+    # auto-saves (as the user moves through the remaining tabs) must update
+    # that same row instead of creating a fresh duplicate report each time.
+    instance = None
+    if request.method == "POST":
+        existing_pk = request.POST.get("_usg_report_pk")
+        if existing_pk:
+            instance = USGReport.objects.filter(pk=existing_pk, created_by=request.user).first()
+
+    form = USGReportForm(request.POST or None, initial=initial, instance=instance)
 
     if request.method == "POST" and form.is_valid():
-        report            = form.save(commit=False)
-        report.created_by = request.user
+        report = form.save(commit=False)
+        if not instance:
+            report.created_by = request.user
         report.save()
+        if is_ajax:
+            return JsonResponse({"success": True, "report_id": report.pk})
         messages.success(request, f"USG Report {report.report_no} saved successfully.")
         return redirect("hms:usg_report_print", pk=report.pk)
+    elif request.method == "POST" and is_ajax:
+        return JsonResponse({"success": False, "error": "Please check the form for errors."}, status=400)
 
     return render(request, "hms/usg/usg_report_form.html", {
         "form":      form,
@@ -3804,11 +3821,16 @@ def usg_report_create(request, patient_id=None, bill_item_id=None):
 def usg_report_edit(request, pk):
     report = get_object_or_404(USGReport, pk=pk)
     form   = USGReportForm(request.POST or None, instance=report)
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
     if request.method == "POST" and form.is_valid():
         form.save()
+        if is_ajax:
+            return JsonResponse({"success": True, "report_id": report.pk})
         messages.success(request, f"Report {report.report_no} updated.")
         return redirect("hms:usg_report_print", pk=report.pk)
+    elif request.method == "POST" and is_ajax:
+        return JsonResponse({"success": False, "error": "Please check the form for errors."}, status=400)
 
     return render(request, "hms/usg/usg_report_form.html", {
         "form":   form,

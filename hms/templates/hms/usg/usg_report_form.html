@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_bare.html" %}
 {% load static %}
 {% block title %}{{ title }}{% endblock %}
 
@@ -7,10 +7,25 @@
   .form-control,.form-select{font-size:13px;}
   .card-header{cursor:pointer;user-select:none;}
 
+  /* ── Dark-theme input fields (mirrors base.html's global force, kept
+       local too so it doesn't depend on cascade order against Bootstrap) ── */
+  .form-control, .form-select {
+    background:#1e2235 !important;
+    color:#e2e8f0 !important;
+    border:1px solid #2d3148 !important;
+  }
+  .form-control::placeholder { color:#4a5270 !important; }
+  .form-control:focus, .form-select:focus {
+    background:#252a40 !important;
+    border-color:#00b8a9 !important;
+    box-shadow:0 0 0 2px rgba(0,184,169,0.2) !important;
+    color:#e2e8f0 !important;
+  }
+
   .sec-label{
-    font-size:11px;font-weight:700;color:#475569;
+    font-size:11px;font-weight:700;color:#8892a4;
     text-transform:uppercase;letter-spacing:.6px;
-    border-left:3px solid #007676;padding-left:8px;
+    border-left:3px solid #00b8a9;padding-left:8px;
     margin:12px 0 6px;
   }
 
@@ -19,32 +34,79 @@
   }
   .cb-pill{
     display:flex;align-items:center;gap:5px;
-    background:#f1f5f9;border:1px solid #cbd5e1;
+    background:#1e2235;border:1px solid #2d3148;color:#cbd5e1;
     border-radius:20px;padding:4px 12px;
     font-size:12.5px;cursor:pointer;transition:.15s;
     white-space:nowrap;
   }
-  .cb-pill:hover{background:#e0f2f1;border-color:#007676;}
+  .cb-pill:hover{background:#252a40;border-color:#00b8a9;}
   .cb-pill input[type=checkbox]{
-    width:14px;height:14px;cursor:pointer;accent-color:#007676;margin:0;
+    width:14px;height:14px;cursor:pointer;accent-color:#00b8a9;margin:0;
   }
-  .cb-pill.on{background:#e0f2f1;border-color:#007676;font-weight:600;color:#005f5f;}
+  .cb-pill.on{background:#0f3d3a;border-color:#00b8a9;font-weight:600;color:#5eead4;}
 
   .sub-row{
     display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px 0;
   }
   .sub-item{
     display:flex;align-items:center;gap:4px;
-    background:#fff7ed;border:1px solid #fed7aa;
+    background:#2e2518;border:1px solid #5a4820;color:#fcd34d;
     border-radius:12px;padding:3px 10px;font-size:12px;cursor:pointer;
   }
-  .sub-item:hover{background:#ffedd5;border-color:#fb923c;}
-  .sub-item.on{background:#ffedd5;border-color:#ea580c;font-weight:600;}
-  .sub-item input[type=checkbox]{width:13px;height:13px;accent-color:#ea580c;margin:0;}
+  .sub-item:hover{background:#3a2f1e;border-color:#eab308;}
+  .sub-item.on{background:#3a2f1e;border-color:#eab308;font-weight:600;}
+  .sub-item input[type=checkbox]{width:13px;height:13px;accent-color:#eab308;margin:0;}
 
   .field-inline{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
-  .field-inline label{font-size:12px;color:#64748b;white-space:nowrap;min-width:80px;}
+  .field-inline label{font-size:12px;color:#94a3b8;white-space:nowrap;min-width:80px;}
   .field-inline input,.field-inline select{font-size:13px;}
+
+  /* ── Vertical tab column (same sticky-scroll / mobile-fallback pattern
+       as the OPD Consultation page's Vitals/Complaints/Examination tabs) ── */
+  .usg-tab-layout { display:flex; align-items:flex-start; gap:14px; }
+  .usg-tab-content { flex:1 1 auto; min-width:0; }
+  .usg-tab-nav {
+      position:sticky; top:10px; z-index:500;
+      flex:0 0 190px; width:190px;
+      max-height:calc(100vh - 20px); overflow-y:auto;
+      background:#1e2235; border:1px solid #2d3148; border-radius:8px;
+      padding:8px; margin:0 0 14px;
+      display:flex; flex-direction:column; flex-wrap:nowrap; gap:4px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  }
+  .usg-tab-nav a {
+      display:block; padding:7px 12px; border-radius:8px;
+      background:#f1f5f9; color:#334155; font-size:12px; font-weight:600;
+      text-decoration:none; border:1px solid #e2e8f0;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      transition:background .15s, color .15s, border-color .15s;
+  }
+  .usg-tab-nav a:hover { background:#007676; color:#fff; border-color:#007676; }
+  .usg-tab-nav a.active { background:#007676; color:#fff; border-color:#007676; }
+  /* Below tablet width, drop back to a horizontal wrapping tab bar above the content */
+  @media (max-width: 860px) {
+      .usg-tab-layout { flex-direction:column; }
+      .usg-tab-nav {
+          position:static; width:100%; max-height:none;
+          flex-direction:row; flex-wrap:wrap;
+      }
+  }
+  /* Tab panels: only the active one is shown, JS toggles which */
+  .usg-tab-content [data-tab] { display:none; }
+  .usg-tab-content [data-tab].tab-active { display:block; }
+
+  /* ── Sticky action bar: Save/Next/Print stay visible while scrolling
+       through a tall tab instead of only appearing at the very bottom ── */
+  .usg-action-bar {
+      position: sticky;
+      bottom: 0;
+      z-index: 600;
+      background: #1a1d27;
+      padding: 10px 4px;
+      margin-top: 12px;
+      border-top: 1px solid #2d3148;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
+  }
 </style>
 
 <div class="container-fluid py-3">
@@ -56,6 +118,11 @@
 
   <form method="post" id="usgForm">
     {% csrf_token %}
+    <!-- Tracks the report row created by the tab layout's "Next" button so
+         later auto-saves (as the user moves through the remaining tabs)
+         update that same row instead of creating a duplicate — see
+         saveUsgReportAjax() below. -->
+    <input type="hidden" name="_usg_report_pk" id="id_usg_report_pk" value="{{ report.pk|default_if_none:'' }}">
 
     <!-- ════════════ PATIENT & REPORT DETAILS ════════════ -->
     <div class="card mb-2 shadow-sm">
@@ -90,8 +157,31 @@
       </div>
     </div>
 
+    <!-- ═══ TAB COLUMN + SECTION CONTENT ═══ -->
+    <div class="usg-tab-layout">
+
+    <nav class="usg-tab-nav" aria-label="Jump to section">
+      <a href="#sec-liver" data-tab="liver" onclick="return switchUsgTab('liver', this);">🫀 Liver</a>
+      <a href="#sec-gb" data-tab="gb" onclick="return switchUsgTab('gb', this);">💛 Gallbladder &amp; CBD</a>
+      <a href="#sec-spleen" data-tab="spleen" onclick="return switchUsgTab('spleen', this);">❤️ Spleen &amp; Pancreas</a>
+      <a href="#sec-rk" data-tab="rk" onclick="return switchUsgTab('rk', this);">🫘 Right Kidney</a>
+      <a href="#sec-lk" data-tab="lk" onclick="return switchUsgTab('lk', this);">🫘 Left Kidney</a>
+      <a href="#sec-ureter" data-tab="ureter" onclick="return switchUsgTab('ureter', this);">🪨 Ureteric Calculus</a>
+      <a href="#sec-bladder" data-tab="bladder" onclick="return switchUsgTab('bladder', this);">💧 Bladder</a>
+      <a href="#sec-uterus" data-tab="uterus" id="tab-link-uterus" onclick="return switchUsgTab('uterus', this);">♀️ Uterus &amp; Ovaries</a>
+      <a href="#sec-obs" data-tab="obs" id="tab-link-obs" onclick="return switchUsgTab('obs', this);">🤱 Obstetric</a>
+      <a href="#sec-prostate" data-tab="prostate" id="tab-link-prostate" onclick="return switchUsgTab('prostate', this);">♂️ Prostate</a>
+      <a href="#sec-hernia" data-tab="hernia" onclick="return switchUsgTab('hernia', this);">🩺 Hernia</a>
+      <a href="#sec-appendix" data-tab="appendix" onclick="return switchUsgTab('appendix', this);">🔴 Appendix</a>
+      <a href="#sec-bowel" data-tab="bowel" onclick="return switchUsgTab('bowel', this);">🌀 Bowel</a>
+      <a href="#sec-additional" data-tab="additional" onclick="return switchUsgTab('additional', this);">📝 Additional</a>
+      <a href="#sec-impression" data-tab="impression" onclick="return switchUsgTab('impression', this);">✅ Impression</a>
+    </nav>
+
+    <div class="usg-tab-content">
+
     <!-- ════════════ LIVER ════════════ -->
-    <div class="card mb-2 shadow-sm">
+    <div class="card mb-2 shadow-sm" id="sec-liver" data-tab="liver">
       <div class="card-header bg-success bg-opacity-10 fw-semibold d-flex justify-content-between"
            data-bs-toggle="collapse" data-bs-target="#sec_liver">
         <span>🫀 Liver</span><i class="bi bi-chevron-down"></i>
@@ -139,7 +229,7 @@
     </div>
 
     <!-- ════════════ GALLBLADDER & CBD ════════════ -->
-    <div class="card mb-2 shadow-sm">
+    <div class="card mb-2 shadow-sm" id="sec-gb" data-tab="gb">
       <div class="card-header bg-warning bg-opacity-10 fw-semibold d-flex justify-content-between"
            data-bs-toggle="collapse" data-bs-target="#sec_gb">
         <span>💛 Gallbladder &amp; CBD</span><i class="bi bi-chevron-down"></i>
@@ -193,7 +283,7 @@
     </div>
 
     <!-- ════════════ SPLEEN & PANCREAS ════════════ -->
-    <div class="card mb-2 shadow-sm">
+    <div class="card mb-2 shadow-sm" id="sec-spleen" data-tab="spleen">
       <div class="card-header bg-danger bg-opacity-10 fw-semibold d-flex justify-content-between"
            data-bs-toggle="collapse" data-bs-target="#sec_spleen">
         <span>❤️ Spleen &amp; Pancreas</span><i class="bi bi-chevron-down"></i>
@@ -226,7 +316,7 @@
     </div>
 
     <!-- ════════════ RIGHT KIDNEY ════════════ -->
-    <div class="card mb-2 shadow-sm">
+    <div class="card mb-2 shadow-sm" id="sec-rk" data-tab="rk">
       <div class="card-header bg-info bg-opacity-10 fw-semibold d-flex justify-content-between"
            data-bs-toggle="collapse" data-bs-target="#sec_rk">
         <span>🫘 Right Kidney</span><i class="bi bi-chevron-down"></i>
@@ -313,7 +403,7 @@
     </div>
 
     <!-- ════════════ LEFT KIDNEY ════════════ -->
-    <div class="card mb-2 shadow-sm">
+    <div class="card mb-2 shadow-sm" id="sec-lk" data-tab="lk">
       <div class="card-header bg-info bg-opacity-10 fw-semibold d-flex justify-content-between"
            data-bs-toggle="collapse" data-bs-target="#sec_lk">
         <span>🫘 Left Kidney</span><i class="bi bi-chevron-down"></i>
@@ -397,7 +487,7 @@
     </div>
 
     <!-- ════════════ URETERIC CALCULUS ════════════ -->
-    <div class="card mb-2 shadow-sm">
+    <div class="card mb-2 shadow-sm" id="sec-ureter" data-tab="ureter">
       <div class="card-header bg-secondary bg-opacity-10 fw-semibold d-flex justify-content-between"
            data-bs-toggle="collapse" data-bs-target="#sec_ureter">
         <span>🪨 Ureteric Calculus</span><i class="bi bi-chevron-down"></i>
@@ -441,7 +531,7 @@
     </div>
 
     <!-- ════════════ BLADDER ════════════ -->
-    <div class="card mb-2 shadow-sm">
+    <div class="card mb-2 shadow-sm" id="sec-bladder" data-tab="bladder">
       <div class="card-header bg-info bg-opacity-10 fw-semibold d-flex justify-content-between"
            data-bs-toggle="collapse" data-bs-target="#sec_bladder">
         <span>💧 Urinary Bladder</span><i class="bi bi-chevron-down"></i>
@@ -481,7 +571,7 @@
     </div>
 
     <!-- ════════════ UTERUS & OVARIES (Female) ════════════ -->
-    <div class="card mb-2 shadow-sm" id="card_uterus" style="display:none;">
+    <div class="card mb-2 shadow-sm" id="card_uterus" data-tab="uterus">
       <div class="card-header fw-semibold d-flex justify-content-between"
            style="background:#fff0f6;"
            data-bs-toggle="collapse" data-bs-target="#sec_uterus">
@@ -618,7 +708,7 @@
     </div>
 
     <!-- ════════════ OBSTETRIC (Female) ════════════ -->
-    <div class="card mb-2 shadow-sm" id="card_obs" style="display:none;">
+    <div class="card mb-2 shadow-sm" id="card_obs" data-tab="obs">
       <div class="card-header fw-semibold d-flex justify-content-between" style="background:#f0fff4;"
            data-bs-toggle="collapse" data-bs-target="#sec_obs">
         <span>🤱 Obstetric Scan</span><i class="bi bi-chevron-down"></i>
@@ -662,7 +752,7 @@
     </div>
 
     <!-- ════════════ PROSTATE (Male) ════════════ -->
-    <div class="card mb-2 shadow-sm" id="card_prostate" style="display:none;">
+    <div class="card mb-2 shadow-sm" id="card_prostate" data-tab="prostate">
       <div class="card-header bg-primary bg-opacity-10 fw-semibold d-flex justify-content-between"
            data-bs-toggle="collapse" data-bs-target="#sec_prostate">
         <span>♂️ Prostate</span><i class="bi bi-chevron-down"></i>
@@ -702,7 +792,7 @@
     </div>
 
     <!-- ════════════ HERNIA ════════════ -->
-    <div class="card mb-2 shadow-sm">
+    <div class="card mb-2 shadow-sm" id="sec-hernia" data-tab="hernia">
       <div class="card-header bg-secondary bg-opacity-10 fw-semibold d-flex justify-content-between"
            data-bs-toggle="collapse" data-bs-target="#sec_hernia">
         <span>🩺 Hernia</span><i class="bi bi-chevron-down"></i>
@@ -752,7 +842,7 @@
     </div>
 
     <!-- ════════════ APPENDIX ════════════ -->
-    <div class="card mb-2 shadow-sm">
+    <div class="card mb-2 shadow-sm" id="sec-appendix" data-tab="appendix">
       <div class="card-header bg-danger bg-opacity-10 fw-semibold d-flex justify-content-between"
            data-bs-toggle="collapse" data-bs-target="#sec_appendix">
         <span>🔴 Appendix</span><i class="bi bi-chevron-down"></i>
@@ -782,7 +872,7 @@
     </div>
 
     <!-- ════════════ BOWEL ════════════ -->
-    <div class="card mb-2 shadow-sm">
+    <div class="card mb-2 shadow-sm" id="sec-bowel" data-tab="bowel">
       <div class="card-header bg-warning bg-opacity-10 fw-semibold d-flex justify-content-between"
            data-bs-toggle="collapse" data-bs-target="#sec_bowel">
         <span>🌀 Bowel</span><i class="bi bi-chevron-down"></i>
@@ -817,7 +907,7 @@
 
 
     <!-- ════════════ ADDITIONAL FINDINGS ════════════ -->
-    <div class="card mb-2 shadow-sm">
+    <div class="card mb-2 shadow-sm" id="sec-additional" data-tab="additional">
       <div class="card-header bg-light fw-semibold">Additional Findings</div>
       <div class="card-body">
         <textarea name="additional_findings" class="form-control" rows="3"
@@ -826,7 +916,7 @@
     </div>
 
     <!-- ════════════ IMPRESSION ════════════ -->
-    <div class="card mb-3 shadow border-primary">
+    <div class="card mb-3 shadow border-primary" id="sec-impression" data-tab="impression">
       <div class="card-header bg-primary text-white fw-bold">Impression &amp; Conclusion</div>
       <div class="card-body">
         <div class="row g-3">
@@ -861,6 +951,9 @@
       </div>
     </div>
 
+    </div><!-- /usg-tab-content -->
+    </div><!-- /usg-tab-layout -->
+
     {% if form.errors %}
     <div class="alert alert-danger">
       <strong>Fix errors:</strong>
@@ -868,20 +961,20 @@
     </div>
     {% endif %}
 
-    <div class="d-flex gap-2 mb-5">
+    <div class="usg-action-bar d-flex justify-content-end gap-2">
       <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Report</button>
+      <button type="button" id="usg-next-tab-btn" class="btn px-4" style="background:#00b8a9;color:#0f1117;font-weight:600;" onclick="goToNextUsgTab()">Next ➜</button>
       {% if report %}
         <a href="{% url 'hms:usg_report_print' report.pk %}" class="btn btn-outline-success" target="_blank">
           <i class="bi bi-printer me-1"></i> Print
         </a>
       {% endif %}
-      <a href="{% url 'hms:usg_report_list' %}" class="btn btn-outline-secondary">Cancel</a>
     </div>
   </form>
 </div>
 
-<!-- Fill Normals -->
-<div style="position:fixed;bottom:24px;right:24px;z-index:999;">
+<!-- Fill Normals — sits above the sticky action bar so the two don't overlap -->
+<div style="position:fixed;bottom:84px;right:24px;z-index:999;">
   <button id="btnFillNormals" class="btn btn-warning shadow-lg rounded-pill px-4">
     <i class="bi bi-magic me-1"></i> Fill Normals
   </button>
@@ -889,6 +982,115 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+
+  // ── Vertical tab column: sticky nav switches which organ-section panel
+  //    shows (same pattern as the OPD Consultation page's tabs) ──────
+  window.switchUsgTab = function(tabName) {
+    document.querySelectorAll('.usg-tab-content [data-tab]').forEach(function (el) {
+      var match = el.dataset.tab === tabName;
+      el.classList.toggle('tab-active', match);
+      // Force it inline — each panel is a Bootstrap .card (display:flex by
+      // default), so the .tab-active class alone has to out-specificity
+      // Bootstrap's own rule; setting it directly here is bullet-proof.
+      el.style.display = match ? 'block' : 'none';
+    });
+    document.querySelectorAll('.usg-tab-nav a').forEach(function (a) {
+      a.classList.toggle('active', a.dataset.tab === tabName);
+    });
+    updateUsgNextButtonUI();
+    return false; // skip the native #anchor jump — panel is already switched
+  };
+  switchUsgTab('liver');
+
+  // ── "Next" button: auto-save via AJAX, then advance to the next tab
+  //    (same save/advance mechanism as the OPD Consultation page's
+  //    switchConsultTab()/goToNextTab() pair) ──────────────────────
+  function usgToast(msg, color) {
+    var t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:' + color + ';color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,0.18);';
+    document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, 3000);
+  }
+
+  function getUsgTabOrder() {
+    return Array.prototype.map.call(
+      document.querySelectorAll('.usg-tab-nav a[data-tab]'),
+      function (a) { return a.dataset.tab; }
+    ).filter(function (tabName) {
+      // skip gender-hidden tabs (Uterus/Obstetric/Prostate) so Next doesn't
+      // stop on a panel the user can't even see
+      var link = document.querySelector('.usg-tab-nav a[data-tab="' + tabName + '"]');
+      return link && link.style.display !== 'none';
+    });
+  }
+
+  // Plain hoisted declaration (not `window.foo = function(){}`) so it's
+  // already callable from switchUsgTab() above even though switchUsgTab
+  // runs immediately below, before this line is reached in source order.
+  function updateUsgNextButtonUI() {
+    var btn = document.getElementById('usg-next-tab-btn');
+    if (!btn) return;
+    var order = getUsgTabOrder();
+    var current = document.querySelector('.usg-tab-nav a.active');
+    var currentTab = current ? current.dataset.tab : order[0];
+    var idx = order.indexOf(currentTab);
+    var isLast = (idx === -1) || (idx === order.length - 1);
+    btn.textContent = isLast ? '✅ Finish' : 'Next ➜';
+    btn.dataset.isLast = isLast ? '1' : '';
+  }
+
+  function saveUsgReportAjax(onSuccess, onError) {
+    var form = document.getElementById('usgForm');
+    var data = new FormData(form);
+    fetch(window.location.href, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: data,
+    })
+    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); })
+    .then(function (result) {
+      if (!result.ok || !result.data.success) {
+        throw new Error((result.data && result.data.error) || 'Could not save the report.');
+      }
+      if (result.data.report_id) {
+        var pkField = document.getElementById('id_usg_report_pk');
+        if (pkField) pkField.value = result.data.report_id;
+      }
+      usgToast('✅ Report saved.', '#16a34a');
+      if (onSuccess) onSuccess();
+    })
+    .catch(function (err) {
+      usgToast('⚠️ ' + err.message, '#dc3545');
+      if (onError) onError(err);
+    });
+  }
+
+  window.goToNextUsgTab = function() {
+    var btn = document.getElementById('usg-next-tab-btn');
+    if (!btn || btn.disabled) return;
+    var order = getUsgTabOrder();
+    var current = document.querySelector('.usg-tab-nav a.active');
+    var currentTab = current ? current.dataset.tab : order[0];
+    var idx = order.indexOf(currentTab);
+    var isLast = (idx === -1) || (idx === order.length - 1);
+
+    btn.disabled = true;
+    var prevLabel = btn.textContent;
+    btn.textContent = 'Saving…';
+
+    saveUsgReportAjax(function () {
+      btn.disabled = false;
+      if (!isLast) {
+        switchUsgTab(order[idx + 1]); // also refreshes the button label
+      } else {
+        btn.textContent = prevLabel;
+      }
+    }, function () {
+      btn.disabled = false;
+      btn.textContent = prevLabel;
+    });
+  };
 
   // ── Radio-style pills (mutually exclusive) ──────────────────────
   document.querySelectorAll('[data-radio]').forEach(function(label) {
@@ -929,18 +1131,24 @@ document.addEventListener("DOMContentLoaded", function() {
   toggleSub('lo_cyst_present',   'lo_cyst_sub');
 
   // ── Gender-based visibility ─────────────────────────────────────
+  // (panels themselves are now shown/hidden by the tab switcher above;
+  // gender only needs to hide the corresponding tab in the nav column)
   var patSel  = document.querySelector('[name="patient"]');
-  var cU = document.getElementById('card_uterus');
-  var cO = document.getElementById('card_obs');
-  var cP = document.getElementById('card_prostate');
+  var navU = document.getElementById('tab-link-uterus');
+  var navO = document.getElementById('tab-link-obs');
+  var navP = document.getElementById('tab-link-prostate');
 
   function applyGender(g) {
     g = (g||'').trim().toUpperCase();
     var f = g==='F'||g==='FEMALE';
     var m = g==='M'||g==='MALE';
-    if (cU) cU.style.display = f ? '' : 'none';
-    if (cO) cO.style.display = f ? '' : 'none';
-    if (cP) cP.style.display = m ? '' : 'none';
+    if (navU) navU.style.display = f ? '' : 'none';
+    if (navO) navO.style.display = f ? '' : 'none';
+    if (navP) navP.style.display = m ? '' : 'none';
+    // if the tab currently open just became unavailable for this gender,
+    // fall back to the always-visible Liver tab
+    var active = document.querySelector('.usg-tab-nav a.active');
+    if (active && active.style.display === 'none') switchUsgTab('liver');
   }
   function fetchGender(pid) {
     if (!pid) return;
@@ -1119,8 +1327,7 @@ document.addEventListener("DOMContentLoaded", function() {
     if (ck('ibs_suggestion'))         lines.push('Findings suggestive of IBS.');
 
     if (lines.length===0) return 'Normal Study.';
-    return lines.map(function(l,i){ return (i+1)+'. '+l; }).join('
-');
+    return lines.map(function(l,i){ return (i+1)+'. '+l; }).join('\n');
   }
 
   // Auto-fill impression on page load if empty
