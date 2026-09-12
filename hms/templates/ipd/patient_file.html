@@ -1080,7 +1080,17 @@ value="{{ admission.follow_up_date|date:'Y-m-d' }}">
 <!-- Save/Print submit the discharge-summary-form above via the form=""
      attribute, so they can sit here — below Discharge Medications —
      without nesting inside the per-medicine forms in this section. -->
-<div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px;">
+<div id="ai-polish-flags" style="display:none; margin-top:14px; padding:8px 12px; background:#3a2f1e; border:1px solid #5a4820; border-radius:8px; color:#fcd34d; font-size:12px;"></div>
+<div style="display:flex; justify-content:flex-end; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap;">
+<span id="ai-polish-msg" style="color:#64748b; font-size:12px;"></span>
+{% if ai_enabled %}
+<button type="button" id="ai-polish-btn" class="print-btn" onclick="aiPolishDischargeSummary()">
+✨ AI Polish Summary
+</button>
+{% endif %}
+<button type="button" id="ai-polish-revert-btn" class="print-btn" style="display:none;" onclick="aiPolishRevert()">
+↩ Revert to Original
+</button>
 <button type="submit" form="discharge-summary-form" class="save-btn">
 Save Discharge
 </button>
@@ -1134,6 +1144,118 @@ function toggleDischargeMoreMeds() {
     } else {
         el.style.display = 'none';
         btn.textContent = '▼ Show all medicines by category';
+    }
+}
+
+/* ── Discharge Summary: AI Polish ──────────────────────────────────
+   Sends the current text of every discharge field to the AI rewrite
+   endpoint and writes the polished text back into the same fields.
+   Non-destructive: the pre-polish values are snapshotted into
+   AI_POLISH_ORIGINAL first, and "Revert to Original" restores them —
+   nothing is saved until the doctor clicks Save Discharge themselves. */
+var AI_POLISH_FIELD_IDS = {
+    diagnosis:              'discharge-diagnosis',
+    chief_complaint:        'discharge-chief-complaints',
+    general_examination:    'discharge-general-examination',
+    local_examination:      'discharge-local-examination',
+    procedure_done:         'discharge-procedure-done',
+    ipd_treatment:           'discharge-ipd-treatment',
+    course_in_hospital:     'discharge-course-in-hospital',
+    condition_at_discharge: 'discharge-condition-at-discharge',
+    discharge_advice:       'discharge-advice'
+};
+var AI_POLISH_ORIGINAL = null;
+
+function aiPolishDischargeSummary() {
+    var btn = document.getElementById('ai-polish-btn');
+    var msg = document.getElementById('ai-polish-msg');
+    if (!btn || btn.disabled) return;
+
+    var payload = {};
+    var snapshot = {};
+    Object.keys(AI_POLISH_FIELD_IDS).forEach(function(key) {
+        var el = document.getElementById(AI_POLISH_FIELD_IDS[key]);
+        var val = el ? el.value : '';
+        payload[key] = val;
+        snapshot[key] = val;
+    });
+
+    btn.disabled = true;
+    var prevLabel = btn.textContent;
+    btn.textContent = 'Polishing…';
+    if (msg) msg.textContent = '';
+
+    var csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    fetch('{% url "hms:ai_polish_discharge" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+        body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.error) { throw new Error(data.error); }
+        AI_POLISH_ORIGINAL = snapshot;
+        Object.keys(AI_POLISH_FIELD_IDS).forEach(function(key) {
+            var el = document.getElementById(AI_POLISH_FIELD_IDS[key]);
+            if (el && typeof data.fields[key] === 'string') {
+                el.value = data.fields[key];
+            }
+        });
+        var revertBtn = document.getElementById('ai-polish-revert-btn');
+        if (revertBtn) revertBtn.style.display = '';
+        if (msg) msg.textContent = '✅ Rewritten — review before saving.';
+        checkDischargeCompleteness();
+    })
+    .catch(function(err) {
+        if (msg) msg.textContent = '⚠️ ' + err.message;
+    })
+    .finally(function() {
+        btn.disabled = false;
+        btn.textContent = prevLabel;
+    });
+}
+
+function aiPolishRevert() {
+    if (!AI_POLISH_ORIGINAL) return;
+    Object.keys(AI_POLISH_FIELD_IDS).forEach(function(key) {
+        var el = document.getElementById(AI_POLISH_FIELD_IDS[key]);
+        if (el) el.value = AI_POLISH_ORIGINAL[key] || '';
+    });
+    AI_POLISH_ORIGINAL = null;
+    var revertBtn = document.getElementById('ai-polish-revert-btn');
+    if (revertBtn) revertBtn.style.display = 'none';
+    var msg = document.getElementById('ai-polish-msg');
+    if (msg) msg.textContent = 'Reverted to original text.';
+    var flagsBox = document.getElementById('ai-polish-flags');
+    if (flagsBox) flagsBox.style.display = 'none';
+}
+
+/* Standard-completeness check — flags (never auto-fills) sections a real
+   discharge summary normally has, so the doctor notices before saving.
+   Runs after a polish, checking the just-rewritten fields plus Follow Up
+   Date (which AI Polish never touches). */
+function checkDischargeCompleteness() {
+    var flagsBox = document.getElementById('ai-polish-flags');
+    if (!flagsBox) return;
+    var checks = [
+        ['discharge-diagnosis', 'Diagnosis'],
+        ['discharge-chief-complaints', 'Chief Complaints'],
+        ['discharge-condition-at-discharge', 'Condition at Discharge'],
+        ['discharge-advice', 'Discharge Advice']
+    ];
+    var missing = [];
+    checks.forEach(function(pair) {
+        var el = document.getElementById(pair[0]);
+        if (el && !el.value.trim()) missing.push(pair[1]);
+    });
+    var followUp = document.querySelector('#discharge-summary-form [name="follow_up_date"]');
+    if (followUp && !followUp.value.trim()) missing.push('Follow-up Date');
+
+    if (missing.length) {
+        flagsBox.textContent = '⚠️ Missing standard sections: ' + missing.join(', ') + '.';
+        flagsBox.style.display = '';
+    } else {
+        flagsBox.style.display = 'none';
     }
 }
 

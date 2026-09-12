@@ -59,6 +59,7 @@ urlpatterns = [
     path('drugs/defaults/', views.drug_defaults, name='drug_defaults'),
     path('generate-ai-medicines/', views.generate_ai_medicines, name='generate_ai_medicines'),
     path('generate-diet/', views.generate_diet, name='generate_diet'),
+    path('ai-polish-discharge/', views.ai_polish_discharge, name='ai_polish_discharge'),
     # ── SEARCH (AJAX) ──────────────────────────────────
     path("medicine-search/", views.medicine_search, name="medicine_search"),
     path("icd-search/", views.icd_search, name="icd_search"),

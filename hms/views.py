@@ -4361,6 +4361,158 @@ def generate_diet(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+# The Discharge tab's field keys, in the order they appear on the form —
+# shared between the request payload the JS sends and the JSON schema below,
+# so a field can't be silently dropped from one side without the other.
+DISCHARGE_POLISH_FIELDS = [
+    "diagnosis", "chief_complaint", "general_examination", "local_examination",
+    "procedure_done", "ipd_treatment", "course_in_hospital",
+    "condition_at_discharge", "discharge_advice",
+]
+
+
+@login_required
+def ai_polish_discharge(request):
+    """Rewrite the Discharge tab's free-text fields into standard clinical
+    discharge-summary documentation style: proper medical terminology,
+    standard vitals notation when present, and a coherent narrative
+    structure for Course in Hospital — never inventing or altering clinical
+    facts, values, units, or medicine names. Purely a text rewrite: takes
+    whatever the doctor already typed and returns polished versions of the
+    same fields for review before saving; nothing is read from or written
+    to the database here."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+    if not settings.AI_FEATURES_ENABLED:
+        return JsonResponse({'error': 'AI features are not configured on this system.'})
+    import json
+    data = json.loads(request.body)
+    fields = {key: (data.get(key) or "").strip() for key in DISCHARGE_POLISH_FIELDS}
+    if not any(fields.values()):
+        return JsonResponse({'error': 'Nothing to polish — the discharge fields are all empty.'}, status=400)
+
+    field_labels = {
+        "diagnosis": "Diagnosis",
+        "chief_complaint": "Chief Complaints",
+        "general_examination": "General Examination",
+        "local_examination": "Local Examination",
+        "procedure_done": "Procedure Performed",
+        "ipd_treatment": "IPD Treatment",
+        "course_in_hospital": "Course in Hospital",
+        "condition_at_discharge": "Condition at Discharge",
+        "discharge_advice": "Discharge Advice",
+    }
+
+    try:
+        client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model='gpt-4o-mini',
+            max_tokens=1400,
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "discharge_polish",
+                    "strict": True,
+                    "schema": {
+                        "type": "object",
+                        "properties": {key: {"type": "string"} for key in DISCHARGE_POLISH_FIELDS},
+                        "required": DISCHARGE_POLISH_FIELDS,
+                        "additionalProperties": False,
+                    },
+                },
+            },
+            messages=[
+                {
+                    'role': 'system',
+                    'content': (
+                        "You are a senior Indian hospital medical scribe finalizing an "
+                        "IPD discharge summary into standard clinical documentation "
+                        "style — not just a grammar pass. For each field: replace "
+                        "colloquial or shorthand phrasing with correct medical "
+                        "terminology, and use a consistent, formal clinical tone — "
+                        "complete sentences, properly capitalized, correct punctuation. Do "
+                        "not silently expand or reinterpret an abbreviation you are not "
+                        "certain of — if unsure what one stands for, leave it exactly "
+                        "as written rather than guessing.\n\n"
+                        "Vitals notation: if a field's text contains vital-sign "
+                        "readings (temperature, pulse, blood pressure, SpO2, "
+                        "respiratory rate), reformat them into the standard clinical "
+                        "line format, e.g. 'Temp: 98.6°F, Pulse: 88/min, BP: 120/80 "
+                        "mmHg, SpO2: 98% on room air, RR: 18/min' — but include ONLY "
+                        "the vital signs that are actually present in the source text, "
+                        "with the exact values/units given (do not convert °F↔°C, and "
+                        "do not add a unit that wasn't there). Never invent, guess, or "
+                        "default a reading that is not present in the source text.\n\n"
+                        "Course in Hospital specifically: rewrite it as ONE coherent "
+                        "narrative paragraph (not a bulleted or dated fragment list) "
+                        "describing how the patient's condition evolved during the "
+                        "stay, using ONLY the information already present in this "
+                        "field's own text. Course in Hospital must stay linked to "
+                        "Procedure Performed (given below): if Procedure Performed is "
+                        "non-empty, this paragraph MUST include one clear statement, "
+                        "early on, that the named procedure was actually carried out — "
+                        "not merely planned — e.g. '...following which appendicectomy "
+                        "was performed...'. Quote the procedure exactly as written in "
+                        "the Procedure Performed field. If that field's own text "
+                        "explicitly states a date, you MUST carry that same date into "
+                        "this statement; if it does not state one, do not invent one. "
+                        "If Procedure Performed is empty, do not reference any "
+                        "procedure. Aside from that one confirmatory statement, do not "
+                        "otherwise import or repeat the diagnosis, procedure detail, or "
+                        "treatment information that belongs to the other fields below — "
+                        "this field is primarily about clinical progress over time, not "
+                        "a restatement of the whole case. Because of this link, Course "
+                        "in Hospital may end up non-empty even if its own input was "
+                        "empty, whenever Procedure Performed has content — that is "
+                        "expected, not an invented fact. IMPORTANT: if Course in "
+                        "Hospital's own input text is empty, output ONLY the "
+                        "procedure-confirmation statement itself and nothing else — do "
+                        "not add any recovery narrative, response-to-treatment "
+                        "language, or details borrowed from Condition at Discharge or "
+                        "any other field; there is no progress-note information to "
+                        "narrate, so don't invent any.\n\n"
+                        "Absolute rule, overriding all of the above: do NOT invent, "
+                        "add, remove, or alter any clinical fact — no diagnoses, "
+                        "symptoms, findings, vital values, lab values, medicine names, "
+                        "doses, frequencies, durations, dates, or instructions may "
+                        "change in meaning. Only reword/reformat what is already "
+                        "there. If a field's input is empty, return it as an empty "
+                        "string — never fabricate content for a blank field — except "
+                        "Course in Hospital's procedure-confirmation statement as "
+                        "described above, which is sourced directly from the Procedure "
+                        "Performed field, not fabricated. Return ONLY valid JSON, one "
+                        "key per field, no explanation."
+                    ),
+                },
+                {
+                    'role': 'user',
+                    'content': "Rewrite each of these discharge-summary fields:\n\n" + "\n\n".join(
+                        f"{field_labels[key]}: {fields[key] or '(empty)'}"
+                        for key in DISCHARGE_POLISH_FIELDS
+                    ),
+                },
+            ],
+        )
+        raw = response.choices[0].message.content or "{}"
+        parsed = json.loads(raw)
+        result = {}
+        for key in DISCHARGE_POLISH_FIELDS:
+            # An input left blank must stay blank — belt-and-suspenders on top
+            # of the prompt instruction, in case the model still fills one in.
+            # Course in Hospital is the one deliberate exception: it's allowed
+            # to come back non-blank even from a blank input, but only when
+            # Procedure Performed has content (the procedure-confirmation
+            # link) — never fabricated out of nothing.
+            if key == "course_in_hospital":
+                allowed = bool(fields["course_in_hospital"]) or bool(fields["procedure_done"])
+            else:
+                allowed = bool(fields[key])
+            result[key] = (parsed.get(key, "") or "").strip() if allowed else ""
+        return JsonResponse({'fields': result})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
 @login_required
 def transcribe_dictation(request):
     """Voice dictation for the OPD free-text fields.
