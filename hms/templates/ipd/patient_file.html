@@ -665,7 +665,19 @@ Discharge Bill
 
 <h4>Diagnosis</h4>
 
-<textarea class="form-control" style="height:150px" readonly>{{ admission.diagnosis }}</textarea>
+<label>Search ICD-10</label>
+<select id="ipd-diagnosis-icd-search" style="width:100%"></select>
+<p style="color:#64748b; font-size:12px; margin:4px 0 10px;">Search by condition name or code — selecting a result appends it below.</p>
+
+<form method="POST">
+{% csrf_token %}
+<input type="hidden" name="form_type" value="diagnosis">
+
+<textarea name="diagnosis" id="ipd-diagnosis-text" class="form-control" rows="6" style="height:150px" placeholder="Provisional diagnosis entered at admission, ICD-10 codes, working diagnosis…">{{ admission.diagnosis }}</textarea>
+
+<button class="save-btn">Save Diagnosis</button>
+
+</form>
 
 </div>
 
@@ -1209,6 +1221,33 @@ $(function () {
         }
     });
 
+});
+
+/* ── ICD-10 Search (Select2, reuses the same hms:icd_search endpoint as
+     OPD Consultation) — appends "CODE - Description" to Diagnosis ── */
+$(function () {
+    $('#ipd-diagnosis-icd-search').select2({
+        placeholder: "Search ICD-10 code or condition name…",
+        minimumInputLength: 2,
+        dropdownParent: $('body'),
+        ajax: {
+            url: "{% url 'hms:icd_search' %}",
+            data: params => ({ q: params.term || '' }),
+            dataType: "json", delay: 250,
+            processResults: d => d
+        },
+        width: "100%"
+    });
+    $('#ipd-diagnosis-icd-search').on('select2:select', function(e) {
+        var text = e.params.data.text;
+        var ta = document.getElementById('ipd-diagnosis-text');
+        if (ta && text) {
+            var existing = ta.value.trim();
+            ta.value = existing ? existing + '\n' + text : text;
+        }
+        // Clear the search box so it's ready to add another code right away.
+        $(this).val(null).trigger('change');
+    });
 });
 
 /* ── Discharge Medications: Quick Select card tiles ── */

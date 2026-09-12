@@ -1588,6 +1588,9 @@ def ipd_patient_file(request, admission_id):
                     symptoms=symptoms_text,
                 )
 
+        elif form_type == "diagnosis":
+            admission.diagnosis = request.POST.get("diagnosis", "").strip()
+
         elif form_type == "treatment":
             treatment_text = request.POST.get("treatment_plan", "").strip()
             if treatment_text:
