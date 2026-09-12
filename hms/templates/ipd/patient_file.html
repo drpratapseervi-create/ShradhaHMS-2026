@@ -385,6 +385,19 @@ margin:20px 0;
     }
 }
 
+/* ── Follow Up Date / Date of Procedure: native <input type="date">
+     pickers — invert the browser's calendar icon so it's visible against
+     the dark theme instead of blending into the dark input background ── */
+#discharge-follow-up-date,
+#ipd-procedure-date {
+    cursor: pointer;
+}
+#discharge-follow-up-date::-webkit-calendar-picker-indicator,
+#ipd-procedure-date::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
 </style>
 </style>
 
@@ -979,8 +992,9 @@ Discharge Bill
 
 <label>Follow Up Date</label>
 
-<input type="date" name="follow_up_date" class="form-control"
-value="{{ admission.follow_up_date|date:'Y-m-d' }}">
+<input type="date" name="follow_up_date" id="discharge-follow-up-date" class="form-control"
+value="{{ admission.follow_up_date|date:'Y-m-d' }}"
+onclick="this.showPicker && this.showPicker();">
 
 </form>
 
