@@ -684,6 +684,46 @@ def referral_letter_print(request, appointment_id):
     })
 
 
+@login_required
+def medical_certificate_print(request, appointment_id):
+    appointment = get_object_or_404(
+        Appointment.objects.select_related("patient", "doctor"),
+        id=appointment_id,
+    )
+    consultation = Consultation.objects.filter(appointment=appointment).first()
+
+    # Diagnosis prefill: this visit's consultation first, else the patient's
+    # most recent past diagnosis (mirrors the IPD discharge-summary prefill
+    # rule — advisory only, the doctor edits the field before printing).
+    diagnosis_prefill = ""
+    if consultation:
+        parts = []
+        if consultation.diagnosis_text:
+            parts.append(consultation.diagnosis_text)
+        parts += [f"{icd.code} – {icd.description}" for icd in consultation.icd_codes.all()]
+        diagnosis_prefill = "; ".join(parts)
+    if not diagnosis_prefill:
+        past = (
+            Consultation.objects
+            .filter(appointment__patient=appointment.patient)
+            .exclude(diagnosis_text="")
+            .order_by("-appointment__date", "-id")
+            .first()
+        )
+        if past:
+            diagnosis_prefill = past.diagnosis_text
+
+    doctor_name = appointment.doctor.full_name if appointment.doctor else "Pratap Senecha"
+
+    return render(request, "opd/medical_certificate_print.html", {
+        "appointment":        appointment,
+        "consultation":       consultation,
+        "diagnosis_prefill":  diagnosis_prefill,
+        "doctor_name":        doctor_name,
+        "printed_on":         timezone.now(),
+    })
+
+
 # ======================================================
 # LAB BILLING
 # ======================================================

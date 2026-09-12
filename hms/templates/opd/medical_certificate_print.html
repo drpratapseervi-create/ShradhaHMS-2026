@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Medical Certificate</title>
+<style>
+@page {
+    size: A4;
+    margin-top: 1.5cm;
+    margin-bottom: 2cm;
+    margin-left: 2cm;
+    margin-right: 1.5cm;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    color: #000;
+    text-align: left;
+}
+
+/* ── Hospital Header ── */
+.hosp-header {
+    text-align: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+}
+.hosp-name {
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #000;
+}
+.hosp-sub {
+    font-size: 11px;
+    color: #333;
+    margin-top: 2px;
+}
+.hosp-contact {
+    font-size: 10px;
+    color: #333;
+    margin-top: 3px;
+}
+
+/* ── Document Title Bar ── */
+.doc-title-bar {
+    background: #0369a1;
+    color: #fff;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 7px;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    border-radius: 3px;
+}
+
+/* ── Section heading ── */
+.sec-title {
+    background: #e8e8e8;
+    color: #000;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 7px;
+    margin: 14px 0 4px 0;
+    letter-spacing: 0.5px;
+}
+
+/* ── Tables ── */
+table.details { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top; font-size: 11px; }
+.lbl { font-weight: 700; background: #f5f5f5; width: 20%; white-space: nowrap; }
+
+/* ── Certificate body ── */
+.cert-line {
+    margin: 14px 0;
+    font-size: 12px;
+    line-height: 1.9;
+    text-align: justify;
+}
+
+/* Fillable inline blank — editable, but not nested inside another
+   contenteditable (browsers handle nested contenteditable poorly) */
+.fill {
+    display: inline-block;
+    min-width: 70px;
+    padding: 1px 4px;
+    border-bottom: 1px dashed #666;
+    font-weight: 700;
+}
+.fill-wide { min-width: 260px; }
+.fill:empty:before { content: "click to fill in"; color: #999; font-weight: 400; font-style: italic; }
+.fill:focus { outline: none; background: #fffbe6; }
+
+/* ── Footer / signature ── */
+.sign-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 44px;
+}
+.sign-box {
+    text-align: center;
+    width: 260px;
+}
+.sig-name {
+    border-top: 1px solid #000;
+    padding-top: 4px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.sig-caption {
+    font-size: 10px;
+    color: #333;
+    margin-top: 2px;
+}
+
+@media print {
+    .no-print { display: none !important; }
+    .fill { border-bottom: 1px solid #000; }
+    .fill:empty:before { content: ""; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Hospital Header ── -->
+<div class="hosp-header">
+    <div class="hosp-name">Shradha Hospital &amp; Multispeciality Centre</div>
+    <div class="hosp-sub">Pani Ki Do Tanki, Surajpole, Pali (Raj.) — 306401</div>
+    <div class="hosp-contact">📞 9414122542 &nbsp;|&nbsp; Emergency: 9414122542</div>
+</div>
+
+<div class="doc-title-bar">MEDICAL CERTIFICATE</div>
+
+<!-- ── Patient Details ── -->
+<div class="sec-title">PATIENT DETAILS</div>
+<table class="details">
+    <tr>
+        <td class="lbl">Patient Name</td>
+        <td><strong>{{ appointment.patient.full_name|title }}</strong></td>
+        <td class="lbl">Age / Sex</td>
+        <td>{% if appointment.patient.age_years %}{{ appointment.patient.age_years }} Yrs{% else %}-{% endif %} / {{ appointment.patient.gender }}</td>
+    </tr>
+    <tr>
+        <td class="lbl">UHID</td>
+        <td>{{ appointment.patient.uhid }}</td>
+        <td class="lbl">Consultant</td>
+        <td><span class="fill" contenteditable="true" spellcheck="false">Dr. {{ doctor_name }}</span></td>
+    </tr>
+</table>
+
+<!-- ── Certificate Statement (each blank individually editable) ── -->
+<div class="cert-line">
+    This is to certify that I examined
+    {% if appointment.patient.gender == "Female" %}Mrs./Ms.{% else %}Mr./Mrs.{% endif %}
+    <strong>{{ appointment.patient.full_name|title }}</strong>
+    on <span class="fill" contenteditable="true" spellcheck="false">{{ printed_on|date:"d-m-Y" }}</span>
+    and found him/her to be suffering from
+    <span class="fill fill-wide" contenteditable="true" spellcheck="false">{{ diagnosis_prefill }}</span>.
+</div>
+
+<div class="cert-line">
+    Advised rest from <span class="fill" contenteditable="true" spellcheck="false"></span>
+    to <span class="fill" contenteditable="true" spellcheck="false"></span>.
+</div>
+
+<div class="cert-line">
+    Fit to resume duty from <span class="fill" contenteditable="true" spellcheck="false"></span>.
+</div>
+
+<!-- ── Signature ── -->
+<div class="sign-row">
+    <div class="sign-box">
+        <div style="height:50px;"></div>
+        <div class="sig-name" contenteditable="true" spellcheck="false">Dr. {{ doctor_name }}</div>
+        <div class="sig-caption">Consultant — Signature &amp; Stamp</div>
+    </div>
+</div>
+
+<!-- ── Print Button (hidden when printing) ── -->
+<div style="text-align:center; margin: 24px 0 8px 0;" class="no-print">
+    <p style="font-size:11px; color:#666;">Click on any underlined field above to edit it before printing.</p>
+    <button onclick="window.print()" style="
+        background: #374151;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 32px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        letter-spacing: 0.5px;
+    ">🖨️ Print Certificate</button>
+</div>
+
+</body>
+</html>

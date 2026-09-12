@@ -337,6 +337,7 @@
                             data-proc-bill="{% url 'hms:procedure_billing' %}"
                             data-advance="{% url 'hms:advance_payment_receipt' appt.patient.id %}"
                             data-consult="{% url 'hms:start_consultation' appt.id %}"
+                            data-cert="{% url 'hms:medical_certificate_print' appt.id %}"
                             data-admit="{% url 'hms:admit_patient' %}?patient={{ appt.patient.id }}"
                             data-upload="{% url 'hms:upload_medical_image' appt.patient.id %}"
                             onclick="openDropdown(this)">&#8964;</button>
@@ -348,6 +349,7 @@
                             data-proc-bill="{% url 'hms:procedure_billing' %}"
                             data-advance="{% url 'hms:advance_payment_receipt' appt.patient.id %}"
                             data-consult="{% url 'hms:start_consultation' appt.id %}"
+                            data-cert="{% url 'hms:medical_certificate_print' appt.id %}"
                             data-admit="{% url 'hms:admit_patient' %}?patient={{ appt.patient.id }}"
                             data-upload="{% url 'hms:upload_medical_image' appt.patient.id %}"
                             onclick="openDropdown(this)">&#8943;</button>
@@ -382,6 +384,7 @@
     <div class="dd-divider"></div>
     <div class="dd-section">Clinical</div>
     <a class="dd-item" id="dd-consult" href="#" target="_blank"><span class="di">🩺</span> Consultation</a>
+    <a class="dd-item" id="dd-cert" href="#" target="_blank"><span class="di">📜</span> Medical Certificate</a>
     <a class="dd-item" id="dd-admit" href="#"><span class="di">🏥</span> Admission</a>
     <a class="dd-item" id="dd-upload" href="#"><span class="di">📁</span> Upload Medical Records</a>
     <div class="dd-divider"></div>
@@ -406,11 +409,12 @@ function openDropdown(btn) {
     document.getElementById('dd-proc-bill').href       = btn.dataset.procBill;
     document.getElementById('dd-advance').href         = btn.dataset.advance;
     document.getElementById('dd-consult').href         = btn.dataset.consult;
+    document.getElementById('dd-cert').href            = btn.dataset.cert;
     document.getElementById('dd-admit').href           = btn.dataset.admit;
     document.getElementById('dd-upload').href          = btn.dataset.upload;
 
     var rect = btn.getBoundingClientRect();
-    var ddW = 220, ddH = 330;
+    var ddW = 220, ddH = 365;
     var left = rect.right - ddW;
     if (left < 6) left = 6;
     var top = (window.innerHeight - rect.bottom < ddH) ? rect.top - ddH - 4 : rect.bottom + 4;
