@@ -2280,6 +2280,42 @@ class IPDTreatmentHistory(models.Model):
 
     class Meta:
         ordering = ["-recorded_at"]
+
+
+# ======================================================
+# IPD PROCEDURE
+# ======================================================
+
+class IPDProcedure(models.Model):
+    """
+    A structured record of a procedure performed during an IPD admission —
+    the primary source for the Discharge tab's "Procedure Performed" field
+    and, through it, the Course in Hospital narrative (falls back to the
+    Treatment tab's free text when no structured entry exists yet).
+    """
+    ANAESTHESIA_CHOICES = [
+        ("General", "General"),
+        ("Spinal", "Spinal"),
+        ("Local", "Local"),
+        ("Regional", "Regional"),
+        ("Sedation", "Sedation"),
+    ]
+
+    admission = models.ForeignKey(
+        'IPDAdmission',
+        on_delete=models.CASCADE,
+        related_name="procedures"
+    )
+    procedure_name   = models.CharField(max_length=255)
+    anaesthesia_type = models.CharField(max_length=20, choices=ANAESTHESIA_CHOICES)
+    procedure_date   = models.DateField()
+    recorded_at      = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-procedure_date", "-recorded_at"]
+
+    def __str__(self):
+        return f"{self.procedure_name} - {self.admission.ipd_no}"
         verbose_name = "IPD Treatment Log"
         verbose_name_plural = "IPD Treatment History Records"
 

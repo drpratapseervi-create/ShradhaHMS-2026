@@ -34,7 +34,7 @@ from .models import USGReport
 from .forms  import USGReportForm
 from django.utils import timezone
 from .models import (
-    Ward, Bed, IPDAdmission, IPDVital, IPDMedication, IPDDischargeMedication, DischargeTemplate, IPDProgressNote, IPDSymptomHistory, IPDTreatmentHistory,
+    Ward, Bed, IPDAdmission, IPDVital, IPDMedication, IPDDischargeMedication, DischargeTemplate, IPDProgressNote, IPDSymptomHistory, IPDTreatmentHistory, IPDProcedure,
     Patient, Doctor, Department, Appointment, Consultation, Prescription,
     Investigation, InvestigationCategory, InvestigationBill, InvestigationBillItem,
     InvestigationResult, InvestigationParameter, ICDCode, DrugMaster, VillageMaster,
@@ -1475,6 +1475,41 @@ def admit_patient(request):
     })
 
 
+def procedure_performed_text(admission):
+    """The single, authoritative "Procedure Performed" text for an admission
+    — shared by the Discharge tab and the printed PDF so they can never show
+    two different answers for the same admission.
+
+    Precedence: a structured Procedure-tab entry, when one exists, ALWAYS
+    wins — generating "He/she underwent [name] under [anaesthesia]
+    anaesthesia on [date]." per entry (oldest first) — even overriding
+    whatever free text is already saved in admission.procedure_done, since
+    that text can go stale/wrong once a real Procedure entry is recorded
+    (e.g. leftover text from before the Procedure tab existed, or a typo
+    unrelated to anything else on the chart). Only when there is no
+    structured entry yet does the doctor's own saved procedure_done text
+    apply, then finally the Treatment tab history as a last resort — this
+    keeps existing admissions from before the Procedure tab untouched.
+    """
+    procedures = list(admission.procedures.all())
+    if procedures:
+        pronoun = "She" if (admission.patient.gender or "").strip().lower().startswith("f") else "He"
+        return " ".join(
+            f"{pronoun} underwent {p.procedure_name} under {p.anaesthesia_type} "
+            f"anaesthesia on {p.procedure_date.strftime('%d %b %Y')}."
+            for p in reversed(procedures)
+        )
+    if (admission.procedure_done or "").strip():
+        return admission.procedure_done.strip()
+    _tr = [
+        h.treatment_plan.strip() for h in admission.treatment_history.all().order_by("-recorded_at")
+        if h.treatment_plan and h.treatment_plan.strip()
+    ]
+    if _tr:
+        return "\n".join(reversed(_tr))
+    return (admission.treatment_plan or "").strip()
+
+
 # ======================================================
 # IPD PATIENT FILE
 # ======================================================
@@ -1518,6 +1553,18 @@ def ipd_patient_file(request, admission_id):
                 IPDTreatmentHistory.objects.create(
                     admission=admission,
                     treatment_plan=treatment_text,
+                )
+
+        elif form_type == "procedure":
+            procedure_name   = request.POST.get("procedure_name", "").strip()
+            anaesthesia_type = request.POST.get("anaesthesia_type", "").strip()
+            procedure_date   = request.POST.get("procedure_date") or None
+            if procedure_name and anaesthesia_type and procedure_date:
+                IPDProcedure.objects.create(
+                    admission=admission,
+                    procedure_name=procedure_name,
+                    anaesthesia_type=anaesthesia_type,
+                    procedure_date=procedure_date,
                 )
 
         elif form_type == "medication":
@@ -1653,6 +1700,7 @@ def ipd_patient_file(request, admission_id):
     )
     symptom_history = IPDSymptomHistory.objects.filter(admission=admission).order_by("-recorded_at")
     treatment_history = IPDTreatmentHistory.objects.filter(admission=admission).order_by("-recorded_at")
+    procedure_history = IPDProcedure.objects.filter(admission=admission)  # Meta.ordering: -procedure_date, -recorded_at
 
     ordered_investigations = (
         InvestigationBillItem.objects
@@ -1730,10 +1778,13 @@ def ipd_patient_file(request, admission_id):
                 if any(n in _exact for n in _names) or any(sub in n for sub in _contains for n in _names):
                     inv_prefill[_field] = _val
 
-    # Procedure Performed  ←  Treatment tab history
-    # (treatment_history is newest-first; join oldest-first so it reads in order)
-    _tr = [h.treatment_plan.strip() for h in treatment_history if h.treatment_plan and h.treatment_plan.strip()]
-    treatment_prefill = "\n".join(reversed(_tr)) if _tr else (admission.treatment_plan or "").strip()
+    # Procedure Performed  ←  procedure_performed_text() (see its definition
+    # above this view): a structured Procedure-tab entry always wins when
+    # one exists, overriding stale/mismatched text already saved in
+    # admission.procedure_done; falls back to that saved text, then to the
+    # Treatment tab history, for admissions with no structured entry yet.
+    # Shared with the printed PDF so the two can never disagree.
+    procedure_prefill = procedure_performed_text(admission)
 
     # IPD Treatment  ←  a narrative built from the inpatient Medication Chart
     # (the treatment actually given during the stay, kept separate from Discharge
@@ -1826,7 +1877,28 @@ def ipd_patient_file(request, admission_id):
         if (_n.plan or "").strip():       _bits.append("P: " + _n.plan.strip())
         if _bits:
             _note_lines.append(f"{timezone.localtime(_n.date_time):%d %b %Y} — " + "; ".join(_bits))
-    course_prefill = "\n".join(_note_lines)
+
+    # Course in Hospital stays linked to Procedure Performed: the same
+    # procedure_prefill computed above (structured Procedure entry, or its
+    # fallbacks) is quoted verbatim in a "the following procedure was
+    # performed …" statement confirming it was actually carried out, never
+    # just planned. No procedure text -> no procedure sentence. Nothing at
+    # all (no procedure, no progress notes) -> stays blank, same as before.
+    _procedure_for_course = procedure_prefill
+    _course_parts = []
+    if _procedure_for_course:
+        # A label + verbatim quote reads correctly whether Procedure
+        # Performed was typed as a short noun phrase ("Laparoscopic
+        # appendectomy") or already as a full sentence ("He underwent …
+        # anaesthesia.") — embedding either style mid-sentence instead
+        # produces a grammatically broken run-on for the latter case.
+        _proc_sentence = f"The following procedure was performed during the hospital stay: {_procedure_for_course}"
+        if not _proc_sentence.endswith((".", "!", "?")):
+            _proc_sentence += "."
+        _course_parts.append(_proc_sentence)
+    if _note_lines:
+        _course_parts.append("\n".join(_note_lines))
+    course_prefill = "\n\n".join(_course_parts)
 
     # Condition at Discharge  ←  a fixed default template sentence (NOT derived
     # from patient data). Prefilled only into an empty field; the doctor edits or
@@ -1870,7 +1942,7 @@ def ipd_patient_file(request, admission_id):
         "general_examination":    general_exam_prefill,
         "ipd_treatment":          ipd_treatment_prefill,
         "course_in_hospital":     course_prefill,
-        "procedure_done":         treatment_prefill,
+        "procedure_done":         procedure_prefill,
         "condition_at_discharge": condition_prefill,
         "discharge_advice":       discharge_advice_prefill,
     }
@@ -1886,10 +1958,13 @@ def ipd_patient_file(request, admission_id):
         "saved_symptoms_list":      saved_symptoms_list,
         "symptom_history":          symptom_history,
         "treatment_history":        treatment_history,
+        "procedure_history":        procedure_history,
         "available_investigations": available_investigations,
         "ordered_investigations":   ordered_investigations,
         "ordered_investigation_ids": ordered_investigation_ids,
         "discharge_autofill":       discharge_autofill,
+        "procedure_done_display":   procedure_prefill,
+        "ai_enabled":               settings.AI_FEATURES_ENABLED,
     })
 
 # ======================================================
@@ -1900,12 +1975,13 @@ def discharge_pdf(request, admission_id):
     admission   = get_object_or_404(IPDAdmission, id=admission_id)
     medications = IPDDischargeMedication.objects.filter(admission=admission).order_by("id")
     return render(request, "ipd/discharge_pdf.html", {
-        "admission":   admission,
-        "patient":     admission.patient,
-        "doctor":      admission.doctor,
-        "ward":        admission.ward,
-        "bed":         admission.bed,
-        "medications": medications,
+        "admission":              admission,
+        "patient":                admission.patient,
+        "doctor":                 admission.doctor,
+        "ward":                   admission.ward,
+        "bed":                    admission.bed,
+        "medications":            medications,
+        "procedure_done_display": procedure_performed_text(admission),
     })
 
 

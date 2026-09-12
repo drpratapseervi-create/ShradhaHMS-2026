@@ -442,6 +442,7 @@ margin:20px 0;
 <button class="tab-btn" onclick="openTab(event,'symptoms')">Symptoms</button>
 <button class="tab-btn" onclick="openTab(event,'diagnosis')">Diagnosis</button>
 <button class="tab-btn" onclick="openTab(event,'treatment')">Treatment</button>
+<button class="tab-btn" onclick="openTab(event,'procedure')">Procedure</button>
 <button class="tab-btn" onclick="openTab(event,'medication')">Medication</button>
 <button class="tab-btn" onclick="openTab(event,'investigations')">Investigations</button>
 <button class="tab-btn" onclick="openTab(event,'progress')">Progress Notes</button>
@@ -713,6 +714,69 @@ Discharge Bill
 </div>
 
 
+<!-- PROCEDURE -->
+
+<div id="procedure" class="tab-content">
+
+<h4>Procedure</h4>
+
+<form method="POST">
+{% csrf_token %}
+<input type="hidden" name="form_type" value="procedure">
+
+<label>Procedure Name</label>
+<input type="text" name="procedure_name" class="form-control" placeholder="e.g. Laparoscopic appendicectomy" required>
+
+<label>Anaesthesia Type</label>
+<select name="anaesthesia_type" class="form-control" required>
+    <option value="">-- Select --</option>
+    <option value="General">General</option>
+    <option value="Spinal">Spinal</option>
+    <option value="Local">Local</option>
+    <option value="Regional">Regional</option>
+    <option value="Sedation">Sedation</option>
+</select>
+
+<label>Date of Procedure</label>
+<input type="date" name="procedure_date" id="ipd-procedure-date" class="form-control" required
+onclick="this.showPicker && this.showPicker();">
+
+<button class="save-btn">Save Procedure</button>
+
+</form>
+
+<hr>
+
+<h5>Procedure History</h5>
+
+<table class="ipd-table">
+    <thead>
+    <tr>
+        <th>Date of Procedure</th>
+        <th>Procedure Name</th>
+        <th>Anaesthesia Type</th>
+        <th>Recorded</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for p in procedure_history %}
+    <tr>
+        <td>{{ p.procedure_date|date:"M d, Y" }}</td>
+        <td>{{ p.procedure_name }}</td>
+        <td>{{ p.anaesthesia_type }}</td>
+        <td>{{ p.recorded_at|date:"M d, Y H:i" }}</td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="4">No procedure entries yet.</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+</div>
+
+
 <!-- MEDICATION -->
 
 <div id="medication" class="tab-content">
@@ -976,7 +1040,7 @@ Discharge Bill
 </div>
 
 <label>Procedure Performed</label>
-<textarea name="procedure_done" id="discharge-procedure-done" class="form-control">{{ admission.procedure_done }}</textarea>
+<textarea name="procedure_done" id="discharge-procedure-done" class="form-control">{{ procedure_done_display }}</textarea>
 
 <label>IPD Treatment</label>
 <textarea name="ipd_treatment" id="discharge-ipd-treatment" class="form-control" placeholder="Inpatient (IV) medication given during the stay.">{{ admission.ipd_treatment }}</textarea>
