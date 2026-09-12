@@ -932,7 +932,7 @@ Discharge Bill
 {{ discharge_autofill|json_script:"discharge-autofill-data" }}
 <button type="button" id="discharge-autofill-btn" class="print-btn" style="margin-left:0; margin-top:6px; cursor:pointer;">↧ Load from patient record</button>
 <span id="discharge-autofill-msg" style="color:#64748b; font-size:12px; margin-left:10px;"></span>
-<p style="color:#64748b; font-size:12px; margin-top:4px;">Fills <b>empty</b> Diagnosis, Chief Complaints, General Examination, Investigations (Hb/TLC/Platelet/RBS/HIV/HBsAg/USG), Procedure Performed, IPD Treatment and Course in Hospital from what's already recorded on this IPD file (Diagnosis, Symptoms, Vitals, Investigations, Medication, Progress Notes &amp; Treatment tabs), plus a default template sentence for Condition at Discharge. General Examination is built from the latest vitals reading; IPD Treatment is built from the inpatient Medication Chart; Course in Hospital is built from Progress Notes (SOAP), left blank if none were recorded. Never overwrites text you've already entered — review and edit before saving. Runs automatically when this tab is opened.</p>
+<p style="color:#64748b; font-size:12px; margin-top:4px;">Fills <b>empty</b> Diagnosis, Chief Complaints, General Examination, Investigations (Hb/TLC/Platelet/RBS/HIV/HBsAg/USG), Procedure Performed, IPD Treatment and Course in Hospital from what's already recorded on this IPD file (Diagnosis, Symptoms, Vitals, Investigations, Medication, Progress Notes &amp; Treatment tabs), plus default template text for Condition at Discharge and Discharge Advice. General Examination is built from the latest vitals reading; IPD Treatment is built from the inpatient Medication Chart; Course in Hospital is built from Progress Notes (SOAP), left blank if none were recorded. Never overwrites text you've already entered — review and edit before saving. Runs automatically when this tab is opened.</p>
 
 <form method="POST" id="discharge-summary-form">
 
@@ -1206,7 +1206,8 @@ document.addEventListener('DOMContentLoaded', function() {
         inv_hbsag:              'discharge-inv-hbsag',
         inv_usg:                'discharge-inv-usg',
         procedure_done:         'discharge-procedure-done',
-        condition_at_discharge: 'discharge-condition-at-discharge'
+        condition_at_discharge: 'discharge-condition-at-discharge',
+        discharge_advice:       'discharge-advice'
     };
 
     // Writes each prefill value into its field only when that field is still blank,

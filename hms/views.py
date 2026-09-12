@@ -1839,6 +1839,16 @@ def ipd_patient_file(request, admission_id):
         "surgical site is clean, healthy."
     )
 
+    # Discharge Advice  ←  a fixed default template (NOT derived from patient
+    # data). Prefilled only into an empty field; the doctor edits or replaces
+    # it per patient.
+    discharge_advice_prefill = (
+        "Continue prescribed medications, maintain a light diet with adequate "
+        "fluids, and keep the surgical wound clean and dry. Avoid heavy lifting "
+        "for 2–4 weeks; return immediately if fever, worsening pain, vomiting, "
+        "or wound redness/discharge occurs."
+    )
+
     # General Examination  ←  the latest vitals reading, recorded on the
     # discharge date or within 12h before it (falls back to "now" while the
     # patient hasn't been discharged yet). Blank if nothing that recent exists.
@@ -1864,6 +1874,7 @@ def ipd_patient_file(request, admission_id):
         "course_in_hospital":     course_prefill,
         "procedure_done":         treatment_prefill,
         "condition_at_discharge": condition_prefill,
+        "discharge_advice":       discharge_advice_prefill,
     }
     discharge_autofill.update(inv_prefill)
 
