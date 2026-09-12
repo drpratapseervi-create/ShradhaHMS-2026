@@ -745,6 +745,8 @@ class IPDAdmission(models.Model):
     general_examination     = models.TextField(blank=True)
     local_examination       = models.TextField(blank=True)
     procedure_done          = models.TextField(blank=True)
+    ipd_treatment           = models.TextField(blank=True,
+        help_text="Inpatient Medication Chart narrative — IV/inpatient treatment given during the stay")
     course_in_hospital      = models.TextField(blank=True)
     condition_at_discharge  = models.TextField(blank=True)
     treatment_on_discharge  = models.TextField(blank=True)

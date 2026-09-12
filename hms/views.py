@@ -1625,6 +1625,7 @@ def ipd_patient_file(request, admission_id):
             admission.inv_hbsag               = request.POST.get("inv_hbsag", "").strip()
             admission.inv_usg                 = request.POST.get("inv_usg", "").strip()
             admission.procedure_done          = request.POST.get("procedure_done", "").strip()
+            admission.ipd_treatment           = request.POST.get("ipd_treatment", "").strip()
             admission.course_in_hospital      = request.POST.get("course_in_hospital", "").strip()
             admission.condition_at_discharge  = request.POST.get("condition_at_discharge", "").strip()
             admission.treatment_on_discharge  = request.POST.get("treatment_on_discharge", "").strip()
@@ -1737,10 +1738,10 @@ def ipd_patient_file(request, admission_id):
     _tr = [h.treatment_plan.strip() for h in treatment_history if h.treatment_plan and h.treatment_plan.strip()]
     treatment_prefill = "\n".join(reversed(_tr)) if _tr else (admission.treatment_plan or "").strip()
 
-    # Treatment Given  ←  a narrative built from the inpatient Medication Chart
+    # IPD Treatment  ←  a narrative built from the inpatient Medication Chart
     # (the treatment actually given during the stay, kept separate from Discharge
-    # Medications) followed by any Progress Notes (SOAP), chronological. Blank if
-    # neither exists.
+    # Medications). Course in Hospital  ←  the Progress Notes (SOAP), chronological.
+    # Each is blank if its source has nothing recorded.
     import re
 
     def _freq_words(raw):
@@ -1806,7 +1807,7 @@ def ipd_patient_file(request, admission_id):
     if _dx and not _dx[:2].isupper():
         _dx = _dx[0].lower() + _dx[1:]
 
-    _course_parts = []
+    ipd_treatment_prefill = ""
     if _med_segs:
         _all_iv = all("iv" in r for r in _routes if r) and any("iv" in r for r in _routes)
         if _is_abx and _all_iv:
@@ -1818,7 +1819,7 @@ def ipd_patient_file(request, admission_id):
         _sentence = _lead + _join_natural(_med_segs)
         if _dx:
             _sentence += f" for the management of {_dx}"
-        _course_parts.append(_sentence.rstrip() + ".")
+        ipd_treatment_prefill = _sentence.rstrip() + "."
 
     _note_lines = []
     for _n in admission.progress_notes.all().order_by("date_time"):
@@ -1828,10 +1829,7 @@ def ipd_patient_file(request, admission_id):
         if (_n.plan or "").strip():       _bits.append("P: " + _n.plan.strip())
         if _bits:
             _note_lines.append(f"{timezone.localtime(_n.date_time):%d %b %Y} — " + "; ".join(_bits))
-    if _note_lines:
-        _course_parts.append("Progress:\n" + "\n".join(_note_lines))
-
-    course_prefill = "\n\n".join(_course_parts)
+    course_prefill = "\n".join(_note_lines)
 
     # Condition at Discharge  ←  a fixed default template sentence (NOT derived
     # from patient data). Prefilled only into an empty field; the doctor edits or
@@ -1844,6 +1842,7 @@ def ipd_patient_file(request, admission_id):
     discharge_autofill = {
         "diagnosis":              (admission.diagnosis or "").strip(),
         "chief_complaint":        chief_complaint_prefill,
+        "ipd_treatment":          ipd_treatment_prefill,
         "course_in_hospital":     course_prefill,
         "procedure_done":         treatment_prefill,
         "treatment_on_discharge": treatment_prefill,

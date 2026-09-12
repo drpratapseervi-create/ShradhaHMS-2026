@@ -932,7 +932,7 @@ Discharge Bill
 {{ discharge_autofill|json_script:"discharge-autofill-data" }}
 <button type="button" id="discharge-autofill-btn" class="print-btn" style="margin-left:0; margin-top:6px; cursor:pointer;">↧ Load from patient record</button>
 <span id="discharge-autofill-msg" style="color:#64748b; font-size:12px; margin-left:10px;"></span>
-<p style="color:#64748b; font-size:12px; margin-top:4px;">Fills <b>empty</b> Diagnosis, Chief Complaints, Investigations (Hb/TLC/Platelet/RBS/HIV/HBsAg/USG), Procedure Performed, Treatment Given and Treatment on Discharge from what's already recorded on this IPD file (Diagnosis, Symptoms, Investigations, Medication, Progress Notes &amp; Treatment tabs), plus a default template sentence for Condition at Discharge. Never overwrites text you've already entered — review and edit before saving. Runs automatically when this tab is opened.</p>
+<p style="color:#64748b; font-size:12px; margin-top:4px;">Fills <b>empty</b> Diagnosis, Chief Complaints, Investigations (Hb/TLC/Platelet/RBS/HIV/HBsAg/USG), Procedure Performed, IPD Treatment, Course in Hospital and Treatment on Discharge from what's already recorded on this IPD file (Diagnosis, Symptoms, Investigations, Medication, Progress Notes &amp; Treatment tabs), plus a default template sentence for Condition at Discharge. IPD Treatment is built from the inpatient Medication Chart; Course in Hospital is built from Progress Notes (SOAP), left blank if none were recorded. Never overwrites text you've already entered — review and edit before saving. Runs automatically when this tab is opened.</p>
 
 <form method="POST" id="discharge-summary-form">
 
@@ -965,8 +965,11 @@ Discharge Bill
 <label>Procedure Performed</label>
 <textarea name="procedure_done" id="discharge-procedure-done" class="form-control">{{ admission.procedure_done }}</textarea>
 
-<label>Treatment Given</label>
-<textarea name="course_in_hospital" id="discharge-course-in-hospital" class="form-control">{{ admission.course_in_hospital }}</textarea>
+<label>IPD Treatment</label>
+<textarea name="ipd_treatment" id="discharge-ipd-treatment" class="form-control" placeholder="Inpatient (IV) medication given during the stay.">{{ admission.ipd_treatment }}</textarea>
+
+<label>Course in Hospital</label>
+<textarea name="course_in_hospital" id="discharge-course-in-hospital" class="form-control" placeholder="Progress notes narrative, if any were recorded.">{{ admission.course_in_hospital }}</textarea>
 
 <label>Condition at Discharge</label>
 <textarea name="condition_at_discharge" id="discharge-condition-at-discharge" class="form-control" placeholder="Describe the patient's condition at discharge.">{{ admission.condition_at_discharge }}</textarea>
@@ -1196,6 +1199,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var autofillMap = {
         diagnosis:              'discharge-diagnosis',
         chief_complaint:        'discharge-chief-complaints',
+        ipd_treatment:          'discharge-ipd-treatment',
         course_in_hospital:     'discharge-course-in-hospital',
         inv_hb:                 'discharge-inv-hb',
         inv_tlc:                'discharge-inv-tlc',

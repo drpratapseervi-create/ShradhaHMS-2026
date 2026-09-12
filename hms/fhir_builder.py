@@ -174,6 +174,10 @@ def build_discharge_summary_bundle(admission):
                         "text": {"div": admission.diagnosis or ""}
                     },
                     {
+                        "title": "IPD Treatment",
+                        "text": {"div": admission.ipd_treatment or ""}
+                    },
+                    {
                         "title": "Course in Hospital",
                         "text": {"div": admission.course_in_hospital or ""}
                     },
