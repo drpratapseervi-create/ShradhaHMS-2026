@@ -1628,7 +1628,6 @@ def ipd_patient_file(request, admission_id):
             admission.ipd_treatment           = request.POST.get("ipd_treatment", "").strip()
             admission.course_in_hospital      = request.POST.get("course_in_hospital", "").strip()
             admission.condition_at_discharge  = request.POST.get("condition_at_discharge", "").strip()
-            admission.treatment_on_discharge  = request.POST.get("treatment_on_discharge", "").strip()
             admission.discharge_advice        = request.POST.get("discharge_advice", "").strip()
             admission.follow_up_date          = request.POST.get("follow_up_date") or None
             admission.follow_up_instructions  = request.POST.get("follow_up_instructions", "").strip()
@@ -1650,7 +1649,7 @@ def ipd_patient_file(request, admission_id):
         DischargeTemplate.objects.filter(is_active=True).values(
             "id", "procedure_name", "gender",
             "diagnosis", "chief_complaints", "general_examination", "local_examination",
-            "operation_notes", "course_in_hospital", "treatment_on_discharge",
+            "operation_notes", "course_in_hospital",
             "advice", "follow_up", "instructions",
         )
     )
@@ -1733,7 +1732,7 @@ def ipd_patient_file(request, admission_id):
                 if any(n in _exact for n in _names) or any(sub in n for sub in _contains for n in _names):
                     inv_prefill[_field] = _val
 
-    # Procedure Performed / Treatment on Discharge  ←  Treatment tab history
+    # Procedure Performed  ←  Treatment tab history
     # (treatment_history is newest-first; join oldest-first so it reads in order)
     _tr = [h.treatment_plan.strip() for h in treatment_history if h.treatment_plan and h.treatment_plan.strip()]
     treatment_prefill = "\n".join(reversed(_tr)) if _tr else (admission.treatment_plan or "").strip()
@@ -1835,17 +1834,35 @@ def ipd_patient_file(request, admission_id):
     # from patient data). Prefilled only into an empty field; the doctor edits or
     # replaces it per patient.
     condition_prefill = (
-        "Patient is hemodynamically stable, conscious, alert, and oriented; "
-        "surgical site healthy; pain controlled with oral medication."
+        "Patient is hemodynamically stable, ambulatory, comfortable, and has no "
+        "active complaints. Vitals are stable and within normal limits; the "
+        "surgical site is clean, healthy."
     )
+
+    # General Examination  ←  the latest vitals reading, recorded on the
+    # discharge date or within 12h before it (falls back to "now" while the
+    # patient hasn't been discharged yet). Blank if nothing that recent exists.
+    from datetime import timedelta
+    _ref_time = admission.discharge_date or timezone.now()
+    _latest_vital = vitals.first()
+    general_exam_prefill = ""
+    if _latest_vital and (
+        _latest_vital.recorded_at.date() == _ref_time.date()
+        or _latest_vital.recorded_at >= _ref_time - timedelta(hours=12)
+    ):
+        _vbits = []
+        if _latest_vital.temperature is not None: _vbits.append(f"Temp {_latest_vital.temperature}")
+        if _latest_vital.spo2 is not None:        _vbits.append(f"SpO2 {_latest_vital.spo2}%")
+        if _latest_vital.rr is not None:          _vbits.append(f"RR {_latest_vital.rr}/min")
+        general_exam_prefill = ", ".join(_vbits)
 
     discharge_autofill = {
         "diagnosis":              (admission.diagnosis or "").strip(),
         "chief_complaint":        chief_complaint_prefill,
+        "general_examination":    general_exam_prefill,
         "ipd_treatment":          ipd_treatment_prefill,
         "course_in_hospital":     course_prefill,
         "procedure_done":         treatment_prefill,
-        "treatment_on_discharge": treatment_prefill,
         "condition_at_discharge": condition_prefill,
     }
     discharge_autofill.update(inv_prefill)

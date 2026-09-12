@@ -932,7 +932,7 @@ Discharge Bill
 {{ discharge_autofill|json_script:"discharge-autofill-data" }}
 <button type="button" id="discharge-autofill-btn" class="print-btn" style="margin-left:0; margin-top:6px; cursor:pointer;">↧ Load from patient record</button>
 <span id="discharge-autofill-msg" style="color:#64748b; font-size:12px; margin-left:10px;"></span>
-<p style="color:#64748b; font-size:12px; margin-top:4px;">Fills <b>empty</b> Diagnosis, Chief Complaints, Investigations (Hb/TLC/Platelet/RBS/HIV/HBsAg/USG), Procedure Performed, IPD Treatment, Course in Hospital and Treatment on Discharge from what's already recorded on this IPD file (Diagnosis, Symptoms, Investigations, Medication, Progress Notes &amp; Treatment tabs), plus a default template sentence for Condition at Discharge. IPD Treatment is built from the inpatient Medication Chart; Course in Hospital is built from Progress Notes (SOAP), left blank if none were recorded. Never overwrites text you've already entered — review and edit before saving. Runs automatically when this tab is opened.</p>
+<p style="color:#64748b; font-size:12px; margin-top:4px;">Fills <b>empty</b> Diagnosis, Chief Complaints, General Examination, Investigations (Hb/TLC/Platelet/RBS/HIV/HBsAg/USG), Procedure Performed, IPD Treatment and Course in Hospital from what's already recorded on this IPD file (Diagnosis, Symptoms, Vitals, Investigations, Medication, Progress Notes &amp; Treatment tabs), plus a default template sentence for Condition at Discharge. General Examination is built from the latest vitals reading; IPD Treatment is built from the inpatient Medication Chart; Course in Hospital is built from Progress Notes (SOAP), left blank if none were recorded. Never overwrites text you've already entered — review and edit before saving. Runs automatically when this tab is opened.</p>
 
 <form method="POST" id="discharge-summary-form">
 
@@ -946,7 +946,7 @@ Discharge Bill
 <textarea name="chief_complaint" id="discharge-chief-complaints" class="form-control">{{ admission.chief_complaint }}</textarea>
 
 <label>General Examination</label>
-<textarea name="general_examination" id="discharge-general-examination" class="form-control">{{ admission.general_examination }}</textarea>
+<textarea name="general_examination" id="discharge-general-examination" class="form-control" placeholder="e.g. Temp 98.6, SpO2 98%, RR 18/min">{{ admission.general_examination }}</textarea>
 
 <label>Local Examination</label>
 <textarea name="local_examination" id="discharge-local-examination" class="form-control">{{ admission.local_examination }}</textarea>
@@ -973,9 +973,6 @@ Discharge Bill
 
 <label>Condition at Discharge</label>
 <textarea name="condition_at_discharge" id="discharge-condition-at-discharge" class="form-control" placeholder="Describe the patient's condition at discharge.">{{ admission.condition_at_discharge }}</textarea>
-
-<label>Treatment on Discharge</label>
-<textarea name="treatment_on_discharge" id="discharge-treatment-on-discharge" class="form-control">{{ admission.treatment_on_discharge }}</textarea>
 
 <label>Discharge Advice</label>
 <textarea name="discharge_advice" id="discharge-advice" class="form-control">{{ admission.discharge_advice }}</textarea>
@@ -1160,7 +1157,6 @@ document.addEventListener('DOMContentLoaded', function() {
         local_examination: 'discharge-local-examination',
         operation_notes: 'discharge-procedure-done',
         course_in_hospital: 'discharge-course-in-hospital',
-        treatment_on_discharge: 'discharge-treatment-on-discharge',
         advice: 'discharge-advice',
         follow_up: 'discharge-follow-up-instructions',
         instructions: 'discharge-instructions'
@@ -1199,6 +1195,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var autofillMap = {
         diagnosis:              'discharge-diagnosis',
         chief_complaint:        'discharge-chief-complaints',
+        general_examination:    'discharge-general-examination',
         ipd_treatment:          'discharge-ipd-treatment',
         course_in_hospital:     'discharge-course-in-hospital',
         inv_hb:                 'discharge-inv-hb',
@@ -1209,7 +1206,6 @@ document.addEventListener('DOMContentLoaded', function() {
         inv_hbsag:              'discharge-inv-hbsag',
         inv_usg:                'discharge-inv-usg',
         procedure_done:         'discharge-procedure-done',
-        treatment_on_discharge: 'discharge-treatment-on-discharge',
         condition_at_discharge: 'discharge-condition-at-discharge'
     };
 
