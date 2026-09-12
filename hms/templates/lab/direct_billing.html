@@ -3,11 +3,11 @@
 
 {% block content %}
 <style>
-/* ── Investigation tiles (matches OPD Consultation's cb-grid/cb-item style) ── */
+/* ── Investigation tiles: card-style selectable chips (dark theme) ── */
 .cb-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 5px;
+    gap: 8px;
 }
 .cb-grid-8 { grid-template-columns: repeat(8, 1fr); }
 .cb-item {
@@ -15,27 +15,49 @@
     align-items: center;
     justify-content: space-between;
     gap: 7px;
-    padding: 6px 9px;
-    border: 1px solid #e2e8f0;
-    border-radius: 7px;
-    background: #fafafa;
+    padding: 8px 10px;
+    border: 1px solid #166534 !important;
+    border-radius: 8px;
+    background: #0d2a1a !important;
+    color: #4ade80 !important;
     cursor: pointer;
     font-size: 12px;
     transition: all 0.15s;
     user-select: none;
 }
-.cb-item:hover { background: #fff; border-color: #ececec; }
-.cb-item input[type=checkbox] { accent-color: #1a1a1a; width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
-.cb-item:has(input:checked) { background: #f7f7f7; border-color: #ddd; color: #1a1a1a; font-weight: 500; }
-.cb-item-label { display: flex; align-items: center; gap: 7px; overflow: hidden; }
+.cb-item:hover { background: #14532d !important; border-color: #4ade80 !important; color: #86efac !important; }
+.cb-item input[type=checkbox] {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 14px; height: 14px;
+    margin: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+    border: 1.5px solid #4ade80 !important;
+    border-radius: 3px;
+    background: #0d2a1a !important;
+    position: relative;
+}
+.cb-item input[type=checkbox]:checked {
+    background: #4ade80 !important;
+    border-color: #4ade80 !important;
+}
+.cb-item input[type=checkbox]:checked::after {
+    content: "";
+    position: absolute;
+    left: 3.5px; top: 0px;
+    width: 4px; height: 8px;
+    border: solid #06201c;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+.cb-item:has(input:checked) { background: #166534 !important; border-color: #166534 !important; color: #4ade80 !important; font-weight: 700; }
+.cb-item:has(input:checked):hover { background: #14532d !important; border-color: #4ade80 !important; }
+.cb-item-label { display: flex; align-items: center; gap: 7px; overflow: hidden; width: 100%; }
 .cb-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
 <div class="container py-4" style="max-width:900px">
-
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0">🧪 Walk-in Lab Billing</h4>
-    <a href="{% url 'hms:lab_reports' %}" class="btn btn-sm btn-outline-secondary">← Lab Reports</a>
-  </div>
 
   {% if messages %}
     {% for msg in messages %}
@@ -48,31 +70,26 @@
   <form method="post">
     {% csrf_token %}
 
-    <!-- Patient Selection -->
-    <div class="row">
-      <div class="col-md-6">
-        <div class="card mb-4">
-          <div class="card-header fw-bold">Patient</div>
-          <div class="card-body">
-            {% if patient %}
-              <input type="hidden" name="patient_id" value="{{ patient.id }}">
-              <p class="mb-0">
-                <strong>{{ patient.full_name }}</strong>
-                <span class="text-muted ms-2">{{ patient.uhid }}</span>
-                {% if patient.age %} | {{ patient.age }} yrs{% endif %}
-                | {{ patient.gender }}
-              </p>
-            {% else %}
-              <label class="form-label fw-bold">Select Patient</label>
-              <select name="patient_id" class="form-select" required>
-                <option value="">-- Select Patient --</option>
-                {% for p in patients %}
-                  <option value="{{ p.id }}">{{ p.uhid }} – {{ p.full_name }}</option>
-                {% endfor %}
-              </select>
-            {% endif %}
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <h4 class="mb-0">🧪 Walk-in Lab Billing</h4>
+      <div class="d-flex align-items-center gap-2">
+        {% if patient %}
+          <input type="hidden" name="patient_id" value="{{ patient.id }}">
+          <div class="text-end small">
+            <strong>{{ patient.full_name }}</strong>
+            <span class="text-muted ms-1">{{ patient.uhid }}</span>
+            {% if patient.age %} | {{ patient.age }} yrs{% endif %}
+            | {{ patient.gender }}
           </div>
-        </div>
+        {% else %}
+          <select name="patient_id" class="form-select form-select-sm" style="width:240px" required>
+            <option value="">-- Select Patient --</option>
+            {% for p in patients %}
+              <option value="{{ p.id }}">{{ p.uhid }} – {{ p.full_name }}</option>
+            {% endfor %}
+          </select>
+        {% endif %}
+        <a href="{% url 'hms:lab_reports' %}" class="btn btn-sm btn-outline-secondary">← Lab Reports</a>
       </div>
     </div>
 
