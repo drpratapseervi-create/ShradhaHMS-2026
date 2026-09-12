@@ -95,17 +95,11 @@
   .usg-tab-content [data-tab] { display:none; }
   .usg-tab-content [data-tab].tab-active { display:block; }
 
-  /* ── Sticky action bar: Save/Next/Print stay visible while scrolling
-       through a tall tab instead of only appearing at the very bottom ── */
+  /* ── Action bar: sits right after the active tab's content, right-aligned
+       within the tab-content column — same placement as Consultation's
+       action-bar inside consult-content ── */
   .usg-action-bar {
-      position: sticky;
-      bottom: 0;
-      z-index: 600;
-      background: #1a1d27;
-      padding: 10px 4px;
-      margin-top: 12px;
-      border-top: 1px solid #2d3148;
-      box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
+      padding: 10px 0 2px;
   }
 </style>
 
@@ -951,9 +945,6 @@
       </div>
     </div>
 
-    </div><!-- /usg-tab-content -->
-    </div><!-- /usg-tab-layout -->
-
     {% if form.errors %}
     <div class="alert alert-danger">
       <strong>Fix errors:</strong>
@@ -961,6 +952,10 @@
     </div>
     {% endif %}
 
+    <!-- Sits inside usg-tab-content (same column as the tab panels, right
+         after whichever one is active) so it lands right below the visible
+         tab's content, right-aligned — same placement as Consultation's
+         action-bar inside consult-content. -->
     <div class="usg-action-bar d-flex justify-content-end gap-2">
       <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Report</button>
       <button type="button" id="usg-next-tab-btn" class="btn px-4" style="background:#00b8a9;color:#0f1117;font-weight:600;" onclick="goToNextUsgTab()">Next ➜</button>
@@ -970,11 +965,14 @@
         </a>
       {% endif %}
     </div>
+
+    </div><!-- /usg-tab-content -->
+    </div><!-- /usg-tab-layout -->
   </form>
 </div>
 
-<!-- Fill Normals — sits above the sticky action bar so the two don't overlap -->
-<div style="position:fixed;bottom:84px;right:24px;z-index:999;">
+<!-- Fill Normals -->
+<div style="position:fixed;bottom:24px;right:24px;z-index:999;">
   <button id="btnFillNormals" class="btn btn-warning shadow-lg rounded-pill px-4">
     <i class="bi bi-magic me-1"></i> Fill Normals
   </button>
