@@ -1630,8 +1630,6 @@ def ipd_patient_file(request, admission_id):
             admission.condition_at_discharge  = request.POST.get("condition_at_discharge", "").strip()
             admission.discharge_advice        = request.POST.get("discharge_advice", "").strip()
             admission.follow_up_date          = request.POST.get("follow_up_date") or None
-            admission.follow_up_instructions  = request.POST.get("follow_up_instructions", "").strip()
-            admission.discharge_instructions  = request.POST.get("discharge_instructions", "").strip()
             if not admission.discharge_date:
                 admission.discharge_date = timezone.now()
 
@@ -1650,7 +1648,7 @@ def ipd_patient_file(request, admission_id):
             "id", "procedure_name", "gender",
             "diagnosis", "chief_complaints", "general_examination", "local_examination",
             "operation_notes", "course_in_hospital",
-            "advice", "follow_up", "instructions",
+            "advice",
         )
     )
     symptom_history = IPDSymptomHistory.objects.filter(admission=admission).order_by("-recorded_at")

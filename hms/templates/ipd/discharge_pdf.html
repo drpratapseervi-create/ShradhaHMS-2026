@@ -316,19 +316,8 @@ DISCHARGE SUMMARY
 <div class="section">
 
 <b>Follow Up Date:</b> {{ admission.follow_up_date }}
-{% if admission.follow_up_instructions %}<br>{{ admission.follow_up_instructions }}{% endif %}
 
 </div>
-
-{% if admission.discharge_instructions %}
-<div class="section">
-
-<div class="section-title">Instructions</div>
-
-{{ admission.discharge_instructions }}
-
-</div>
-{% endif %}
 
 <div class="signature">
 

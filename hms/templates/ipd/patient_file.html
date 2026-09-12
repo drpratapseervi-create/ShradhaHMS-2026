@@ -982,22 +982,6 @@ Discharge Bill
 <input type="date" name="follow_up_date" class="form-control"
 value="{{ admission.follow_up_date|date:'Y-m-d' }}">
 
-<label>Follow Up Instructions</label>
-<textarea name="follow_up_instructions" id="discharge-follow-up-instructions" class="form-control">{{ admission.follow_up_instructions }}</textarea>
-
-<label>Instructions</label>
-<textarea name="discharge_instructions" id="discharge-instructions" class="form-control">{{ admission.discharge_instructions }}</textarea>
-
-<br>
-
-<button type="submit" class="save-btn">
-Save Discharge
-</button>
-
-<a href="{% url 'hms:discharge_pdf' admission.id %}" class="print-btn">
-Print Discharge
-</a>
-
 </form>
 
 <h4 id="discharge-medications-section">Discharge Medications</h4>
@@ -1157,9 +1141,7 @@ document.addEventListener('DOMContentLoaded', function() {
         local_examination: 'discharge-local-examination',
         operation_notes: 'discharge-procedure-done',
         course_in_hospital: 'discharge-course-in-hospital',
-        advice: 'discharge-advice',
-        follow_up: 'discharge-follow-up-instructions',
-        instructions: 'discharge-instructions'
+        advice: 'discharge-advice'
     };
 
     select.addEventListener('change', function() {
