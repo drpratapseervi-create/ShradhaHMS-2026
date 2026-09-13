@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Delete USG Report{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3" style="max-width:600px;">
+  <div class="card border-danger">
+    <div class="card-header bg-danger text-white fw-bold">
+      <i class="bi bi-exclamation-triangle"></i> Delete USG Report
+    </div>
+    <div class="card-body">
+      <p>Are you sure you want to permanently delete report
+        <strong>{{ report.report_no }}</strong> for
+        <strong>{{ report.patient.full_name }}</strong>
+        ({{ report.get_scan_type_display }}, {{ report.report_date|date:"d-M-Y" }})?
+      </p>
+      <p class="text-danger">This cannot be undone.</p>
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">
+          <i class="bi bi-trash"></i> Yes, Delete
+        </button>
+        <a href="{% url 'hms:usg_report_print' report.pk %}" class="btn btn-outline-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

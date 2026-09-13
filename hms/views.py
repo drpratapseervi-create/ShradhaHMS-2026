@@ -32,6 +32,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from .models import USGReport
 from .forms  import USGReportForm
+from .utils import render_to_pdf
 from django.utils import timezone
 from .models import (
     Ward, Bed, IPDAdmission, IPDVital, IPDMedication, IPDDischargeMedication, DischargeTemplate, IPDProgressNote, IPDSymptomHistory, IPDTreatmentHistory, IPDProcedure,
@@ -4035,25 +4036,14 @@ def usg_report_create(request, patient_id=None, bill_item_id=None):
         initial["patient"] = patient
     if bill_item:
         initial["bill_item"] = bill_item
+    initial["findings_text"] = USGReport.default_findings_text("ABDOMEN_PELVIS")
 
     is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
-
-    # The tab layout's "Next" button auto-saves via AJAX before this report
-    # exists as a row yet — once the first auto-save creates it, later
-    # auto-saves (as the user moves through the remaining tabs) must update
-    # that same row instead of creating a fresh duplicate report each time.
-    instance = None
-    if request.method == "POST":
-        existing_pk = request.POST.get("_usg_report_pk")
-        if existing_pk:
-            instance = USGReport.objects.filter(pk=existing_pk, created_by=request.user).first()
-
-    form = USGReportForm(request.POST or None, initial=initial, instance=instance)
+    form = USGReportForm(request.POST or None, initial=initial)
 
     if request.method == "POST" and form.is_valid():
         report = form.save(commit=False)
-        if not instance:
-            report.created_by = request.user
+        report.created_by = request.user
         report.save()
         if is_ajax:
             return JsonResponse({"success": True, "report_id": report.pk})
@@ -4063,10 +4053,11 @@ def usg_report_create(request, patient_id=None, bill_item_id=None):
         return JsonResponse({"success": False, "error": "Please check the form for errors."}, status=400)
 
     return render(request, "hms/usg/usg_report_form.html", {
-        "form":      form,
-        "patient":   patient,
-        "bill_item": bill_item,
-        "title":     "New USG Report",
+        "form":               form,
+        "patient":            patient,
+        "bill_item":          bill_item,
+        "title":              "New USG Report",
+        "findings_templates": json.dumps(USGReport.FINDINGS_TEMPLATES),
     })
 
 
@@ -4087,9 +4078,10 @@ def usg_report_edit(request, pk):
         return JsonResponse({"success": False, "error": "Please check the form for errors."}, status=400)
 
     return render(request, "hms/usg/usg_report_form.html", {
-        "form":   form,
-        "report": report,
-        "title":  f"Edit {report.report_no}",
+        "form":               form,
+        "report":             report,
+        "title":              f"Edit {report.report_no}",
+        "findings_templates": json.dumps(USGReport.FINDINGS_TEMPLATES),
     })
 
 

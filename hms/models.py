@@ -1808,13 +1808,16 @@ class ExpenseBudget(models.Model):
         verbose_name_plural = 'Expense Budgets'
 
         # =====================================================================
-# USG REPORT MODEL — add this block to models.py
+# USG REPORT MODEL
 # =====================================================================
 
 class USGReport(models.Model):
     """
-    Auto-generated USG (Ultrasonography) Report.
-    Linked to a Patient and optionally to a Consultation / InvestigationBillItem.
+    USG (Ultrasonography) Report. Findings are captured as one editable
+    narrative paragraph (pre-filled from a per-scan-type standard template)
+    plus a separate Impression, mirroring how the report is actually
+    dictated and printed. Linked to a Patient and optionally to a
+    Consultation / InvestigationBillItem.
     """
 
     # ── SCAN TYPES ────────────────────────────────────────────────────
@@ -1840,6 +1843,36 @@ class USGReport(models.Model):
         ("ABNORMAL", "Abnormal / Significant Findings"),
         ("INCONCLUSIVE", "Inconclusive / Follow-up Advised"),
     ]
+
+    # Standard normal-study narrative per scan type — the doctor's own
+    # wording, used to prefill the findings box on a new report of that
+    # scan type. Scan types not listed here just start with an empty
+    # findings box until a standard template is supplied for them.
+    FINDINGS_TEMPLATES = {
+        "ABDOMEN_PELVIS": """Liver: The liver is normal in size measuring __ cm. The echotexture is normal. No focal hepatic lesion is seen. The intrahepatic ducts are not dilated. The portal vein and common bile duct show normal calibre.
+Portal Vein: Measuring __ mm.
+
+Gallbladder: The gallbladder is distended and shows smooth walls. No gallstones or biliary sludge is seen. The wall thickness is within normal limits. No evidence of pericholecystic fluid.
+CBD: Measuring __ size normal.
+
+Pancreas: The pancreas is normal in size and echotexture. The pancreatic duct is not dilated.
+
+Spleen: The spleen is normal in size, measuring __ cm. No splenic lesion is seen.
+
+Kidneys: Both kidneys are normal in size, shape and position and show normal cortico-medullary differentiation.
+Right kidney measures __
+Left kidney measures __
+
+Bladder: The urinary bladder is adequately filled. Its wall is not thickened. No evidence of diverticulum or calculus.
+
+Uterus and Ovaries: The uterus is __ size, cm, anteverted shape, homogenous echotexture, myometrium and endometrial thickness __ mm, and ovaries are of normal size.
+
+Colon wall thickness __ mm. Ileal wall thickness __ mm.""",
+    }
+
+    @classmethod
+    def default_findings_text(cls, scan_type):
+        return cls.FINDINGS_TEMPLATES.get(scan_type, "")
 
     # ── CORE LINKS ────────────────────────────────────────────────────
     patient      = models.ForeignKey(
@@ -1878,130 +1911,10 @@ class USGReport(models.Model):
                                       help_text="e.g. Curvilinear 3.5 MHz")
     sonographer    = models.CharField(max_length=120, blank=True)
 
-    # ══════════════════════════════════════════════════════════════════
-    # ORGAN-WISE FINDINGS  (blank = not examined / normal)
-    # ══════════════════════════════════════════════════════════════════
-
-    # ── LIVER ─────────────────────────────────────────────────────────
-    liver_size         = models.CharField(max_length=100, blank=True,
-                                          help_text="e.g. 14.2 cm")
-    liver_echotexture  = models.CharField(max_length=200, blank=True,
-                                          help_text="e.g. Normal homogeneous")
-    liver_lesion       = models.TextField(blank=True,
-                                          help_text="Any focal lesion description")
-    liver_notes        = models.TextField(blank=True)
-
-    # ── GALLBLADDER ───────────────────────────────────────────────────
-    gb_size            = models.CharField(max_length=100, blank=True)
-    gb_wall_thickness  = models.CharField(max_length=50, blank=True,
-                                          help_text="e.g. 3 mm")
-    gb_calculi         = models.BooleanField(default=False,
-                                             verbose_name="Gallbladder Calculi")
-    gb_calculi_size    = models.CharField(max_length=100, blank=True,
-                                          help_text="e.g. 8mm calculus in neck")
-    gb_notes           = models.TextField(blank=True)
-
-    # ── CBD ───────────────────────────────────────────────────────────
-    cbd_diameter       = models.CharField(max_length=50, blank=True,
-                                          help_text="e.g. 4 mm — normal <6mm")
-    cbd_notes          = models.TextField(blank=True)
-
-    # ── SPLEEN ────────────────────────────────────────────────────────
-    spleen_size        = models.CharField(max_length=100, blank=True,
-                                          help_text="e.g. 10.5 cm")
-    spleen_notes       = models.TextField(blank=True)
-
-    # ── PANCREAS ──────────────────────────────────────────────────────
-    pancreas_notes     = models.TextField(blank=True,
-                                          help_text="e.g. Normal in size and echotexture")
-
-    # ── KIDNEYS ───────────────────────────────────────────────────────
-    rt_kidney_size     = models.CharField(max_length=100, blank=True,
-                                          help_text="e.g. 10.2 × 4.5 cm")
-    rt_kidney_notes    = models.TextField(blank=True)
-    lt_kidney_size     = models.CharField(max_length=100, blank=True)
-    lt_kidney_notes    = models.TextField(blank=True)
-    kidney_calculi     = models.BooleanField(default=False)
-    kidney_calculi_detail = models.TextField(blank=True)
-    hydronephrosis     = models.BooleanField(default=False)
-    hydronephrosis_detail = models.TextField(blank=True)
-
-    # ── URINARY BLADDER ───────────────────────────────────────────────
-    bladder_notes      = models.TextField(blank=True,
-                                          help_text="e.g. Well distended, smooth walls")
-    post_void_residue  = models.CharField(max_length=50, blank=True,
-                                          help_text="PVR in ml")
-
-    # ── UTERUS / GYN (Female) ─────────────────────────────────────────
-    uterus_size        = models.CharField(max_length=150, blank=True,
-                                          help_text="e.g. 7.5 × 4.2 × 3.8 cm")
-    uterus_position    = models.CharField(max_length=50, blank=True,
-                                          help_text="e.g. Anteverted / Retroverted")
-    uterus_echotexture = models.CharField(max_length=200, blank=True)
-    endometrial_thickness = models.CharField(max_length=50, blank=True,
-                                              help_text="e.g. 8 mm")
-    uterus_notes       = models.TextField(blank=True)
-
-    # ── OVARIES ───────────────────────────────────────────────────────
-    rt_ovary_size      = models.CharField(max_length=150, blank=True,
-                                          help_text="e.g. 3.0 × 2.0 × 1.5 cm")
-    rt_ovary_notes     = models.TextField(blank=True)
-    lt_ovary_size      = models.CharField(max_length=150, blank=True)
-    lt_ovary_notes     = models.TextField(blank=True)
-    adnexal_notes      = models.TextField(blank=True)
-
-    # ── OBSTETRIC ─────────────────────────────────────────────────────
-    lmp                = models.DateField(null=True, blank=True,
-                                          verbose_name="LMP (Last Menstrual Period)")
-    ga_by_lmp          = models.CharField(max_length=50, blank=True,
-                                          verbose_name="GA by LMP",
-                                          help_text="e.g. 28 weeks 3 days")
-    ga_by_scan         = models.CharField(max_length=50, blank=True,
-                                          verbose_name="GA by Scan")
-    edd_by_lmp         = models.DateField(null=True, blank=True,
-                                          verbose_name="EDD by LMP")
-    edd_by_scan        = models.DateField(null=True, blank=True,
-                                          verbose_name="EDD by Scan")
-    fetal_presentation = models.CharField(max_length=100, blank=True,
-                                          help_text="e.g. Cephalic / Breech")
-    fetal_heart_rate   = models.CharField(max_length=50, blank=True,
-                                          help_text="e.g. 148 bpm — regular")
-    placental_location = models.CharField(max_length=200, blank=True)
-    liquor             = models.CharField(max_length=100, blank=True,
-                                          help_text="e.g. Adequate / Reduced")
-    afi                = models.CharField(max_length=50, blank=True,
-                                          verbose_name="AFI (cm)")
-    biometry_bpd       = models.CharField(max_length=50, blank=True, verbose_name="BPD")
-    biometry_hc        = models.CharField(max_length=50, blank=True, verbose_name="HC")
-    biometry_ac        = models.CharField(max_length=50, blank=True, verbose_name="AC")
-    biometry_fl        = models.CharField(max_length=50, blank=True, verbose_name="FL")
-    efw                = models.CharField(max_length=100, blank=True,
-                                          verbose_name="Estimated Fetal Weight")
-    obstetric_notes    = models.TextField(blank=True)
-
-    # ── PROSTATE (Male) ───────────────────────────────────────────────
-    prostate_size      = models.CharField(max_length=150, blank=True,
-                                          help_text="e.g. 3.5 × 3.0 × 3.2 cm, Vol 17 ml")
-    prostate_notes     = models.TextField(blank=True)
-
-    # ── THYROID / NECK ────────────────────────────────────────────────
-    thyroid_rt         = models.CharField(max_length=200, blank=True)
-    thyroid_lt         = models.CharField(max_length=200, blank=True)
-    thyroid_isthmus    = models.CharField(max_length=100, blank=True)
-    thyroid_notes      = models.TextField(blank=True)
-
-    # ── BREAST ────────────────────────────────────────────────────────
-    breast_rt          = models.TextField(blank=True)
-    breast_lt          = models.TextField(blank=True)
-    breast_notes       = models.TextField(blank=True)
-
-    # ── ASCITES / FREE FLUID ──────────────────────────────────────────
-    ascites            = models.BooleanField(default=False)
-    ascites_detail     = models.TextField(blank=True)
-
-    # ── FREE TEXT FINDINGS ────────────────────────────────────────────
-    additional_findings = models.TextField(blank=True,
-        help_text="Any other findings not captured above")
+    # ── FINDINGS (narrative) ──────────────────────────────────────────
+    findings_text  = models.TextField(blank=True, default="",
+        help_text="Organ-wise findings, pre-filled from the standard "
+                   "template for the selected scan type and edited per case")
 
     # ── IMPRESSION / CONCLUSION ───────────────────────────────────────
     impression_status  = models.CharField(
@@ -2043,140 +1956,6 @@ class USGReport(models.Model):
 
     def __str__(self):
         return f"{self.report_no} | {self.patient.full_name} | {self.get_scan_type_display()}"
-
- # =====================================================================
-# ADD THESE FIELDS TO YOUR EXISTING USGReport MODEL in models.py
-# Paste inside the USGReport class, after the existing fields
-# =====================================================================
-
-    # ── LIVER (extended) ─────────────────────────────────────────────
-    liver_focal_lesion      = models.BooleanField(default=False)
-    liver_cyst              = models.BooleanField(default=False)
-    liver_mass              = models.BooleanField(default=False)
-    liver_ihbr_dilated      = models.BooleanField(default=False, verbose_name="IHBR Dilated")
-
-    # ── GALLBLADDER (extended) ────────────────────────────────────────
-    gb_calculi_present      = models.BooleanField(default=False)
-    gb_calculi_detail       = models.CharField(max_length=200, blank=True)
-    gb_wall_thick           = models.BooleanField(default=False)
-    gb_distended            = models.BooleanField(default=False)
-    gb_contracted           = models.BooleanField(default=False)
-    gb_sludge               = models.BooleanField(default=False)
-    gb_pericholecystic_fluid= models.BooleanField(default=False)
-    gb_probe_tenderness     = models.BooleanField(default=False)
-
-    # ── CBD (extended) ────────────────────────────────────────────────
-    cbd_dilated             = models.BooleanField(default=False)
-
-    # ── RIGHT KIDNEY ─────────────────────────────────────────────────
-    rk_size                 = models.CharField(max_length=100, blank=True)
-    rk_stone_present        = models.BooleanField(default=False)
-    rk_stone_size           = models.CharField(max_length=100, blank=True)
-    rk_stone_site           = models.CharField(max_length=200, blank=True)
-    rk_mild_hydronephrosis  = models.BooleanField(default=False)
-    rk_moderate_hydronephrosis = models.BooleanField(default=False)
-    rk_severe_hydronephrosis= models.BooleanField(default=False)
-    rk_hydroureter          = models.BooleanField(default=False)
-    rk_hydroureteronephrosis= models.BooleanField(default=False)
-    rk_cyst_present         = models.BooleanField(default=False)
-    rk_cyst_size            = models.CharField(max_length=100, blank=True)
-    rk_cyst_location        = models.CharField(max_length=100, blank=True)
-    rk_cyst_type            = models.CharField(max_length=100, blank=True, help_text="e.g. Simple / Complex")
-
-    # ── LEFT KIDNEY ──────────────────────────────────────────────────
-    lk_size                 = models.CharField(max_length=100, blank=True)
-    lk_stone_present        = models.BooleanField(default=False)
-    lk_stone_size           = models.CharField(max_length=100, blank=True)
-    lk_stone_site           = models.CharField(max_length=200, blank=True)
-    lk_mild_hydronephrosis  = models.BooleanField(default=False)
-    lk_moderate_hydronephrosis = models.BooleanField(default=False)
-    lk_severe_hydronephrosis= models.BooleanField(default=False)
-    lk_hydroureter          = models.BooleanField(default=False)
-    lk_hydroureteronephrosis= models.BooleanField(default=False)
-    lk_cyst_present         = models.BooleanField(default=False)
-    lk_cyst_size            = models.CharField(max_length=100, blank=True)
-    lk_cyst_location        = models.CharField(max_length=100, blank=True)
-    lk_cyst_type            = models.CharField(max_length=100, blank=True)
-
-    # ── URETERIC CALCULUS ─────────────────────────────────────────────
-    ureteric_side           = models.CharField(max_length=20, blank=True, help_text="Right / Left / Bilateral")
-    ureteric_size           = models.CharField(max_length=100, blank=True)
-    ureteric_site           = models.CharField(max_length=200, blank=True, help_text="e.g. VUJ / PUJ / mid-ureter")
-    ureteric_hydroureter    = models.BooleanField(default=False)
-    ureteric_hydronephrosis = models.BooleanField(default=False)
-    ureteric_hydroureteronephrosis = models.BooleanField(default=False)
-
-    # ── SPLEEN (extended) ─────────────────────────────────────────────
-    splenomegaly            = models.BooleanField(default=False)
-    spleen_cyst             = models.BooleanField(default=False)
-    spleen_lesion           = models.BooleanField(default=False)
-
-    # ── BLADDER (extended) ────────────────────────────────────────────
-    bladder_state           = models.CharField(max_length=50, blank=True, help_text="e.g. Well distended / Partially filled / Empty")
-    bladder_wall_thick      = models.BooleanField(default=False)
-    bladder_internal_echoes = models.BooleanField(default=False)
-    bladder_calculus        = models.BooleanField(default=False)
-    bladder_mass            = models.BooleanField(default=False)
-    pvrv                    = models.CharField(max_length=50, blank=True, verbose_name="Post-Void Residual Volume (ml)")
-
-    # ── PROSTATE (extended) ───────────────────────────────────────────
-    prostate_volume         = models.CharField(max_length=50, blank=True, help_text="Volume in cc/ml")
-    prostate_echotexture    = models.CharField(max_length=200, blank=True)
-    prostate_median_lobe    = models.BooleanField(default=False, help_text="Median lobe hypertrophy")
-    prostatomegaly          = models.BooleanField(default=False)
-
-    # ── UTERUS (extended) ─────────────────────────────────────────────
-    uterus_myometrium       = models.CharField(max_length=200, blank=True, help_text="e.g. Homogeneous / Heterogeneous")
-    pid_changes             = models.BooleanField(default=False, verbose_name="PID Changes")
-    fibroid_present         = models.BooleanField(default=False)
-    fibroid_size            = models.CharField(max_length=100, blank=True)
-    fibroid_site            = models.CharField(max_length=100, blank=True, help_text="e.g. Anterior / Posterior / Fundal")
-    fibroid_type            = models.CharField(max_length=100, blank=True, help_text="e.g. Intramural / Subserosal / Submucosal")
-
-    # ── RIGHT OVARY ───────────────────────────────────────────────────
-    ro_size                 = models.CharField(max_length=100, blank=True)
-    ro_volume               = models.CharField(max_length=50, blank=True, help_text="Volume in cc")
-    ro_bulky                = models.BooleanField(default=False)
-    ro_cyst_present         = models.BooleanField(default=False)
-    ro_cyst_size            = models.CharField(max_length=100, blank=True)
-    ro_cyst_type            = models.CharField(max_length=100, blank=True, help_text="e.g. Simple / Hemorrhagic / Dermoid / Endometrioma")
-
-    # ── LEFT OVARY ────────────────────────────────────────────────────
-    lo_size                 = models.CharField(max_length=100, blank=True)
-    lo_volume               = models.CharField(max_length=50, blank=True)
-    lo_bulky                = models.BooleanField(default=False)
-    lo_cyst_present         = models.BooleanField(default=False)
-    lo_cyst_size            = models.CharField(max_length=100, blank=True)
-    lo_cyst_type            = models.CharField(max_length=100, blank=True)
-
-    # ── HERNIA ────────────────────────────────────────────────────────
-    hernia_type             = models.CharField(max_length=100, blank=True, help_text="e.g. Inguinal / Umbilical / Incisional / Femoral")
-    hernia_side             = models.CharField(max_length=20, blank=True, help_text="Right / Left / Bilateral")
-    hernia_defect_size      = models.CharField(max_length=100, blank=True)
-    hernia_reducible        = models.BooleanField(default=False)
-    hernia_irreducible      = models.BooleanField(default=False)
-    hernia_bowel_loops      = models.BooleanField(default=False)
-    hernia_omentum          = models.BooleanField(default=False)
-    hernia_cough_impulse    = models.BooleanField(default=False)
-
-    # ── APPENDIX ──────────────────────────────────────────────────────
-    appendix_visualized     = models.BooleanField(default=False)
-    appendix_diameter       = models.CharField(max_length=50, blank=True, help_text="mm")
-    appendix_noncompressible= models.BooleanField(default=False)
-    appendix_probe_tenderness = models.BooleanField(default=False)
-    appendix_periappendiceal_fluid = models.BooleanField(default=False)
-    appendicolith           = models.BooleanField(default=False)
-    inflamed_fat            = models.BooleanField(default=False, verbose_name="Inflamed Periappendiceal Fat")
-
-    # ── BOWEL ─────────────────────────────────────────────────────────
-    colitis_present         = models.BooleanField(default=False)
-    colitis_site            = models.CharField(max_length=200, blank=True)
-    sbo_present             = models.BooleanField(default=False, verbose_name="Small Bowel Obstruction")
-    dilated_bowel_loops     = models.BooleanField(default=False)
-    to_and_fro_peristalsis  = models.BooleanField(default=False)
-    collapsed_distal_bowel  = models.BooleanField(default=False)
-    gaseous_bowel_loops     = models.BooleanField(default=False)
-    ibs_suggestion          = models.BooleanField(default=False, verbose_name="IBS Suggestion")
 
     # ===================== PRESCRIPTION TEMPLATE =====================
 class PrescriptionTemplate(models.Model):
