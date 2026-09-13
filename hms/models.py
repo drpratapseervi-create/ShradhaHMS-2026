@@ -375,6 +375,26 @@ class Consultation(models.Model):
     )
     referral_letter_text = models.TextField(blank=True)
 
+    # ===== MEDICAL CERTIFICATE =====
+    # certificate_no is assigned once, on first Save/Generate — never
+    # reassigned afterward, so reprinting keeps the same number (mirrors
+    # the UHID/ADV-receipt "assign once, format from a running count"
+    # convention used elsewhere in this file).
+    certificate_no = models.CharField(max_length=30, blank=True)
+    certificate_reason = models.CharField(
+        max_length=20,
+        choices=[
+            ("post_procedure", "Post-Procedure Rest"),
+            ("illness",         "Illness / Unfit for Duty"),
+            ("fitness",         "Fitness Certificate"),
+            ("other",           "Other"),
+        ],
+        blank=True,
+    )
+    certificate_reason_other = models.CharField(max_length=200, blank=True)
+    certificate_text = models.TextField(blank=True)
+    certificate_generated_at = models.DateTimeField(null=True, blank=True)
+
     # ===== METADATA =====
     custom_investigations = models.TextField(blank=True, null=True)
     last_modified_by = models.CharField(max_length=100, blank=True, null=True)

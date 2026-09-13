@@ -98,6 +98,25 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
 .fill:empty:before { content: "click to fill in"; color: #999; font-weight: 400; font-style: italic; }
 .fill:focus { outline: none; background: #fffbe6; }
 
+/* Auto-growing certificate paragraph — single line by default, grows to
+   fit as content is typed/generated (same behaviour as the LAMA consent
+   boxes in the consultation form) */
+.cert-textarea {
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 7px;
+    padding: 9px 12px;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    line-height: 1.9;
+    text-align: justify;
+    color: #000;
+    background: #fff;
+    resize: none;
+    overflow: hidden;
+}
+.cert-textarea:focus { outline: none; border-color: #7c3aed; background: #fffbe6; }
+
 /* ── Footer / signature ── */
 .sign-row {
     display: flex;
@@ -124,6 +143,7 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
     .no-print { display: none !important; }
     .fill { border-bottom: 1px solid #000; }
     .fill:empty:before { content: ""; }
+    .cert-textarea { border: none; padding: 0; border-radius: 0; background: transparent; }
 }
 </style>
 </head>
@@ -137,6 +157,12 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
 </div>
 
 <div class="doc-title-bar">MEDICAL CERTIFICATE</div>
+
+<!-- ── Certificate No. / Date ── -->
+<div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin:-4px 0 10px 0;">
+    <span>Certificate No: <span id="cert-no-display">{{ certificate_no|default:"(assigned on save)" }}</span></span>
+    <span>Date: {{ printed_on|date:"d-m-Y" }}</span>
+</div>
 
 <!-- ── Patient Details ── -->
 <div class="sec-title">PATIENT DETAILS</div>
@@ -155,23 +181,43 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
     </tr>
 </table>
 
-<!-- ── Certificate Statement (each blank individually editable) ── -->
-<div class="cert-line">
-    This is to certify that I examined
-    {% if appointment.patient.gender == "Female" %}Mrs./Ms.{% else %}Mr./Mrs.{% endif %}
-    <strong>{{ appointment.patient.full_name|title }}</strong>
-    on <span class="fill" contenteditable="true" spellcheck="false">{{ printed_on|date:"d-m-Y" }}</span>
-    and found him/her to be suffering from
-    <span class="fill fill-wide" contenteditable="true" spellcheck="false">{{ diagnosis_prefill }}</span>.
+<!-- ── AI Controls: reason, diagnosis, generate (hidden when printing) ── -->
+<div class="no-print" style="margin:16px 0;">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+            <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Reason for Certificate</label>
+            <select id="id_cert_reason" onchange="toggleCertReasonOther()" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 10px;font-size:13px;">
+                <option value="post_procedure" {% if cert_reason_initial == "post_procedure" %}selected{% endif %}>Post-Procedure Rest</option>
+                <option value="illness" {% if cert_reason_initial == "illness" %}selected{% endif %}>Illness / Unfit for Duty</option>
+                <option value="fitness" {% if cert_reason_initial == "fitness" %}selected{% endif %}>Fitness Certificate</option>
+                <option value="other" {% if cert_reason_initial == "other" %}selected{% endif %}>Other</option>
+            </select>
+        </div>
+        <div id="cert-reason-other-wrap" style="flex:1;min-width:200px;display:{% if cert_reason_initial == 'other' %}block{% else %}none{% endif %};">
+            <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Specify Reason</label>
+            <input type="text" id="id_cert_reason_other" value="{{ cert_reason_other_initial }}" placeholder="e.g. Travel fitness, Insurance claim…" autocomplete="off" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 12px;font-size:13px;">
+        </div>
+        <div style="flex:2;min-width:260px;">
+            <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Diagnosis / Clinical Details</label>
+            <input type="text" id="id_cert_diagnosis" value="{{ diagnosis_prefill }}" autocomplete="off" placeholder="e.g. Acute viral fever" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 12px;font-size:13px;">
+        </div>
+    </div>
+    <div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        {% if ai_enabled %}
+        <button type="button" id="cert-ai-btn" onclick="generateCertificateText()" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer;">🤖 AI Generate Certificate</button>
+        {% else %}
+        <span title="AI features not configured" style="color:#94a3b8;border:1px dashed #cbd5e1;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;">🤖 AI Generate Certificate (not configured)</span>
+        {% endif %}
+        <button type="button" id="cert-save-btn" onclick="saveMedicalCertificate()" style="background:#0369a1;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer;">💾 Save Certificate</button>
+        <span id="cert-ai-loading" style="display:none;font-size:12px;color:#888;">⏳ Generating…</span>
+        <span id="cert-save-status" style="font-size:11px;color:#888;"></span>
+    </div>
+    <div id="cert-ai-error" style="display:none;margin-top:6px;font-size:12px;color:#dc2626;"></div>
 </div>
 
+<!-- ── Certificate Statement — single auto-growing, editable paragraph ── -->
 <div class="cert-line">
-    Advised rest from <span class="fill" contenteditable="true" spellcheck="false"></span>
-    to <span class="fill" contenteditable="true" spellcheck="false"></span>.
-</div>
-
-<div class="cert-line">
-    Fit to resume duty from <span class="fill" contenteditable="true" spellcheck="false"></span>.
+    <textarea id="id_cert_text" class="cert-textarea" rows="1" spellcheck="false">{{ default_cert_text }}</textarea>
 </div>
 
 <!-- ── Signature ── -->
@@ -185,8 +231,8 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
 
 <!-- ── Print Button (hidden when printing) ── -->
 <div style="text-align:center; margin: 24px 0 8px 0;" class="no-print">
-    <p style="font-size:11px; color:#666;">Click on any underlined field above to edit it before printing.</p>
-    <button onclick="window.print()" style="
+    <p style="font-size:11px; color:#666;">Edit the certificate text, or any underlined field, before printing.</p>
+    <button onclick="printCertificate()" style="
         background: #374151;
         color: #fff;
         border: none;
@@ -198,6 +244,117 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
         letter-spacing: 0.5px;
     ">🖨️ Print Certificate</button>
 </div>
+
+{% csrf_token %}
+<script>
+/* ── Auto-growing certificate textarea ── */
+function autoGrowTextarea(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+}
+document.addEventListener('DOMContentLoaded', function() {
+    var el = document.getElementById('id_cert_text');
+    if (!el) return;
+    autoGrowTextarea(el);
+    el.addEventListener('input', function() { autoGrowTextarea(el); });
+});
+
+/* ── Reason selector: show free-text field only for "Other" ── */
+function toggleCertReasonOther() {
+    var reason = document.getElementById('id_cert_reason').value;
+    document.getElementById('cert-reason-other-wrap').style.display = (reason === 'other') ? 'block' : 'none';
+}
+document.addEventListener('DOMContentLoaded', toggleCertReasonOther);
+
+{% if ai_enabled %}
+function generateCertificateText() {
+    var reason = document.getElementById('id_cert_reason').value;
+    var reasonOther = document.getElementById('id_cert_reason_other').value.trim();
+    var diagnosis = document.getElementById('id_cert_diagnosis').value.trim();
+    if (!diagnosis) {
+        alert('Please fill in Diagnosis / Clinical Details first.');
+        return;
+    }
+    if (reason === 'other' && !reasonOther) {
+        alert('Please specify the reason for the certificate.');
+        return;
+    }
+    var btn = document.getElementById('cert-ai-btn');
+    var loading = document.getElementById('cert-ai-loading');
+    var errBox = document.getElementById('cert-ai-error');
+    btn.disabled = true;
+    loading.style.display = 'inline';
+    errBox.style.display = 'none';
+
+    var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    var csrf = csrfEl ? csrfEl.value : '';
+
+    fetch('/generate-medical-certificate-text/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+        body: JSON.stringify({
+            appointment_id: {{ appointment.id }},
+            reason: reason,
+            reason_other: reasonOther,
+            diagnosis: diagnosis
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.error) { throw new Error(data.error); }
+        var certEl = document.getElementById('id_cert_text');
+        certEl.value = data.cert_text || '';
+        autoGrowTextarea(certEl);
+        saveMedicalCertificate();
+    })
+    .catch(function(err) {
+        errBox.textContent = '⚠️ ' + err.message;
+        errBox.style.display = 'block';
+    })
+    .finally(function() {
+        btn.disabled = false;
+        loading.style.display = 'none';
+    });
+}
+{% endif %}
+
+/* ── Save: persists reason/text and assigns certificate_no once ── */
+function saveMedicalCertificate() {
+    var reason = document.getElementById('id_cert_reason').value;
+    var reasonOther = document.getElementById('id_cert_reason_other').value.trim();
+    var certText = document.getElementById('id_cert_text').value.trim();
+    var statusEl = document.getElementById('cert-save-status');
+    var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    var csrf = csrfEl ? csrfEl.value : '';
+
+    statusEl.textContent = 'Saving…';
+
+    return fetch('{% url "hms:save_medical_certificate" appointment.id %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+        body: JSON.stringify({ reason: reason, reason_other: reasonOther, cert_text: certText })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.error) { throw new Error(data.error); }
+        document.getElementById('cert-no-display').textContent = data.certificate_no;
+        statusEl.textContent = '✅ Saved';
+        return data;
+    })
+    .catch(function(err) {
+        statusEl.textContent = '⚠️ Save failed: ' + err.message;
+        throw err;
+    });
+}
+
+/* ── Print: save first (so a number is assigned) then open print dialog ── */
+function printCertificate() {
+    saveMedicalCertificate()
+        .catch(function() { /* still let the doctor print even if the save failed */ })
+        .finally(function() { window.print(); });
+}
+</script>
 
 </body>
 </html>
