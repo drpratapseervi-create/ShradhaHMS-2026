@@ -60,8 +60,18 @@
 .usg-container .ch-pill{ background:#1a1a1a; border:1px solid #2a2a2a; border-radius:20px; padding:6px 14px; cursor:pointer; font-size:12px; font-weight:600; color:#8892a4; user-select:none; transition:.15s; }
 .usg-container .ch-pill:hover{ background:#1e3a3a; border-color:#00b8a9; color:#00b8a9; }
 .usg-container .ch-pill.active{ background:#00b8a9; border-color:#00b8a9; color:#000; font-weight:800; }
-.usg-container .ch-group-label{ font-size:11px; font-weight:700; color:#00b8a9; text-transform:uppercase; letter-spacing:.4px; margin:10px 0 4px; }
+.usg-container .ch-group-label{
+    font-size:12px; font-weight:700; color:#00b8a9; letter-spacing:.3px;
+    margin:8px 0; padding:8px 12px; cursor:pointer; user-select:none;
+    background:#0f1e1e; border:1px solid #1a3a3a; border-radius:7px;
+    display:flex; align-items:center; gap:8px; transition:background .15s;
+}
 .usg-container .ch-group-label:first-child{ margin-top:0; }
+.usg-container .ch-group-label:hover{ background:#132727; }
+.usg-container .ch-group-chevron{ font-size:9px; transition:transform .2s; display:inline-block; }
+.usg-container .ch-group-label.open .ch-group-chevron{ transform:rotate(90deg); }
+.usg-container .ch-group-count{ margin-left:auto; background:#1e3a3a; color:#00b8a9; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; }
+.usg-container .ch-group-body{ padding:2px 4px 4px; }
 
 .usg-container .btn{ padding:11px 22px; border-radius:8px; font-weight:700; border:none; cursor:pointer; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:.2s; }
 .usg-container .btn-green{ background:#166534; color:#4ade80; border:1px solid #166534; } .usg-container .btn-green:hover{ background:#14532d; color:#86efac; }
@@ -174,8 +184,11 @@
             <label>Impression</label>
             <div id="impression-pill-container">
                 {% for group_label, items in impression_groups %}
-                <div class="ch-group-label">{{ group_label }}</div>
-                <div class="ch-grid">
+                <div class="ch-group-label" onclick="toggleChGroup(this)">
+                    <span class="ch-group-chevron">▶</span> {{ group_label }}
+                    <span class="ch-group-count">{{ items|length }}</span>
+                </div>
+                <div class="ch-grid ch-group-body" style="display:none;">
                     {% for item in items %}
                     <div class="ch-pill" data-val="{{ item }}" data-target="id_impression" onclick="toggleChipInto(this)">{{ item }}</div>
                     {% endfor %}
@@ -281,6 +294,14 @@ function toggleChipInto(el) {
     autoGrowTextarea(ta);
 }
 
+// ── Collapsible category headers (Impression groups) ───────────
+function toggleChGroup(header) {
+    var body = header.nextElementSibling;
+    var open = header.classList.contains('open');
+    header.classList.toggle('open', !open);
+    body.style.display = open ? 'none' : 'flex';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     ['id_advice', 'id_impression'].forEach(function(taId) {
         var ta = document.getElementById(taId);
@@ -288,7 +309,17 @@ document.addEventListener('DOMContentLoaded', function() {
         ta.style.resize = 'vertical';
         var items = ta.value.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
         document.querySelectorAll('.ch-pill[data-target="' + taId + '"]').forEach(function(p) {
-            if (items.indexOf(p.getAttribute('data-val')) !== -1) p.classList.add('active');
+            if (items.indexOf(p.getAttribute('data-val')) !== -1) {
+                p.classList.add('active');
+                // Auto-expand any group that already has a selected item,
+                // so an existing report's impression stays visible on Edit.
+                var body = p.closest('.ch-group-body');
+                if (body) {
+                    var header = body.previousElementSibling;
+                    header.classList.add('open');
+                    body.style.display = 'flex';
+                }
+            }
         });
     });
 });
