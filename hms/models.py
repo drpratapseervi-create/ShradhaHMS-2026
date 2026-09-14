@@ -1848,8 +1848,7 @@ class USGReport(models.Model):
     # wording, used to prefill the findings box on a new report of that
     # scan type. Scan types not listed here just start with an empty
     # findings box until a standard template is supplied for them.
-    FINDINGS_TEMPLATES = {
-        "ABDOMEN_PELVIS": """Liver: The liver is normal in size measuring __ cm. The echotexture is normal. No focal hepatic lesion is seen. The intrahepatic ducts are not dilated. The portal vein and common bile duct show normal calibre.
+    _ABDOMEN_PELVIS_COMMON = """Liver: The liver is normal in size measuring __ cm. The echotexture is normal. No focal hepatic lesion is seen. The intrahepatic ducts are not dilated. The portal vein and common bile duct show normal calibre.
 Portal Vein: Measuring __ mm.
 
 Gallbladder: The gallbladder is distended and shows smooth walls. No gallstones or biliary sludge is seen. The wall thickness is within normal limits. No evidence of pericholecystic fluid.
@@ -1865,14 +1864,34 @@ Left kidney measures __
 
 Bladder: The urinary bladder is adequately filled. Its wall is not thickened. No evidence of diverticulum or calculus.
 
-Uterus and Ovaries: The uterus is __ size, cm, anteverted shape, homogenous echotexture, myometrium and endometrial thickness __ mm, and ovaries are of normal size.
+{PELVIC_ORGANS}
 
-Colon wall thickness __ mm. Ileal wall thickness __ mm.""",
+Colon wall thickness __ mm. Ileal wall thickness __ mm."""
+
+    _PELVIC_ORGANS_FEMALE = "Uterus and Ovaries: The uterus is __ size, cm, anteverted shape, homogenous echotexture, myometrium and endometrial thickness __ mm, and ovaries are of normal size."
+    _PELVIC_ORGANS_MALE = "Prostate: The prostate gland is normal in size and shows homogenous echotexture. No focal lesion is seen. Post-void residual urine is minimal."
+
+    # Standard normal-study narrative per scan type — the doctor's own
+    # wording, used to prefill the findings box on a new report of that
+    # scan type. A value may be a plain string (same for every patient)
+    # or a {"male": ..., "female": ..., "default": ...} dict for scan
+    # types whose pelvic-organ paragraph depends on the patient's sex.
+    # Scan types not listed here just start with an empty findings box.
+    FINDINGS_TEMPLATES = {
+        "ABDOMEN_PELVIS": {
+            "male":    _ABDOMEN_PELVIS_COMMON.replace("{PELVIC_ORGANS}", _PELVIC_ORGANS_MALE),
+            "female":  _ABDOMEN_PELVIS_COMMON.replace("{PELVIC_ORGANS}", _PELVIC_ORGANS_FEMALE),
+            "default": _ABDOMEN_PELVIS_COMMON.replace("{PELVIC_ORGANS}", _PELVIC_ORGANS_FEMALE),
+        },
     }
 
     @classmethod
-    def default_findings_text(cls, scan_type):
-        return cls.FINDINGS_TEMPLATES.get(scan_type, "")
+    def default_findings_text(cls, scan_type, gender=None):
+        template = cls.FINDINGS_TEMPLATES.get(scan_type, "")
+        if isinstance(template, dict):
+            key = "male" if gender == "Male" else "female" if gender == "Female" else "default"
+            return template.get(key, template.get("default", ""))
+        return template
 
     # ── CORE LINKS ────────────────────────────────────────────────────
     patient      = models.ForeignKey(

@@ -4036,7 +4036,9 @@ def usg_report_create(request, patient_id=None, bill_item_id=None):
         initial["patient"] = patient
     if bill_item:
         initial["bill_item"] = bill_item
-    initial["findings_text"] = USGReport.default_findings_text("ABDOMEN_PELVIS")
+    initial["findings_text"] = USGReport.default_findings_text(
+        "ABDOMEN_PELVIS", gender=patient.gender if patient else None
+    )
 
     is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
     form = USGReportForm(request.POST or None, initial=initial)

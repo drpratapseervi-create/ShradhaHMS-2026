@@ -141,10 +141,13 @@ document.addEventListener('DOMContentLoaded', function() {
     el.addEventListener('input', function() { autoGrowTextarea(el); });
 });
 
-function loadStandardTemplate() {
-    var scanType = document.getElementById('id_scan_type').value;
-    var template = USG_FINDINGS_TEMPLATES[scanType];
-    if (!template) {
+function applyTemplateText(template, gender) {
+    var text = template;
+    if (template && typeof template === 'object') {
+        var key = gender === 'Male' ? 'male' : gender === 'Female' ? 'female' : 'default';
+        text = template[key] || template['default'] || '';
+    }
+    if (!text) {
         alert('No standard template saved yet for this scan type.');
         return;
     }
@@ -152,8 +155,34 @@ function loadStandardTemplate() {
     if (el.value.trim() && !confirm('Replace the current findings text with the standard template?')) {
         return;
     }
-    el.value = template;
+    el.value = text;
     autoGrowTextarea(el);
+}
+
+function loadStandardTemplate() {
+    var scanType = document.getElementById('id_scan_type').value;
+    var template = USG_FINDINGS_TEMPLATES[scanType];
+    if (!template) {
+        alert('No standard template saved yet for this scan type.');
+        return;
+    }
+    // Plain string templates (no gender variants) apply directly.
+    if (typeof template !== 'object') {
+        applyTemplateText(template, null);
+        return;
+    }
+    // Gender-specific template: look up the currently selected patient's
+    // gender so e.g. a male patient never gets the uterus/ovaries wording.
+    var patientSelect = document.getElementById('id_patient');
+    var patientId = patientSelect ? patientSelect.value : '';
+    if (!patientId) {
+        applyTemplateText(template, null);
+        return;
+    }
+    fetch('{% url "hms:patient_gender_api" 0 %}'.replace('0', patientId))
+        .then(function(r) { return r.json(); })
+        .then(function(data) { applyTemplateText(template, data.gender); })
+        .catch(function() { applyTemplateText(template, null); });
 }
 </script>
 {% endblock %}
