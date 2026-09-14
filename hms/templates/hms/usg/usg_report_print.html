@@ -92,6 +92,36 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
     line-height: 1.4;
 }
 .impression-list li { margin-bottom: 3px; }
+.impression-first { font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: normal; color: #000; }
+
+/* Numbered impression as a two-column table so item 2, 3, 4... line up
+   directly under item 1 instead of under the IMPRESSION label. */
+.impression-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 0 0 14px 0; }
+.impression-table td { padding: 0; vertical-align: top; font-size: 11px; }
+.impression-table tr:first-child td {
+    background: #e8e8e8;
+    padding: 4px 7px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+.impression-table .impression-label { white-space: nowrap; width: 90px; max-width: 90px; padding-right: 8px !important; overflow: hidden; }
+.impression-table .impression-text { width: auto; font-weight: 700; letter-spacing: normal; }
+.impression-table tr:not(:first-child) .impression-text { padding: 2px 7px 2px 0; font-size: 12px; }
+
+/* Advice: label and its content on the same row, not stacked. */
+.advice-row { display: flex; align-items: flex-start; margin: 0 0 14px 0; }
+.advice-label {
+    background: #e8e8e8;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-size: 11px;
+    padding: 4px 7px;
+    width: 90px;
+    max-width: 90px;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.advice-text { padding: 4px 7px; font-size: 12px; flex: 1; }
 
 .status-badge {
     display: inline-block;
@@ -111,7 +141,7 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
 .sign-row {
     display: flex;
     justify-content: flex-end;
-    margin-top: 40px;
+    margin-top: 10px;
 }
 .sign-box {
     text-align: center;
@@ -151,16 +181,7 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
     <div class="hosp-contact">📞 9414122542 &nbsp;|&nbsp; Emergency: 9414122542</div>
 </div>
 
-<div class="doc-title-bar">ULTRASONOGRAPHY REPORT</div>
-
-<!-- ── Report No. / Date ── -->
-<div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin:-4px 0 10px 0;">
-    <span>Report No: {{ report.report_no }}</span>
-    <span>Date: {{ report.report_date|date:"d-m-Y" }}{% if report.report_time %} &nbsp;{{ report.report_time|time:"H:i" }}{% endif %}</span>
-</div>
-
 <!-- ── Patient Details ── -->
-<div class="sec-title">PATIENT DETAILS</div>
 <table class="details">
     <tr>
         <td class="lbl">Patient Name</td>
@@ -180,13 +201,42 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
         <td class="lbl">Clinical Indication</td>
         <td>{{ report.clinical_indication|default:"-" }}</td>
     </tr>
+    <tr>
+        <td class="lbl">Report No.</td>
+        <td>{{ report.report_no }}</td>
+        <td class="lbl">Date</td>
+        <td>{{ report.report_date|date:"d-m-Y" }}{% if report.report_time %} &nbsp;{{ report.report_time|time:"H:i" }}{% endif %}</td>
+    </tr>
 </table>
 
+<div class="doc-title-bar">ULTRASONOGRAPHY {{ report.get_scan_type_display|upper }}</div>
+
 <!-- ── Findings ── -->
-<div class="sec-title">FINDINGS</div>
 <div class="report-para">{{ report.findings_text|default:"-"|linebreaksbr }}</div>
 
 <!-- ── Impression ── -->
+{% with impression_items=report.impression|comma_split %}
+{% if impression_items|length > 1 %}
+<table class="impression-table">
+    <tr>
+        <td class="impression-label">
+            IMPRESSION
+            {% if report.impression_status == "ABNORMAL" %}
+                <span class="status-badge status-abnormal">Abnormal Findings</span>
+            {% elif report.impression_status == "INCONCLUSIVE" %}
+                <span class="status-badge status-inconclusive">Inconclusive</span>
+            {% endif %}
+        </td>
+        <td class="impression-text">1. {{ impression_items.0 }}</td>
+    </tr>
+    {% for item in impression_items|slice:"1:" %}
+    <tr>
+        <td class="impression-label"></td>
+        <td class="impression-text">{{ forloop.counter|add:1 }}. {{ item }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
 <div class="sec-title">
     IMPRESSION
     {% if report.impression_status == "ABNORMAL" %}
@@ -195,27 +245,23 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
         <span class="status-badge status-inconclusive">Inconclusive</span>
     {% endif %}
 </div>
-{% with impression_items=report.impression|comma_split %}
-{% if impression_items|length > 1 %}
-<ol class="impression-list">
-    {% for item in impression_items %}<li>{{ item }}</li>{% endfor %}
-</ol>
-{% else %}
-<div class="report-para">{{ report.impression|default:"-"|linebreaksbr }}</div>
+<div class="report-para" style="font-weight:700;">{{ report.impression|default:"-"|linebreaksbr }}</div>
 {% endif %}
 {% endwith %}
 
 {% if report.advice %}
-<div class="sec-title">ADVICE</div>
-<div class="report-para">{{ report.advice|linebreaksbr }}</div>
+<div class="advice-row">
+    <div class="advice-label">ADVICE</div>
+    <div class="advice-text">{{ report.advice|linebreaksbr }}</div>
+</div>
 {% endif %}
 
 <!-- ── Signature ── -->
 <div class="sign-row">
     <div class="sign-box">
         <div style="height:50px;"></div>
-        <div class="sig-name">Dr. {{ report.reporting_doctor.full_name|default:"Pratap Senecha" }} (MBBS, MS)</div>
-        <div class="sig-caption">RMC No-27994 &nbsp;|&nbsp; Sonologist — Signature &amp; Stamp</div>
+        <div class="sig-name">Dr. {{ report.reporting_doctor.full_name|default:"Pratap Senecha" }}{% if report.reporting_doctor.qualification %}, {{ report.reporting_doctor.qualification }}{% elif not report.reporting_doctor %}, MBBS, MS{% endif %}</div>
+        <div class="sig-caption">{{ report.reporting_doctor.registration_no|default:"RMC No-27994" }}</div>
     </div>
 </div>
 

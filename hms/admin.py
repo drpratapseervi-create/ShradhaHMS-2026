@@ -98,7 +98,8 @@ class DepartmentAdmin(admin.ModelAdmin):
 # ===================== DOCTOR =====================
 @admin.register(Doctor)
 class DoctorAdmin(admin.ModelAdmin):
-    list_display = ("id", "full_name", "department", "specialization", "op_fee")
+    list_display = ("id", "full_name", "department", "specialization", "qualification", "registration_no", "op_fee")
+    list_editable = ("qualification", "registration_no")
     list_filter = ("department",)
     search_fields = ("full_name", "specialization")
 

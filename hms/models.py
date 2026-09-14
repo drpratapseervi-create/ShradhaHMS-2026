@@ -165,6 +165,14 @@ class Doctor(models.Model):
     full_name = models.CharField(max_length=120)
     specialization = models.CharField(max_length=120, blank=True)
     op_fee = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    qualification = models.CharField(
+        max_length=120, blank=True,
+        help_text="e.g. MBBS, MS -- printed on report signature lines"
+    )
+    registration_no = models.CharField(
+        max_length=50, blank=True,
+        help_text="e.g. RMC No-27994 -- printed on report signature lines"
+    )
 
     def __str__(self):
         if self.department:
@@ -1856,7 +1864,6 @@ Gallbladder: The gallbladder is distended and shows smooth walls. No gallstones 
 CBD: Measuring __ size normal.
 
 Pancreas: The pancreas is normal in size and echotexture. The pancreatic duct is not dilated.
-
 Spleen: The spleen is normal in size, measuring __ cm. No splenic lesion is seen.
 
 Kidneys: Both kidneys are normal in size, shape and position and show normal cortico-medullary differentiation.
