@@ -402,6 +402,7 @@ def start_consultation(request, appointment_id):
                 obj.custom_signs    = request.POST.get("custom_signs", "").strip()
 
                 obj.surgery_date    = request.POST.get("surgery_date") or None
+                obj.past_history_date = request.POST.get("past_history_date") or None
 
                 # ── Refusal of Admission / LAMA Consent ──
                 obj.lama_declined = bool(request.POST.get("lama_declined"))

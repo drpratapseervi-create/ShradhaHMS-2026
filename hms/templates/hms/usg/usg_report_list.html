@@ -6,10 +6,10 @@
 
   <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
     <h4 class="mb-0 fw-bold">
-      <i class="bi bi-broadcast-pin text-primary me-1"></i> USG Reports
+      <i class="fa-solid fa-diagnoses text-primary me-1"></i> USG Reports
     </h4>
     <a href="{% url 'hms:usg_report_create' %}" class="btn btn-primary" target="_blank">
-      <i class="bi bi-plus-circle me-1"></i> New USG Report
+      <i class="fa-solid fa-circle-plus me-1"></i> New USG Report
     </a>
   </div>
 
@@ -22,8 +22,17 @@
   </form>
 
   <!-- Table -->
+  <style>
+    /* Bootstrap's .table defaults to a transparent/white background of its
+       own (via --bs-table-bg), so it doesn't reliably pick up the dark
+       .content wrapper behind it — force the row background explicitly. */
+    #usg-reports-table > tbody > tr > td,
+    #usg-reports-table > tbody > tr > th {
+      background-color: #1e2235 !important;
+    }
+  </style>
   <div class="table-responsive">
-    <table class="table table-hover table-bordered align-middle">
+    <table id="usg-reports-table" class="table table-hover table-bordered align-middle">
       <thead class="table-dark">
         <tr>
           <th>Report No</th>
@@ -33,7 +42,6 @@
           <th>Scan Type</th>
           <th>Referred By</th>
           <th>Impression</th>
-          <th>Verified</th>
           <th class="text-center">Actions</th>
         </tr>
       </thead>
@@ -41,11 +49,11 @@
         {% for r in reports %}
         <tr>
           <td><strong class="text-primary">{{ r.report_no }}</strong></td>
-          <td>{{ r.report_date|date:"d-M-Y" }}</td>
-          <td>{{ r.patient.full_name }}</td>
-          <td>{{ r.patient.uhid }}</td>
-          <td><span class="badge bg-secondary">{{ r.get_scan_type_display }}</span></td>
-          <td>{{ r.referred_by.full_name|default:"—" }}</td>
+          <td style="color:#8892a4;">{{ r.report_date|date:"d-M-Y" }}</td>
+          <td style="color:#e2e8f0;font-weight:600;">{{ r.patient.full_name }}</td>
+          <td style="color:#5eead4;font-weight:600;">{{ r.patient.uhid }}</td>
+          <td><span class="badge" style="background:#0f766e;color:#5eead4;">{{ r.get_scan_type_display }}</span></td>
+          <td style="color:#8892a4;">{{ r.referred_by.full_name|default:"—" }}</td>
           <td>
             {% if r.impression_status == "NORMAL" %}
               <span class="badge bg-success">Normal</span>
@@ -56,27 +64,20 @@
             {% endif %}
           </td>
           <td class="text-center">
-            {% if r.is_verified %}
-              <i class="bi bi-check-circle-fill text-success" title="Verified"></i>
-            {% else %}
-              <i class="bi bi-hourglass-split text-warning" title="Draft"></i>
-            {% endif %}
-          </td>
-          <td class="text-center">
             <a href="{% url 'hms:usg_report_print' r.pk %}" class="btn btn-sm btn-outline-primary" target="_blank" title="Print">
-              <i class="bi bi-printer"></i>
+              <i class="fa-solid fa-print"></i>
             </a>
             <a href="{% url 'hms:usg_report_edit' r.pk %}" class="btn btn-sm btn-outline-warning" title="Edit">
-              <i class="bi bi-pencil"></i>
+              <i class="fa-solid fa-pen"></i>
             </a>
             <a href="{% url 'hms:usg_report_pdf' r.pk %}" class="btn btn-sm btn-outline-danger" title="PDF">
-              <i class="bi bi-file-earmark-pdf"></i>
+              <i class="fa-solid fa-file-pdf"></i>
             </a>
           </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="9" class="text-center text-muted py-4">No USG reports found.</td>
+          <td colspan="8" class="text-center text-muted py-4">No USG reports found.</td>
         </tr>
         {% endfor %}
       </tbody>

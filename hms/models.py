@@ -290,6 +290,7 @@ class Consultation(models.Model):
     symptoms         = models.ManyToManyField("Symptom", blank=True)
     signs            = models.ManyToManyField("Sign", blank=True)
     past_history     = models.ManyToManyField("PastHistory", blank=True)
+    past_history_date = models.DateField(null=True, blank=True)
     surgical_history  = models.ManyToManyField("SurgicalHistory", blank=True)
     # Free-text entries typed under Chief Complaints / Examination Findings —
     # scoped to THIS consultation only, never written to the shared masters.
