@@ -5573,8 +5573,25 @@ def tpa_scheme_add(request):
     scheme_type = data.get('scheme_type', 'private')
     if not name:
         return JsonResponse({'error': 'Name required'}, status=400)
-    scheme, created = TPAScheme.objects.get_or_create(name=name, defaults={'scheme_type': scheme_type})
+    # scheme_type is part of the lookup (not just a default) so the same name
+    # under a different category creates its own row instead of silently
+    # reusing — and locking into — whichever category first created it.
+    scheme, created = TPAScheme.objects.get_or_create(name=name, scheme_type=scheme_type)
     return JsonResponse({'id': scheme.id, 'name': scheme.name, 'scheme_type': scheme.scheme_type, 'created': created})
+
+
+# ── SCHEME SEARCH (AJAX, scoped to the selected category) ─────
+@login_required
+def tpa_scheme_search(request):
+    q = request.GET.get('q', '').strip()
+    scheme_type = request.GET.get('scheme_type', '')
+    schemes = TPAScheme.objects.filter(is_active=True)
+    if scheme_type:
+        schemes = schemes.filter(scheme_type=scheme_type)
+    if q:
+        schemes = schemes.filter(name__icontains=q)
+    data = list(schemes.order_by('name').values('id', 'name', 'scheme_type')[:10])
+    return JsonResponse({'schemes': data})
 
 
 # =====================================================================

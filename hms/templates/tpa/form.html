@@ -41,7 +41,8 @@
         <div class="row g-3">
           <div class="col-6 col-md-4">
             <label class="form-label form-label-sm">Category</label>
-            <select name="scheme_type" class="form-select form-select-sm" required>
+            <select name="scheme_type" id="schemeTypeSelect" class="form-select form-select-sm" required
+                    onchange="updatePolicyLabel()">
               {% for val, label in scheme_type_choices %}
                 <option value="{{ val }}" {% if tpa.scheme_type == val or scheme_type_pre == val %}selected{% endif %}>{{ label }}</option>
               {% endfor %}
@@ -56,7 +57,7 @@
             <div id="schemeDropdown" class="list-group position-absolute w-100" style="z-index:1000; display:none; max-height:220px; overflow-y:auto;"></div>
           </div>
           <div class="col-6 col-md-4">
-            <label class="form-label form-label-sm">Policy No. / MAA-Yojana Beneficiary ID</label>
+            <label class="form-label form-label-sm" id="policyLabel">Policy No.</label>
             <input type="text" name="policy_no" class="form-control form-control-sm" value="{{ tpa.policy_no|default:'' }}">
           </div>
           <div class="col-6 col-md-4">
@@ -155,12 +156,39 @@ document.getElementById('patientSearchInput').addEventListener('input', function
 let schemeTimer;
 document.getElementById('schemeSearchInput').addEventListener('input', function() {
   clearTimeout(schemeTimer);
+  const q = this.value.trim();
   document.getElementById('schemeId').value = '';
+  const schemeType = document.getElementById('schemeTypeSelect').value;
+  if (q.length < 2) { document.getElementById('schemeDropdown').style.display='none'; return; }
+  schemeTimer = setTimeout(() => {
+    fetch(`{% url 'hms:tpa_scheme_search' %}?q=${encodeURIComponent(q)}&scheme_type=${encodeURIComponent(schemeType)}`)
+      .then(r => r.json()).then(data => {
+        const dd = document.getElementById('schemeDropdown');
+        dd.innerHTML = '';
+        if (!data.schemes.length) { dd.style.display='none'; return; }
+        data.schemes.forEach(s => {
+          const a = document.createElement('a');
+          a.href='#'; a.className='list-group-item list-group-item-action py-1 px-2';
+          a.style.fontSize='13px';
+          a.textContent = s.name;
+          a.addEventListener('click', e => {
+            e.preventDefault();
+            document.getElementById('schemeSearchInput').value = s.name;
+            document.getElementById('schemeId').value = s.id;
+            dd.style.display='none';
+          });
+          dd.appendChild(a);
+        });
+        dd.style.display='block';
+      });
+  }, 300);
 });
 document.getElementById('schemeSearchInput').addEventListener('blur', function() {
   const name = this.value.trim();
-  const schemeType = document.querySelector('select[name="scheme_type"]').value;
+  const schemeType = document.getElementById('schemeTypeSelect').value;
   if (!name || document.getElementById('schemeId').value) return;
+  // No existing scheme was picked from the dropdown — quick-add a new one
+  // under the currently selected category (never a different one).
   setTimeout(() => {
     fetch(`{% url 'hms:tpa_scheme_add' %}`, {
       method: 'POST',
@@ -172,9 +200,26 @@ document.getElementById('schemeSearchInput').addEventListener('blur', function()
   }, 200);
 });
 
+// Changing the category invalidates whatever scheme was selected/typed —
+// a scheme belongs to exactly one category, so don't carry it over.
+document.getElementById('schemeTypeSelect').addEventListener('change', function() {
+  document.getElementById('schemeSearchInput').value = '';
+  document.getElementById('schemeId').value = '';
+  document.getElementById('schemeDropdown').style.display = 'none';
+});
+
 document.addEventListener('click', e => {
   if (!e.target.closest('#patientSearchInput') && !e.target.closest('#patientDropdown'))
     document.getElementById('patientDropdown').style.display='none';
+  if (!e.target.closest('#schemeSearchInput') && !e.target.closest('#schemeDropdown'))
+    document.getElementById('schemeDropdown').style.display='none';
 });
+
+function updatePolicyLabel() {
+  const schemeType = document.getElementById('schemeTypeSelect').value;
+  document.getElementById('policyLabel').textContent =
+    schemeType === 'government' ? 'MAA-Yojana Beneficiary ID' : 'Policy No.';
+}
+updatePolicyLabel();
 </script>
 {% endblock %}

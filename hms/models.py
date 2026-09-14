@@ -2148,7 +2148,7 @@ TPA_DOCUMENT_TYPE_CHOICES = [
 
 class TPAScheme(models.Model):
     """Master dropdown of TPA / insurance companies and government schemes."""
-    name = models.CharField(max_length=150, unique=True)
+    name = models.CharField(max_length=150)
     scheme_type = models.CharField(max_length=12, choices=TPA_SCHEME_TYPE_CHOICES)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -2157,9 +2157,12 @@ class TPAScheme(models.Model):
         ordering = ["name"]
         verbose_name = "TPA / Scheme"
         verbose_name_plural = "TPA / Schemes"
+        constraints = [
+            models.UniqueConstraint(fields=["name", "scheme_type"], name="unique_tpa_scheme_name_per_type"),
+        ]
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.get_scheme_type_display()})"
 
 
 class TPAPatient(models.Model):

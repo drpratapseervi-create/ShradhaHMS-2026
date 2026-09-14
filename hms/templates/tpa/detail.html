@@ -29,7 +29,7 @@
             {% else %}<span class="badge bg-secondary">{{ tpa.get_status_display }}</span>{% endif %}
           </div>
         </div>
-        <div class="col-6 col-md-3"><div class="text-muted small">Policy / Beneficiary ID</div><div>{{ tpa.policy_no|default:"—" }}</div></div>
+        <div class="col-6 col-md-3"><div class="text-muted small">{% if tpa.scheme_type == 'government' %}MAA-Yojana Beneficiary ID{% else %}Policy No.{% endif %}</div><div>{{ tpa.policy_no|default:"—" }}</div></div>
         <div class="col-6 col-md-3"><div class="text-muted small">TID</div><div>{{ tpa.tid_number|default:"—" }}</div></div>
         <div class="col-6 col-md-3"><div class="text-muted small">Admission Date</div><div>{{ tpa.admission_date|date:"d M Y"|default:"—" }}</div></div>
         <div class="col-6 col-md-3"><div class="text-muted small">Approved Amount</div><div>{% if tpa.approved_amount %}₹{{ tpa.approved_amount }}{% else %}—{% endif %}</div></div>

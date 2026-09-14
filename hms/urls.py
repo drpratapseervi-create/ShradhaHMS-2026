@@ -219,6 +219,7 @@ urlpatterns = [
     path("tpa/<int:pk>/document/upload/", views.tpa_document_upload,  name="tpa_document_upload"),
     path("tpa/document/<int:doc_id>/delete/", views.tpa_document_delete, name="tpa_document_delete"),
     path("tpa/scheme/add/",               views.tpa_scheme_add,       name="tpa_scheme_add"),
+    path("tpa/scheme/search/",            views.tpa_scheme_search,    name="tpa_scheme_search"),
     path("tpa/import/",                   views.tpa_import_upload,    name="tpa_import_upload"),
     path("tpa/import/history/",           views.tpa_import_batch_list, name="tpa_import_batch_list"),
     path("tpa/import/<int:batch_id>/map/",     views.tpa_import_map,     name="tpa_import_map"),
