@@ -643,3 +643,16 @@ class TPAImportBatchAdmin(admin.ModelAdmin):
     list_filter = ("status",)
     readonly_fields = ("imported_by", "imported_at", "updated_count", "created_count", "skipped_count", "mapping")
     inlines = [TPAImportRowInline]
+
+
+# ===================== USG IMPRESSION OPTIONS =====================
+from .models import USGImpressionOption
+
+
+@admin.register(USGImpressionOption)
+class USGImpressionOptionAdmin(admin.ModelAdmin):
+    list_display  = ('text', 'category', 'sort_order', 'is_active')
+    list_editable = ('category', 'sort_order', 'is_active')
+    list_filter   = ('category', 'is_active')
+    search_fields = ('text',)
+    ordering = ('category', 'sort_order', 'text')

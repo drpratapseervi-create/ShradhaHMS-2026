@@ -4018,6 +4018,26 @@ def usg_report_list(request):
     })
 
 # ── USG: Create new report ───────────────────────────────────────
+USG_ADVICE_QUICK_OPTIONS = [
+    "LFT", "S. Amylase", "X-ray KUB", "IVP", "CT Urography",
+    "CECT Abdomen & Pelvis", "MRCP", "TVS", "UPT", "Urine R/E",
+]
+
+
+def _usg_impression_groups():
+    from .models import USGImpressionOption
+    options = USGImpressionOption.objects.filter(is_active=True).order_by("category", "sort_order", "text")
+    groups = []
+    current_key = None
+    for opt in options:
+        label = opt.get_category_display()
+        if label != current_key:
+            groups.append((label, []))
+            current_key = label
+        groups[-1][1].append(opt.text)
+    return groups
+
+
 @login_required
 def usg_report_create(request, patient_id=None, bill_item_id=None):
     """Create a new USG report — optionally pre-linked to patient / bill item."""
@@ -4040,6 +4060,11 @@ def usg_report_create(request, patient_id=None, bill_item_id=None):
     initial["findings_text"] = USGReport.default_findings_text(
         "ABDOMEN_PELVIS", gender=patient.gender if patient else None
     )
+    initial["clinical_indication"] = "Pain abdomen"
+    default_doctor = Doctor.objects.filter(full_name__icontains="Pratap Senecha").first()
+    if default_doctor:
+        initial.setdefault("referred_by", default_doctor)
+        initial.setdefault("reporting_doctor", default_doctor)
 
     is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
     form = USGReportForm(request.POST or None, initial=initial)
@@ -4061,6 +4086,8 @@ def usg_report_create(request, patient_id=None, bill_item_id=None):
         "bill_item":          bill_item,
         "title":              "New USG Report",
         "findings_templates": json.dumps(USGReport.FINDINGS_TEMPLATES),
+        "advice_quick_options": USG_ADVICE_QUICK_OPTIONS,
+        "impression_groups": _usg_impression_groups(),
     })
 
 
@@ -4085,6 +4112,8 @@ def usg_report_edit(request, pk):
         "report":             report,
         "title":              f"Edit {report.report_no}",
         "findings_templates": json.dumps(USGReport.FINDINGS_TEMPLATES),
+        "advice_quick_options": USG_ADVICE_QUICK_OPTIONS,
+        "impression_groups": _usg_impression_groups(),
     })
 
 

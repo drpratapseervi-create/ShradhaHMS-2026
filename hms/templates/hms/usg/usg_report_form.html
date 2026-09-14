@@ -2,126 +2,208 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-3" style="max-width:900px;">
+<style>
+.usg-container, .usg-container *{ box-sizing:border-box; }
+.usg-container{ max-width:900px; margin:0 auto; }
+.usg-container .card{ background:#111111; border-radius:14px; box-shadow:0 4px 24px rgba(0,0,0,0.7); overflow:hidden; border:1px solid #2a2a2a; }
+.usg-container .card-header{
+    background:linear-gradient(135deg,#005555,#007676);
+    padding:16px 26px; display:flex; align-items:center; justify-content:space-between;
+}
+.usg-container .card-header h2{ margin:0; color:white; font-size:18px; font-weight:700; }
+.usg-container .card-header .badge{ background:rgba(255,255,255,0.2); color:white; padding:4px 14px; border-radius:20px; font-size:12px; font-weight:600; }
+.usg-container .card-body{ padding:24px 26px; }
 
-  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-    <h4 class="mb-0 fw-bold">
-      <i class="bi bi-broadcast-pin text-primary me-1"></i> {{ title }}
-    </h4>
-    <a href="{% url 'hms:usg_report_list' %}" class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-arrow-left"></i> Back to List
-    </a>
-  </div>
+.usg-container .section-title{ margin:0 0 12px; padding-bottom:7px; border-bottom:2px solid #22c55e; color:#22c55e; font-size:14px; font-weight:700; }
 
-  {% if form.errors %}
-    <div class="alert alert-danger">Please correct the errors below and resubmit.</div>
-  {% endif %}
+.usg-container .form-section{
+    border:1.5px solid #22c55e; border-radius:12px;
+    padding:18px 20px; margin-bottom:20px;
+    background:#141414;
+}
 
-  <form method="post" novalidate>
+.usg-container .form-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.usg-container .full{ grid-column:1/-1; }
+.usg-container .span2{ grid-column:span 2; }
+
+/* Label and box on the same row, shorter box */
+.usg-container .inline-field{ display:flex; align-items:center; gap:10px; }
+.usg-container .inline-field label{ margin:0; white-space:nowrap; flex-shrink:0; }
+.usg-container .inline-field textarea{ flex:1; height:38px; min-height:38px; padding:8px 12px; resize:none; }
+
+.usg-container label{ font-weight:600; font-size:13px; color:#8892a4; margin-bottom:5px; display:block; }
+.usg-container input, .usg-container select, .usg-container textarea{
+    width:100%; padding:10px 12px;
+    border-radius:7px; border:1px solid #2a2a2a;
+    font-size:13px; font-family:'Segoe UI',sans-serif; color:#e2e8f0;
+    background:#1a1a1a !important;
+    color-scheme:dark;
+    transition:border-color .2s, box-shadow .2s;
+}
+.usg-container input[type=date], .usg-container input[type=time],
+.usg-container select { height:42px; }
+.usg-container input:focus, .usg-container select:focus, .usg-container textarea:focus{
+    background:#1a1a1a !important;
+    border-color:#00b8a9 !important;
+    outline:none;
+    box-shadow:0 0 0 2px rgba(0,184,169,.2) !important;
+    color:#e2e8f0 !important;
+}
+.usg-container input::placeholder, .usg-container textarea::placeholder { color:#555 !important; }
+.usg-container option { background:#1a1a1a; color:#e2e8f0; }
+
+.usg-container .consent-row{ display:flex; align-items:center; gap:9px; margin-top:4px; }
+.usg-container .consent-row input[type=checkbox]{ width:16px; height:16px; accent-color:#00b8a9; margin:0; cursor:pointer; }
+.usg-container .consent-row label{ margin:0; font-weight:500; font-size:13px; color:#8892a4; cursor:pointer; }
+
+.usg-container .ch-grid{ display:flex; flex-wrap:wrap; gap:7px; margin-bottom:8px; }
+.usg-container .ch-pill{ background:#1a1a1a; border:1px solid #2a2a2a; border-radius:20px; padding:6px 14px; cursor:pointer; font-size:12px; font-weight:600; color:#8892a4; user-select:none; transition:.15s; }
+.usg-container .ch-pill:hover{ background:#1e3a3a; border-color:#00b8a9; color:#00b8a9; }
+.usg-container .ch-pill.active{ background:#00b8a9; border-color:#00b8a9; color:#000; font-weight:800; }
+.usg-container .ch-group-label{ font-size:11px; font-weight:700; color:#00b8a9; text-transform:uppercase; letter-spacing:.4px; margin:10px 0 4px; }
+.usg-container .ch-group-label:first-child{ margin-top:0; }
+
+.usg-container .btn{ padding:11px 22px; border-radius:8px; font-weight:700; border:none; cursor:pointer; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:.2s; }
+.usg-container .btn-green{ background:#166534; color:#4ade80; border:1px solid #166534; } .usg-container .btn-green:hover{ background:#14532d; color:#86efac; }
+.usg-container .btn-teal{ background:#1e3a3a; color:#00b8a9; border:1px solid #00b8a9; } .usg-container .btn-teal:hover{ background:#155555; }
+.usg-container .btn-gray{ background:#1e1e1e; color:#8892a4; border:1px solid #2a2a2a; } .usg-container .btn-gray:hover{ background:#2a2a2a; color:#e2e8f0; }
+.usg-container .form-actions{ margin-top:22px; display:flex; gap:10px; flex-wrap:wrap; }
+
+.usg-container .error-banner{ background:#2a0a0a; border:1px solid #5a2d2d; border-radius:8px; margin-bottom:18px; padding:12px 16px; }
+.usg-container .error-banner strong{ color:#fca5a5; }
+.usg-container .field-error{ color:#f87171; font-size:12px; margin-top:3px; }
+
+@media (max-width: 720px) {
+    .usg-container .form-grid{ grid-template-columns:1fr; }
+    .usg-container .span2{ grid-column:auto; }
+}
+</style>
+
+<div class="usg-container">
+<div class="card">
+<div class="card-header">
+    <h2>🩻 {{ title }}</h2>
+    <span class="badge">{% if report %}Edit Report{% else %}New Report{% endif %}</span>
+</div>
+<div class="card-body">
+
+{% if form.errors %}
+<div class="error-banner"><strong>⚠️ Please correct the errors below and resubmit.</strong></div>
+{% endif %}
+
+<form method="post" novalidate>
     {% csrf_token %}
 
-    <div class="card mb-3">
-      <div class="card-header fw-bold">Report Details</div>
-      <div class="card-body row g-3">
-        <div class="col-md-4">
-          <label class="form-label">Patient</label>
-          {{ form.patient }}
+    <div class="form-section">
+    <div class="section-title">Report Identity</div>
+    <div class="form-grid">
+        <div>
+            <label>Patient</label>
+            {{ form.patient }}
+            {% if form.patient.errors %}<div class="field-error">{{ form.patient.errors|join:", " }}</div>{% endif %}
         </div>
-        <div class="col-md-4">
-          <label class="form-label">Scan Type</label>
-          {{ form.scan_type }}
+        <div>
+            <label>Scan Type</label>
+            {{ form.scan_type }}
         </div>
-        <div class="col-md-4">
-          <label class="form-label">Referred By</label>
-          {{ form.referred_by }}
+        <div>
+            <label>Report Date</label>
+            {{ form.report_date }}
         </div>
-        <div class="col-md-4">
-          <label class="form-label">Report Date</label>
-          {{ form.report_date }}
+        <div>
+            <label>Report Time</label>
+            {{ form.report_time }}
         </div>
-        <div class="col-md-4">
-          <label class="form-label">Report Time</label>
-          {{ form.report_time }}
+        <div>
+            <label>Referred By</label>
+            {{ form.referred_by }}
         </div>
-        <div class="col-md-4">
-          <label class="form-label">Reporting Doctor</label>
-          {{ form.reporting_doctor }}
+        <div>
+            <label>Reporting Doctor</label>
+            {{ form.reporting_doctor }}
         </div>
-        <div class="col-12">
-          <label class="form-label">Clinical Indication</label>
-          {{ form.clinical_indication }}
+        <div>
+            <label>Registration No. <span style="font-weight:400;color:#555;">(optional — auto-generated if left blank)</span></label>
+            {{ form.report_no }}
+            {% if form.report_no.errors %}<div class="field-error">{{ form.report_no.errors|join:", " }}</div>{% endif %}
         </div>
-        <div class="col-md-4">
-          <label class="form-label">Machine Used</label>
-          {{ form.machine_used }}
+        <div>
+            <label>Linked Consultation <span style="font-weight:400;color:#555;">(optional)</span></label>
+            {{ form.consultation }}
         </div>
-        <div class="col-md-4">
-          <label class="form-label">Probe Used</label>
-          {{ form.probe_used }}
+        <div>
+            <label>Linked Lab Bill Item <span style="font-weight:400;color:#555;">(optional)</span></label>
+            {{ form.bill_item }}
         </div>
-        <div class="col-md-4">
-          <label class="form-label">Sonographer</label>
-          {{ form.sonographer }}
+        <div class="full inline-field">
+            <label>Clinical Indication</label>
+            {{ form.clinical_indication }}
         </div>
-        <div class="col-md-6">
-          <label class="form-label">Linked Consultation <span class="text-muted small">(optional)</span></label>
-          {{ form.consultation }}
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Linked Lab Bill Item <span class="text-muted small">(optional)</span></label>
-          {{ form.bill_item }}
-        </div>
-      </div>
+    </div>
     </div>
 
-    <div class="card mb-3">
-      <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <span class="fw-bold">Findings</span>
-        <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadStandardTemplate()">
-          <i class="bi bi-clipboard-plus"></i> Load Standard Template
+    <div class="form-section">
+    <div class="section-title">Findings</div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:8px;">
+        <button type="button" class="btn btn-teal" style="padding:6px 14px;font-size:12px;" onclick="loadStandardTemplate()">
+            📋 Load Standard Template
         </button>
-      </div>
-      <div class="card-body">
-        {{ form.findings_text }}
-        <div class="form-text">
-          Loads the standard normal-study wording for the selected scan type — edit
-          the measurements/values before saving. Scan types without a saved
-          template yet start blank.
-        </div>
-      </div>
+    </div>
+    {{ form.findings_text }}
+    <div style="margin-top:6px;font-size:11px;color:#555;">
+        Loads the standard normal-study wording for the selected scan type — edit
+        the measurements/values before saving. Scan types without a saved
+        template yet start blank.
+    </div>
     </div>
 
-    <div class="card mb-3">
-      <div class="card-header fw-bold">Impression &amp; Advice</div>
-      <div class="card-body row g-3">
-        <div class="col-md-6">
-          <label class="form-label">Impression Status</label>
-          {{ form.impression_status }}
+    <div class="form-section">
+    <div class="section-title">Impression &amp; Advice</div>
+    <div class="form-grid">
+        <div>
+            <label>Impression Status</label>
+            {{ form.impression_status }}
         </div>
-        <div class="col-md-6 d-flex align-items-center">
-          <div class="form-check mt-4">
-            {{ form.is_verified }}
-            <label class="form-check-label" for="{{ form.is_verified.id_for_label }}">
-              Radiologist Verified
-            </label>
-          </div>
+        <div class="span2">
+            <div class="consent-row" style="margin-top:28px;">
+                {{ form.is_verified }}
+                <label for="{{ form.is_verified.id_for_label }}">Radiologist Verified</label>
+            </div>
         </div>
-        <div class="col-12">
-          <label class="form-label">Impression</label>
-          {{ form.impression }}
+        <div class="full">
+            <label>Impression</label>
+            <div id="impression-pill-container">
+                {% for group_label, items in impression_groups %}
+                <div class="ch-group-label">{{ group_label }}</div>
+                <div class="ch-grid">
+                    {% for item in items %}
+                    <div class="ch-pill" data-val="{{ item }}" data-target="id_impression" onclick="toggleChipInto(this)">{{ item }}</div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            {{ form.impression }}
         </div>
-        <div class="col-12">
-          <label class="form-label">Advice</label>
-          {{ form.advice }}
+        <div class="full">
+            <label>Advice</label>
+            <div class="ch-grid" id="advice-pill-container">
+                {% for item in advice_quick_options %}
+                <div class="ch-pill" data-val="{{ item }}" data-target="id_advice" onclick="toggleChipInto(this)">{{ item }}</div>
+                {% endfor %}
+            </div>
+            {{ form.advice }}
         </div>
-      </div>
+    </div>
     </div>
 
-    <div class="d-flex gap-2 mb-4">
-      <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Save Report</button>
-      <a href="{% url 'hms:usg_report_list' %}" class="btn btn-outline-secondary">Cancel</a>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-green">💾 Save Report</button>
+        <a href="{% url 'hms:usg_report_list' %}" class="btn btn-gray">← Cancel</a>
     </div>
-  </form>
+</form>
+
+</div>
+</div>
 </div>
 
 <script>
@@ -166,13 +248,10 @@ function loadStandardTemplate() {
         alert('No standard template saved yet for this scan type.');
         return;
     }
-    // Plain string templates (no gender variants) apply directly.
     if (typeof template !== 'object') {
         applyTemplateText(template, null);
         return;
     }
-    // Gender-specific template: look up the currently selected patient's
-    // gender so e.g. a male patient never gets the uterus/ovaries wording.
     var patientSelect = document.getElementById('id_patient');
     var patientId = patientSelect ? patientSelect.value : '';
     if (!patientId) {
@@ -184,5 +263,34 @@ function loadStandardTemplate() {
         .then(function(data) { applyTemplateText(template, data.gender); })
         .catch(function() { applyTemplateText(template, null); });
 }
+
+// ── Quick-select pills (Advice / Impression) ───────────────────
+function toggleChipInto(el) {
+    var val = el.getAttribute('data-val');
+    var ta = document.getElementById(el.getAttribute('data-target'));
+    var items = ta.value.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+    var idx = items.indexOf(val);
+    if (idx === -1) {
+        items.push(val);
+        el.classList.add('active');
+    } else {
+        items.splice(idx, 1);
+        el.classList.remove('active');
+    }
+    ta.value = items.join(', ');
+    autoGrowTextarea(ta);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    ['id_advice', 'id_impression'].forEach(function(taId) {
+        var ta = document.getElementById(taId);
+        if (!ta) return;
+        ta.style.resize = 'vertical';
+        var items = ta.value.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+        document.querySelectorAll('.ch-pill[data-target="' + taId + '"]').forEach(function(p) {
+            if (items.indexOf(p.getAttribute('data-val')) !== -1) p.classList.add('active');
+        });
+    });
+});
 </script>
 {% endblock %}

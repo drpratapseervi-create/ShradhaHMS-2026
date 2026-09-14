@@ -210,13 +210,21 @@ class USGReportForm(forms.ModelForm):
     class Meta:
         model = USGReport
         exclude = [
-            "report_no",
+            # report_no is filled in manually on the registration form
+            # instead of only being auto-generated.
             "created_by",
             "created_at",
             "updated_at",
+            # Dropped from the registration form — no longer collected here.
+            "machine_used",
+            "probe_used",
+            "sonographer",
         ]
 
         widgets = {
+            # ── identity ──────────────────────────────────────────────
+            "report_no":            forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. USG-000123 — leave blank to auto-generate"}),
+
             # ── dates / times ─────────────────────────────────────────
             "report_date":          forms.DateInput(attrs={"type": "date", "class": "form-control"}),
             "report_time":          forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
@@ -230,11 +238,8 @@ class USGReportForm(forms.ModelForm):
             "bill_item":            forms.Select(attrs={"class": "form-select"}),
             "impression_status":    forms.Select(attrs={"class": "form-select"}),
 
-            # ── MACHINE / OTHER ───────────────────────────────────────
-            "clinical_indication":  forms.Textarea(attrs={"class": "form-control", "rows": 2}),
-            "sonographer":          forms.TextInput(attrs={"class": "form-control"}),
-            "machine_used":         forms.TextInput(attrs={"class": "form-control"}),
-            "probe_used":           forms.TextInput(attrs={"class": "form-control"}),
+            # ── OTHER ─────────────────────────────────────────────────
+            "clinical_indication":  forms.Textarea(attrs={"class": "form-control", "rows": 1}),
 
             # ── FINDINGS / IMPRESSION / ADVICE ─────────────────────────
             "findings_text":        forms.Textarea(attrs={"class": "form-control", "rows": 1,

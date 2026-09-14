@@ -2367,3 +2367,32 @@ class TPAImportRow(models.Model):
 
 
 auditlog.register(TPAPatient)
+
+
+# ======================================================
+# USG IMPRESSION OPTIONS -- quick-select chips for the
+# Impression field, grouped like the ICD code list
+# (category + sort_order, both editable from the admin panel).
+# ======================================================
+
+class USGImpressionOption(models.Model):
+    CATEGORY_CHOICES = [
+        ("liver_gallbladder",      "1. Liver and Gall Bladder"),
+        ("kidney",                 "2. Kidney"),
+        ("ureter_bladder_prostate", "3. Ureter, Bladder and Prostate"),
+        ("uterus_ovary",           "4. Uterus and Ovary"),
+        ("misc",                   "5. Miscellaneous"),
+    ]
+
+    text = models.CharField(max_length=255)
+    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default="misc")
+    sort_order = models.IntegerField(default=9999)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["category", "sort_order", "text"]
+        verbose_name = "USG Impression Option"
+        verbose_name_plural = "USG Impression Options"
+
+    def __str__(self):
+        return self.text
