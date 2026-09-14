@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load hms_extras %}
+{% block title %}Map Columns — TPA Import{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3" style="max-width:800px;">
+
+  <h4 class="mb-3 fw-bold" style="color:#1a6b5a;">
+    <i class="fa-solid fa-table-columns me-2"></i>Map Columns — {{ batch.original_filename }}
+  </h4>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <p class="text-muted small">
+        Match each field below to the matching column header from your uploaded file. Leave a field
+        set to "— Not in file —" if this export doesn't include it. Your choices are saved and reused
+        as the default next time you import for {{ batch.get_scheme_type_display }}.
+      </p>
+      <form method="post">
+        {% csrf_token %}
+        <table class="table table-sm align-middle">
+          <thead><tr><th>Target Field</th><th>Excel Column</th></tr></thead>
+          <tbody>
+            {% for target, label in target_fields %}
+            <tr>
+              <td>{{ label }}
+                {% if target == 'tid' or target == 'policy_no' %}<span class="text-danger">*</span>{% endif %}
+              </td>
+              <td>
+                <select name="map_{{ target }}" class="form-select form-select-sm">
+                  <option value="">— Not in file —</option>
+                  {% for h in headers %}
+                    <option value="{{ h }}" {% if guessed|get_item:target == h %}selected{% endif %}>{{ h }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="form-text mb-3"><span class="text-danger">*</span> At least TID or Policy No./Beneficiary ID must be mapped so rows can be matched to existing cases.</div>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-play me-1"></i>Run Import</button>
+        <a href="{% url 'hms:tpa_import_upload' %}" class="btn btn-outline-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

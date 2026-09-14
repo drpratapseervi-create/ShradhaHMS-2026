@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} TPA Case — Shradha HMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3" style="max-width:900px;">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0 fw-bold" style="color:#1a6b5a;">
+      <i class="fa-solid fa-file-shield me-2"></i>{{ action }} TPA Case
+    </h4>
+    <a href="{% url 'hms:tpa_patient_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fa-solid fa-arrow-left me-1"></i>Back to List
+    </a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Patient</h6>
+        <div class="row g-2 mb-2 position-relative">
+          <div class="col-12 col-md-8 position-relative">
+            <label class="form-label form-label-sm">Link to existing Patient / UHID</label>
+            <input type="text" id="patientSearchInput" class="form-control form-control-sm"
+                   placeholder="Search by name or UHID..."
+                   value="{% if tpa.patient %}{{ tpa.patient.full_name }} ({{ tpa.patient.uhid }}){% elif tpa.patient_name_raw %}{{ tpa.patient_name_raw }}{% endif %}"
+                   autocomplete="off">
+            <input type="hidden" name="patient_id" id="patientId" value="{{ tpa.patient_id|default:'' }}">
+            <div id="patientDropdown" class="list-group position-absolute w-100" style="z-index:1000; display:none; max-height:220px; overflow-y:auto;"></div>
+            {% if tpa.is_draft %}
+              <div class="form-text text-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i>Imported without a match — search and select the correct patient to link.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">TPA / Scheme Details</h6>
+        <div class="row g-3">
+          <div class="col-6 col-md-4">
+            <label class="form-label form-label-sm">Category</label>
+            <select name="scheme_type" class="form-select form-select-sm" required>
+              {% for val, label in scheme_type_choices %}
+                <option value="{{ val }}" {% if tpa.scheme_type == val or scheme_type_pre == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-6 col-md-4 position-relative">
+            <label class="form-label form-label-sm">TPA / Scheme Name</label>
+            <input type="text" id="schemeSearchInput" class="form-control form-control-sm"
+                   placeholder="Type to search or add..." autocomplete="off"
+                   value="{% if tpa.scheme %}{{ tpa.scheme.name }}{% else %}{{ tpa.scheme_name_raw|default:'' }}{% endif %}">
+            <input type="hidden" name="scheme" id="schemeId" value="{{ tpa.scheme_id|default:'' }}">
+            <div id="schemeDropdown" class="list-group position-absolute w-100" style="z-index:1000; display:none; max-height:220px; overflow-y:auto;"></div>
+          </div>
+          <div class="col-6 col-md-4">
+            <label class="form-label form-label-sm">Policy No. / MAA-Yojana Beneficiary ID</label>
+            <input type="text" name="policy_no" class="form-control form-control-sm" value="{{ tpa.policy_no|default:'' }}">
+          </div>
+          <div class="col-6 col-md-4">
+            <label class="form-label form-label-sm">Pre-auth / TID Number</label>
+            <input type="text" name="tid_number" class="form-control form-control-sm" value="{{ tpa.tid_number|default:'' }}">
+          </div>
+          <div class="col-6 col-md-4">
+            <label class="form-label form-label-sm">Admission Date</label>
+            <input type="date" name="admission_date" class="form-control form-control-sm" value="{{ tpa.admission_date|date:'Y-m-d'|default:'' }}">
+          </div>
+          <div class="col-6 col-md-4">
+            <label class="form-label form-label-sm">Package Code</label>
+            <input type="text" name="package_code" class="form-control form-control-sm" value="{{ tpa.package_code|default:'' }}">
+          </div>
+          <div class="col-12">
+            <label class="form-label form-label-sm">Diagnosis</label>
+            <textarea name="diagnosis" rows="2" class="form-control form-control-sm">{{ tpa.diagnosis|default:'' }}</textarea>
+          </div>
+          <div class="col-6 col-md-4">
+            <label class="form-label form-label-sm">Approved Amount (₹)</label>
+            <input type="number" step="0.01" name="approved_amount" class="form-control form-control-sm" value="{{ tpa.approved_amount|default:'' }}">
+          </div>
+          <div class="col-6 col-md-4">
+            <label class="form-label form-label-sm">Status</label>
+            <select name="status" class="form-select form-select-sm">
+              {% for val, label in status_choices %}
+                <option value="{{ val }}" {% if tpa.status == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label form-label-sm">Remarks</label>
+            <textarea name="remarks" rows="2" class="form-control form-control-sm">{{ tpa.remarks|default:'' }}</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Document Uploads</h6>
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label form-label-sm">Pre-auth Letter</label>
+            <input type="file" name="preauth_letter" class="form-control form-control-sm">
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label form-label-sm">Discharge Summary</label>
+            <input type="file" name="discharge_summary" class="form-control form-control-sm">
+          </div>
+        </div>
+        {% if action == 'Edit' %}
+          <div class="form-text mt-2">Additional documents can be uploaded from the case detail page.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mb-5">
+      <button type="submit" class="btn btn-primary px-4"><i class="fas fa-save me-1"></i>{% if action == 'Edit' %}Update Case{% else %}Save Case{% endif %}</button>
+      <a href="{% url 'hms:tpa_patient_list' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+let patientTimer;
+document.getElementById('patientSearchInput').addEventListener('input', function() {
+  clearTimeout(patientTimer);
+  const q = this.value.trim();
+  document.getElementById('patientId').value = '';
+  if (q.length < 2) { document.getElementById('patientDropdown').style.display='none'; return; }
+  patientTimer = setTimeout(() => {
+    fetch(`{% url 'hms:patient_search_api' %}?q=${encodeURIComponent(q)}`)
+      .then(r => r.json()).then(data => {
+        const dd = document.getElementById('patientDropdown');
+        dd.innerHTML = '';
+        if (!data.length) { dd.style.display='none'; return; }
+        data.forEach(p => {
+          const a = document.createElement('a');
+          a.href='#'; a.className='list-group-item list-group-item-action py-1 px-2';
+          a.style.fontSize='13px';
+          a.textContent = p.name + ' (' + p.uhid + ')';
+          a.addEventListener('click', e => {
+            e.preventDefault();
+            document.getElementById('patientSearchInput').value = p.name + ' (' + p.uhid + ')';
+            document.getElementById('patientId').value = p.id;
+            dd.style.display='none';
+          });
+          dd.appendChild(a);
+        });
+        dd.style.display='block';
+      });
+  }, 300);
+});
+
+let schemeTimer;
+document.getElementById('schemeSearchInput').addEventListener('input', function() {
+  clearTimeout(schemeTimer);
+  document.getElementById('schemeId').value = '';
+});
+document.getElementById('schemeSearchInput').addEventListener('blur', function() {
+  const name = this.value.trim();
+  const schemeType = document.querySelector('select[name="scheme_type"]').value;
+  if (!name || document.getElementById('schemeId').value) return;
+  setTimeout(() => {
+    fetch(`{% url 'hms:tpa_scheme_add' %}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+      body: JSON.stringify({name: name, scheme_type: schemeType})
+    }).then(r => r.json()).then(data => {
+      if (data.id) document.getElementById('schemeId').value = data.id;
+    });
+  }, 200);
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#patientSearchInput') && !e.target.closest('#patientDropdown'))
+    document.getElementById('patientDropdown').style.display='none';
+});
+</script>
+{% endblock %}

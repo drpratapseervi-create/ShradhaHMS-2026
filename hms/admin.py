@@ -598,3 +598,48 @@ class ExpenseBudgetAdmin(admin.ModelAdmin):
             bg, fg, s,
         )
     status_badge.short_description = "Status"
+
+
+# ===================== TPA PATIENTS =====================
+from .models import TPAScheme, TPAPatient, TPADocument, TPAImportMapping, TPAImportBatch, TPAImportRow
+
+
+@admin.register(TPAScheme)
+class TPASchemeAdmin(admin.ModelAdmin):
+    list_display = ("name", "scheme_type", "is_active", "created_at")
+    list_filter = ("scheme_type", "is_active")
+    search_fields = ("name",)
+
+
+class TPADocumentInline(admin.TabularInline):
+    model = TPADocument
+    extra = 0
+    readonly_fields = ("uploaded_by", "uploaded_at")
+
+
+@admin.register(TPAPatient)
+class TPAPatientAdmin(admin.ModelAdmin):
+    list_display = ("id", "display_name", "scheme_type", "scheme", "tid_number", "policy_no", "status", "approved_amount", "is_draft", "created_at")
+    list_filter = ("scheme_type", "status", "is_draft")
+    search_fields = ("patient__full_name", "patient__uhid", "patient_name_raw", "tid_number", "policy_no")
+    inlines = [TPADocumentInline]
+
+
+@admin.register(TPAImportMapping)
+class TPAImportMappingAdmin(admin.ModelAdmin):
+    list_display = ("name", "updated_at")
+
+
+class TPAImportRowInline(admin.TabularInline):
+    model = TPAImportRow
+    extra = 0
+    readonly_fields = ("row_number", "match_type", "action", "tpa_patient", "field_changes", "error_message")
+    can_delete = False
+
+
+@admin.register(TPAImportBatch)
+class TPAImportBatchAdmin(admin.ModelAdmin):
+    list_display = ("id", "original_filename", "imported_by", "imported_at", "status", "updated_count", "created_count", "skipped_count")
+    list_filter = ("status",)
+    readonly_fields = ("imported_by", "imported_at", "updated_count", "created_count", "skipped_count", "mapping")
+    inlines = [TPAImportRowInline]

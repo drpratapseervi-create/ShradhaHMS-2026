@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Import Summary — TPA Import{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h4 class="mb-0 fw-bold" style="color:#1a6b5a;">
+      <i class="fa-solid fa-clipboard-check me-2"></i>Import #{{ batch.id }} Summary
+    </h4>
+    <div class="d-flex gap-2">
+      {% if batch.status == 'done' %}
+      <form method="post" action="{% url 'hms:tpa_import_undo' batch.id %}" onsubmit="return confirm('Revert this entire import? Updated fields will be restored and unlinked draft records created by it will be removed.')">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-rotate-left me-1"></i>Undo Import</button>
+      </form>
+      {% endif %}
+      <a href="{% url 'hms:tpa_import_upload' %}" class="btn btn-outline-secondary btn-sm">New Import</a>
+      <a href="{% url 'hms:tpa_import_batch_list' %}" class="btn btn-outline-secondary btn-sm">Import History</a>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-6 col-md-3"><div class="text-muted small">File</div><div class="fw-semibold">{{ batch.original_filename }}</div></div>
+        <div class="col-6 col-md-3"><div class="text-muted small">Imported By</div><div>{{ batch.imported_by }}</div></div>
+        <div class="col-6 col-md-3"><div class="text-muted small">Date</div><div>{{ batch.imported_at|date:"d M Y H:i" }}</div></div>
+        <div class="col-6 col-md-3"><div class="text-muted small">Status</div>
+          <div>
+            {% if batch.status == 'done' %}<span class="badge bg-success">Completed</span>
+            {% elif batch.status == 'reverted' %}<span class="badge bg-secondary">Reverted{% if batch.reverted_by %} by {{ batch.reverted_by }}{% endif %}</span>
+            {% else %}<span class="badge bg-danger">{{ batch.get_status_display }}</span>{% endif %}
+          </div>
+        </div>
+      </div>
+      {% if batch.status == 'done' or batch.status == 'reverted' %}
+      <div class="alert alert-info mt-3 mb-0 py-2">
+        <i class="fa-solid fa-circle-info me-1"></i>{{ batch.summary_text }}
+      </div>
+      {% endif %}
+      {% if batch.error_message %}
+      <div class="alert alert-danger mt-3 mb-0 py-2">{{ batch.error_message }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-5">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-dark">
+            <tr><th>Row</th><th>Match</th><th>Action</th><th>Case</th><th>Fields Changed</th><th>Note</th></tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+            <tr>
+              <td class="small">{{ r.row_number }}</td>
+              <td class="small">{{ r.get_match_type_display }}</td>
+              <td>
+                {% if r.action == 'updated' %}<span class="badge bg-primary">Updated</span>
+                {% elif r.action == 'created' %}<span class="badge bg-warning text-dark">New Draft</span>
+                {% elif r.action == 'skipped' %}<span class="badge bg-secondary">Skipped</span>
+                {% else %}<span class="badge bg-danger">Error</span>{% endif %}
+              </td>
+              <td class="small">
+                {% if r.tpa_patient %}<a href="{% url 'hms:tpa_patient_detail' r.tpa_patient_id %}">{{ r.tpa_patient.display_name }}</a>{% else %}—{% endif %}
+              </td>
+              <td class="small">
+                {% for f, diff in r.field_changes.items %}
+                  <div><strong>{{ f }}</strong>: {{ diff.before|default:"—" }} → {{ diff.after }}</div>
+                {% empty %}—{% endfor %}
+              </td>
+              <td class="small text-muted">{{ r.error_message|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

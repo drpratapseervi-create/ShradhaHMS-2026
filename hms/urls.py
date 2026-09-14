@@ -209,4 +209,19 @@ urlpatterns = [
     path("construction/deposits/<int:pk>/delete/", views.partner_deposit_delete, name="partner_deposit_delete"),
     path("construction/media/upload/",              views.construction_media_upload, name="construction_media_upload"),
     path("construction/media/<int:pk>/delete/",     views.construction_media_delete, name="construction_media_delete"),
+
+    # ── TPA PATIENTS ───────────────────────────────────────
+    path("tpa/",                          views.tpa_patient_list,     name="tpa_patient_list"),
+    path("tpa/new/",                      views.tpa_patient_create,   name="tpa_patient_create"),
+    path("tpa/<int:pk>/",                 views.tpa_patient_detail,   name="tpa_patient_detail"),
+    path("tpa/<int:pk>/edit/",            views.tpa_patient_edit,     name="tpa_patient_edit"),
+    path("tpa/<int:pk>/delete/",          views.tpa_patient_delete,   name="tpa_patient_delete"),
+    path("tpa/<int:pk>/document/upload/", views.tpa_document_upload,  name="tpa_document_upload"),
+    path("tpa/document/<int:doc_id>/delete/", views.tpa_document_delete, name="tpa_document_delete"),
+    path("tpa/scheme/add/",               views.tpa_scheme_add,       name="tpa_scheme_add"),
+    path("tpa/import/",                   views.tpa_import_upload,    name="tpa_import_upload"),
+    path("tpa/import/history/",           views.tpa_import_batch_list, name="tpa_import_batch_list"),
+    path("tpa/import/<int:batch_id>/map/",     views.tpa_import_map,     name="tpa_import_map"),
+    path("tpa/import/<int:batch_id>/summary/", views.tpa_import_summary, name="tpa_import_summary"),
+    path("tpa/import/<int:batch_id>/undo/",    views.tpa_import_undo,    name="tpa_import_undo"),
 ]
