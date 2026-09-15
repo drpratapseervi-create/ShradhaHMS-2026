@@ -35,7 +35,6 @@ urlpatterns = [
     path("consultation/<int:appointment_id>/referral/pdf/", views.referral_letter_print, name="referral_letter_print"),
     path("consultation/<int:appointment_id>/certificate/print/", views.medical_certificate_print, name="medical_certificate_print"),
     path("consultation/<int:appointment_id>/certificate/save/", views.save_medical_certificate, name="save_medical_certificate"),
-    path("generate-medical-certificate-text/", views.generate_medical_certificate_text, name="generate_medical_certificate_text"),
     path("consultation/<int:appointment_id>/referral/save/", views.save_referral_note, name="save_referral_note"),
     path("generate-referral-letter/", views.generate_referral_letter, name="generate_referral_letter"),
     path("ai-full-opd/", views.ai_full_opd, name="ai_full_opd"),

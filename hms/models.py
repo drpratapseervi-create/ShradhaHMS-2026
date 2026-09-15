@@ -384,11 +384,11 @@ class Consultation(models.Model):
     )
     referral_letter_text = models.TextField(blank=True)
 
-    # ===== MEDICAL CERTIFICATE =====
-    # certificate_no is assigned once, on first Save/Generate — never
-    # reassigned afterward, so reprinting keeps the same number (mirrors
-    # the UHID/ADV-receipt "assign once, format from a running count"
-    # convention used elsewhere in this file).
+    # ===== MEDICAL CERTIFICATE (legacy, free-text/AI format) =====
+    # Superseded 2026-09 by the fixed NMC Sickness/Fitness certificate
+    # format below. Kept (not dropped) purely so the certificates already
+    # issued under this format stay readable in the DB — no view writes to
+    # these fields any more; new certificates use the NMC fields instead.
     certificate_no = models.CharField(max_length=30, blank=True)
     certificate_reason = models.CharField(
         max_length=20,
@@ -403,6 +403,28 @@ class Consultation(models.Model):
     certificate_reason_other = models.CharField(max_length=200, blank=True)
     certificate_text = models.TextField(blank=True)
     certificate_generated_at = models.DateTimeField(null=True, blank=True)
+
+    # ===== MEDICAL CERTIFICATE — NMC Sickness/Leave & Fitness format =====
+    # Fixed wording per the NMC Code of Medical Ethics Regulations 2002,
+    # Appendix II. There is no free-text/AI-drafted body for this
+    # certificate — only the blanks below are filled in and are printed
+    # into the fixed template.
+    certificate_part = models.CharField(
+        max_length=6,
+        choices=[
+            ("A",    "Part A — Sickness / Leave"),
+            ("B",    "Part B — Fitness"),
+            ("both", "Both Parts"),
+        ],
+        blank=True,
+    )
+    sickness_diagnosis = models.CharField(max_length=255, blank=True)
+    days_absent = models.PositiveSmallIntegerField(null=True, blank=True)
+    absence_from_date = models.DateField(null=True, blank=True)
+    absence_to_date = models.DateField(null=True, blank=True)
+    fitness_effective_date = models.DateField(null=True, blank=True)
+    place_of_examination = models.CharField(max_length=200, blank=True)
+    date_of_issue = models.DateField(null=True, blank=True)
 
     # ===== METADATA =====
     custom_investigations = models.TextField(blank=True, null=True)

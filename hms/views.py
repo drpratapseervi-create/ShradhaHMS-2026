@@ -17,7 +17,7 @@ from django.db.models import Sum
 from .models import PartnerDeposit
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-from django.utils.dateparse import parse_datetime
+from django.utils.dateparse import parse_datetime, parse_date
 from django.db import transaction
 from django.db.models import Q, F, Sum, Count
 from django.contrib import messages
@@ -688,17 +688,22 @@ def referral_letter_print(request, appointment_id):
 
 @login_required
 def medical_certificate_print(request, appointment_id):
+    """NMC Sickness/Leave & Fitness certificate (Code of Medical Ethics
+    Regulations 2002, Appendix II) — fixed wording, only the blanks below
+    are filled in. Replaces the old free-text/AI-drafted certificate."""
     appointment = get_object_or_404(
         Appointment.objects.select_related("patient", "doctor"),
         id=appointment_id,
     )
     consultation = Consultation.objects.filter(appointment=appointment).first()
+    patient = appointment.patient
 
-    # Diagnosis prefill: this visit's consultation first, else the patient's
-    # most recent past diagnosis (mirrors the IPD discharge-summary prefill
-    # rule — advisory only, the doctor edits the field before printing).
-    diagnosis_prefill = ""
-    if consultation:
+    # Diagnosis prefill: a previously-saved certificate wins; else this
+    # visit's consultation; else the patient's most recent past diagnosis
+    # (mirrors the IPD discharge-summary prefill rule — advisory only, the
+    # doctor edits the field before printing).
+    diagnosis_prefill = consultation.sickness_diagnosis if consultation else ""
+    if not diagnosis_prefill and consultation:
         parts = []
         if consultation.diagnosis_text:
             parts.append(consultation.diagnosis_text)
@@ -707,7 +712,7 @@ def medical_certificate_print(request, appointment_id):
     if not diagnosis_prefill:
         past = (
             Consultation.objects
-            .filter(appointment__patient=appointment.patient)
+            .filter(appointment__patient=patient)
             .exclude(diagnosis_text="")
             .order_by("-appointment__date", "-id")
             .first()
@@ -716,57 +721,70 @@ def medical_certificate_print(request, appointment_id):
             diagnosis_prefill = past.diagnosis_text
 
     doctor_name = appointment.doctor.full_name if appointment.doctor else "Pratap Senecha"
-    printed_on = timezone.now()
-
-    # Plain-text default for the certificate paragraph — lets the doctor
-    # fill/print manually even when AI features aren't configured; the AI
-    # button (when available) overwrites this with a purpose-tailored draft.
-    gender_title = "Mrs./Ms." if appointment.patient.gender == "Female" else "Mr./Mrs."
-    default_cert_text = (
-        f"This is to certify that I examined {gender_title} "
-        f"{appointment.patient.full_name.title()} on {printed_on:%d-%m-%Y} and "
-        f"found him/her to be suffering from {diagnosis_prefill or '____________'}.\n\n"
-        f"Advised rest from ____________ to ____________.\n\n"
-        f"Fit to resume duty from ____________."
+    doctor_reg_no = (
+        (appointment.doctor.registration_no if appointment.doctor else "")
+        or "RMC No-27994"
     )
 
-    # A previously-saved certificate (certificate_no already assigned) wins
-    # over the freshly-computed default, so reopening/reprinting shows the
-    # exact text and number that were saved, not a recomputed draft.
-    cert_text_initial = (consultation.certificate_text if consultation and consultation.certificate_text else default_cert_text)
-    cert_reason_initial = (consultation.certificate_reason if consultation and consultation.certificate_reason else "illness")
-    cert_reason_other_initial = consultation.certificate_reason_other if consultation else ""
-    certificate_no = consultation.certificate_no if consultation else ""
+    # Most recent IPD stay for this patient, if any — source for the
+    # admission/discharge-based date suggestions below. Advisory only.
+    last_admission = (
+        IPDAdmission.objects.filter(patient=patient).order_by("-admission_date").first()
+    )
+
+    # Absence range: a previously-saved value wins; else a suggested range
+    # from the IPD stay (admission → discharge/today), else from the
+    # consultation's follow-up date, else left blank for manual entry.
+    absence_from = consultation.absence_from_date if consultation else None
+    absence_to = consultation.absence_to_date if consultation else None
+    days_absent = consultation.days_absent if consultation else None
+    if not absence_from and last_admission:
+        absence_from = last_admission.admission_date.date()
+        absence_to = (
+            last_admission.discharge_date.date() if last_admission.discharge_date
+            else timezone.now().date()
+        )
+    elif not absence_from and consultation and consultation.follow_up_date:
+        absence_from = appointment.date
+        absence_to = consultation.follow_up_date
+    if absence_from and absence_to and not days_absent:
+        days_absent = (absence_to - absence_from).days + 1
+
+    # Fitness effective date: only auto-filled when a discharge date exists.
+    fitness_effective = consultation.fitness_effective_date if consultation else None
+    if not fitness_effective and last_admission and last_admission.discharge_date:
+        fitness_effective = last_admission.discharge_date.date()
+
+    place_of_examination = (
+        (consultation.place_of_examination if consultation else "")
+        or "Shradha Hospital & Multispeciality Centre, Pani Ki Do Tanki, Surajpole, Pali (Raj.)"
+    )
+    date_of_issue = (consultation.date_of_issue if consultation else None) or timezone.now().date()
+
+    # Which part(s) to default to: nothing saved yet → Part A; a Part A
+    # already issued for this consultation → default to showing both (the
+    # doctor is now also certifying recovery); anything else saved → keep it.
+    if consultation and consultation.certificate_part:
+        certificate_part_initial = "both" if consultation.certificate_part == "A" else consultation.certificate_part
+    else:
+        certificate_part_initial = "A"
 
     return render(request, "opd/medical_certificate_print.html", {
-        "appointment":              appointment,
-        "consultation":             consultation,
-        "diagnosis_prefill":        diagnosis_prefill,
-        "default_cert_text":        cert_text_initial,
-        "cert_reason_initial":      cert_reason_initial,
-        "cert_reason_other_initial": cert_reason_other_initial,
-        "certificate_no":           certificate_no,
-        "doctor_name":              doctor_name,
-        "printed_on":               printed_on,
-        "ai_enabled":               settings.AI_FEATURES_ENABLED,
+        "appointment":                  appointment,
+        "consultation":                 consultation,
+        "patient":                      patient,
+        "diagnosis_prefill":            diagnosis_prefill,
+        "doctor_name":                  doctor_name,
+        "doctor_reg_no":                doctor_reg_no,
+        "certificate_part_initial":     certificate_part_initial,
+        "absence_from_initial":         absence_from,
+        "absence_to_initial":           absence_to,
+        "days_absent_initial":          days_absent,
+        "fitness_effective_initial":    fitness_effective,
+        "place_of_examination_initial": place_of_examination,
+        "date_of_issue_initial":        date_of_issue,
+        "printed_on":                   timezone.now(),
     })
-
-
-def _next_certificate_no():
-    """SHMC/<year>/<0001-padded sequence>, scoped per calendar year."""
-    year = timezone.now().year
-    prefix = f"SHMC/{year}/"
-    existing = Consultation.objects.filter(
-        certificate_no__startswith=prefix
-    ).values_list("certificate_no", flat=True)
-    seqs = []
-    for no in existing:
-        try:
-            seqs.append(int(no.rsplit("/", 1)[-1]))
-        except (ValueError, IndexError):
-            continue
-    next_seq = (max(seqs) + 1) if seqs else 1
-    return f"{prefix}{next_seq:04d}"
 
 
 @login_required
@@ -777,21 +795,27 @@ def save_medical_certificate(request, appointment_id):
     consultation, _ = Consultation.objects.get_or_create(appointment=appointment)
     data = json.loads(request.body)
 
-    consultation.certificate_reason = (data.get("reason") or "illness").strip()
-    consultation.certificate_reason_other = (data.get("reason_other") or "").strip()
-    consultation.certificate_text = (data.get("cert_text") or "").strip()
+    def to_int(value):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
 
-    # Assigned once — a certificate that already has a number keeps it on
-    # every subsequent save/reprint, however many times the text is edited.
-    if not consultation.certificate_no:
-        consultation.certificate_no = _next_certificate_no()
-        consultation.certificate_generated_at = timezone.now()
+    consultation.certificate_part = (data.get("certificate_part") or "").strip()
+    consultation.sickness_diagnosis = (data.get("sickness_diagnosis") or "").strip()
+    consultation.days_absent = to_int(data.get("days_absent"))
+    consultation.absence_from_date = parse_date((data.get("absence_from_date") or "").strip() or None)
+    consultation.absence_to_date = parse_date((data.get("absence_to_date") or "").strip() or None)
+    consultation.fitness_effective_date = parse_date((data.get("fitness_effective_date") or "").strip() or None)
+    consultation.place_of_examination = (data.get("place_of_examination") or "").strip()
+    consultation.date_of_issue = parse_date((data.get("date_of_issue") or "").strip() or None)
 
     consultation.save(update_fields=[
-        "certificate_reason", "certificate_reason_other", "certificate_text",
-        "certificate_no", "certificate_generated_at",
+        "certificate_part", "sickness_diagnosis", "days_absent",
+        "absence_from_date", "absence_to_date", "fitness_effective_date",
+        "place_of_examination", "date_of_issue",
     ])
-    return JsonResponse({"success": True, "certificate_no": consultation.certificate_no})
+    return JsonResponse({"success": True})
 
 
 # ======================================================
@@ -4919,135 +4943,6 @@ bullet points.
             'consent_en': parsed.get('consent_en', '').strip(),
             'consent_hi': parsed.get('consent_hi', '').strip(),
         })
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
-
-@login_required
-def generate_medical_certificate_text(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST only'}, status=405)
-    if not settings.AI_FEATURES_ENABLED:
-        return JsonResponse({'error': 'AI features are not configured on this system.'})
-    import json
-    data = json.loads(request.body)
-
-    appointment_id = data.get('appointment_id')
-    appointment = get_object_or_404(
-        Appointment.objects.select_related("patient", "doctor"),
-        id=appointment_id,
-    )
-    patient = appointment.patient
-
-    reason = data.get('reason', '').strip() or 'illness'
-    reason_other = data.get('reason_other', '').strip()
-    diagnosis = data.get('diagnosis', '').strip()
-
-    if not diagnosis:
-        return JsonResponse({'error': 'Diagnosis / Clinical Details is required'}, status=400)
-    if reason == 'other' and not reason_other:
-        return JsonResponse({'error': 'Please specify the reason for the certificate'}, status=400)
-
-    patient_age = f"{patient.age_years} Yrs" if patient.age_years else "age not on record"
-    exam_date = timezone.now().strftime("%d-%m-%Y")
-
-    reason_labels = {
-        'post_procedure': 'Post-Procedure Rest',
-        'illness':        'Illness / Unfit for Duty',
-        'fitness':        'Fitness Certificate',
-        'other':          reason_other or 'Other',
-    }
-    reason_label = reason_labels.get(reason, reason_other or 'Illness / Unfit for Duty')
-
-    if reason == 'post_procedure':
-        type_instruction = (
-            "This is a POST-PROCEDURE REST certificate -- the patient has just "
-            "undergone a procedure/surgery and needs a recovery period. State a "
-            "rest period appropriate to recovery from that specific procedure, "
-            "starting from the examination date, and give a fit-to-resume-duty "
-            "date immediately following it."
-        )
-    elif reason == 'fitness':
-        type_instruction = (
-            "This is a FITNESS CERTIFICATE -- state that the patient has been "
-            "examined and found FIT for normal duties/activities. Do NOT "
-            "recommend any rest period or give a resume-duty date; instead "
-            "confirm current fitness."
-        )
-    elif reason == 'other':
-        type_instruction = (
-            f"This certificate is being issued for: {reason_other}. Tailor the "
-            "wording to this specific purpose, including a rest period and "
-            "fit-to-resume date only if actually relevant to this purpose."
-        )
-    else:  # illness
-        type_instruction = (
-            "This is an ILLNESS / UNFIT-FOR-DUTY certificate -- state the "
-            "patient was found unfit for duty due to the diagnosis, recommend "
-            "a rest period starting from the examination date, and give a "
-            "fit-to-resume-duty date immediately following it."
-        )
-
-    try:
-        client = OpenAI(api_key=settings.OPENAI_API_KEY)
-        response = client.chat.completions.create(
-            model='gpt-4o-mini',
-            max_tokens=400,
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "medical_certificate",
-                    "strict": True,
-                    "schema": {
-                        "type": "object",
-                        "properties": {
-                            "cert_text": {"type": "string"},
-                        },
-                        "required": ["cert_text"],
-                        "additionalProperties": False,
-                    },
-                },
-            },
-            messages=[
-                {
-                    'role': 'system',
-                    'content': (
-                        "You are a senior Indian physician drafting the body "
-                        "text of a formal medical certificate for a hospital "
-                        "record. Always return ONLY valid JSON. No explanation."
-                    ),
-                },
-                {
-                    'role': 'user',
-                    'content': f"""
-Patient: {patient.full_name}, {patient_age}, {patient.gender}, UHID {patient.uhid}
-Examination date: {exam_date}
-Diagnosis / clinical details: {diagnosis}
-Certificate purpose: {reason_label}
-
-{type_instruction}
-
-Write "cert_text": the full body text of the medical certificate, 3-5
-sentences, formal medical-certificate tone, third person for the patient
-("This is to certify that I examined Mr./Mrs./Ms. <name> on <date> and
-found..."). It must:
-- open with the standard certifying statement, including the patient's
-  name and the examination date given above
-- state the diagnosis/clinical finding
-- follow the certificate-purpose instruction above for what the
-  certificate needs to convey
-- wherever a date is stated (rest period / resume date), use DD-MM-YYYY
-  format, computed relative to the examination date above
-
-Plain paragraph text only, no markdown, no bullet points, no headings, no
-salutation or signature block (those are on the certificate separately).
-""",
-                },
-            ],
-        )
-        raw = response.choices[0].message.content or "{}"
-        parsed = json.loads(raw)
-        return JsonResponse({'cert_text': parsed.get('cert_text', '').strip()})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 

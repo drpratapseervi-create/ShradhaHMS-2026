@@ -71,6 +71,15 @@ body {
     margin: 14px 0 4px 0;
     letter-spacing: 0.5px;
 }
+.part-title {
+    background: #0369a1;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 7px;
+    margin: 18px 0 8px 0;
+    letter-spacing: 0.5px;
+}
 
 /* ── Tables ── */
 table.details { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
@@ -78,50 +87,33 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
 .lbl { font-weight: 700; background: #f5f5f5; width: 20%; white-space: nowrap; }
 
 /* ── Certificate body ── */
-.cert-line {
-    margin: 14px 0;
+.cert-para {
+    margin: 10px 0;
     font-size: 12px;
-    line-height: 1.9;
+    line-height: 2;
     text-align: justify;
 }
 
-/* Fillable inline blank — editable, but not nested inside another
-   contenteditable (browsers handle nested contenteditable poorly) */
+/* Fill-in blank — value rendered live from the control-bar inputs below,
+   never typed directly, so the saved structured fields and the printed
+   wording can never drift out of sync. */
 .fill {
     display: inline-block;
-    min-width: 70px;
-    padding: 1px 4px;
+    min-width: 60px;
+    padding: 0 4px;
     border-bottom: 1px dashed #666;
     font-weight: 700;
 }
-.fill-wide { min-width: 260px; }
-.fill:empty:before { content: "click to fill in"; color: #999; font-weight: 400; font-style: italic; }
-.fill:focus { outline: none; background: #fffbe6; }
-
-/* Auto-growing certificate paragraph — single line by default, grows to
-   fit as content is typed/generated (same behaviour as the LAMA consent
-   boxes in the consultation form) */
-.cert-textarea {
-    width: 100%;
-    border: 1px solid #ccc;
-    border-radius: 7px;
-    padding: 9px 12px;
-    font-family: Arial, sans-serif;
-    font-size: 12px;
-    line-height: 1.9;
-    text-align: justify;
-    color: #000;
-    background: #fff;
-    resize: none;
-    overflow: hidden;
-}
-.cert-textarea:focus { outline: none; border-color: #7c3aed; background: #fffbe6; }
+.fill-wide { min-width: 220px; }
+.fill:empty:before { content: "________"; color: #999; font-weight: 400; }
 
 /* ── Footer / signature ── */
+table.footer-block { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+table.footer-block td { padding: 3px 0; vertical-align: top; }
 .sign-row {
     display: flex;
-    justify-content: flex-end;
-    margin-top: 44px;
+    justify-content: space-between;
+    margin-top: 40px;
 }
 .sign-box {
     text-align: center;
@@ -139,11 +131,15 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
     margin-top: 2px;
 }
 
+/* ── No-print control bar ── */
+.ctrl-label { font-size:12px; color:#555; font-weight:600; margin-bottom:4px; display:block; }
+.ctrl-input { width:100%; height:40px; border-radius:7px; border:1px solid #ccc; padding:0 12px; font-size:13px; }
+.part-radio-group { display:flex; gap:16px; align-items:center; }
+.part-radio-group label { font-size:13px; font-weight:600; color:#333; display:flex; align-items:center; gap:6px; cursor:pointer; }
+
 @media print {
     .no-print { display: none !important; }
     .fill { border-bottom: 1px solid #000; }
-    .fill:empty:before { content: ""; }
-    .cert-textarea { border: none; padding: 0; border-radius: 0; background: transparent; }
 }
 </style>
 </head>
@@ -156,11 +152,10 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
     <div class="hosp-contact">📞 9414122542 &nbsp;|&nbsp; Emergency: 9414122542</div>
 </div>
 
-<div class="doc-title-bar">MEDICAL CERTIFICATE</div>
+<div class="doc-title-bar">MEDICAL CERTIFICATE OF SICKNESS / LEAVE &amp; FITNESS</div>
 
-<!-- ── Certificate No. / Date ── -->
-<div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin:-4px 0 10px 0;">
-    <span>Certificate No: <span id="cert-no-display">{{ certificate_no|default:"(assigned on save)" }}</span></span>
+<!-- ── Date ── -->
+<div style="display:flex;justify-content:flex-end;font-size:11px;font-weight:700;margin:-4px 0 10px 0;">
     <span>Date: {{ printed_on|date:"d-m-Y" }}</span>
 </div>
 
@@ -177,61 +172,126 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
         <td class="lbl">UHID</td>
         <td>{{ appointment.patient.uhid }}</td>
         <td class="lbl">Consultant</td>
-        <td><span class="fill" contenteditable="true" spellcheck="false">Dr. {{ doctor_name }}</span></td>
+        <td>Dr. {{ doctor_name }}</td>
     </tr>
 </table>
 
-<!-- ── AI Controls: reason, diagnosis, generate (hidden when printing) ── -->
+<!-- ── Controls: which part(s) to print, and every fill-in-the-blank field
+     (hidden when printing). Nothing here is typed directly into the fixed
+     wording below — the printed blanks are rendered live from these inputs
+     so the doctor always reviews/edits through one clearly-labelled place
+     before printing or saving. ── -->
 <div class="no-print" style="margin:16px 0;">
+    <div class="sec-title" style="margin-top:0;">CERTIFICATE OPTIONS</div>
+    <div class="part-radio-group" style="margin-bottom:14px;">
+        <label><input type="radio" name="cert_part" id="id_part_a" value="A" {% if certificate_part_initial == "A" %}checked{% endif %}> Part A only (Sickness / Leave)</label>
+        <label><input type="radio" name="cert_part" id="id_part_b" value="B" {% if certificate_part_initial == "B" %}checked{% endif %}> Part B only (Fitness)</label>
+        <label><input type="radio" name="cert_part" id="id_part_both" value="both" {% if certificate_part_initial == "both" %}checked{% endif %}> Both Parts</label>
+    </div>
+
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:200px;">
-            <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Reason for Certificate</label>
-            <select id="id_cert_reason" onchange="toggleCertReasonOther()" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 10px;font-size:13px;">
-                <option value="post_procedure" {% if cert_reason_initial == "post_procedure" %}selected{% endif %}>Post-Procedure Rest</option>
-                <option value="illness" {% if cert_reason_initial == "illness" %}selected{% endif %}>Illness / Unfit for Duty</option>
-                <option value="fitness" {% if cert_reason_initial == "fitness" %}selected{% endif %}>Fitness Certificate</option>
-                <option value="other" {% if cert_reason_initial == "other" %}selected{% endif %}>Other</option>
-            </select>
+        <div style="flex:1;min-width:220px;">
+            <label class="ctrl-label">Certifying Doctor</label>
+            <input type="text" id="id_doctor_name" class="ctrl-input" value="Dr. {{ doctor_name }}" autocomplete="off">
         </div>
-        <div id="cert-reason-other-wrap" style="flex:1;min-width:200px;display:{% if cert_reason_initial == 'other' %}block{% else %}none{% endif %};">
-            <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Specify Reason</label>
-            <input type="text" id="id_cert_reason_other" value="{{ cert_reason_other_initial }}" placeholder="e.g. Travel fitness, Insurance claim…" autocomplete="off" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 12px;font-size:13px;">
-        </div>
-        <div style="flex:2;min-width:260px;">
-            <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Diagnosis / Clinical Details</label>
-            <input type="text" id="id_cert_diagnosis" value="{{ diagnosis_prefill }}" autocomplete="off" placeholder="e.g. Acute viral fever" style="width:100%;height:40px;border-radius:7px;border:1px solid #ccc;padding:0 12px;font-size:13px;">
+        <div style="flex:1;min-width:180px;">
+            <label class="ctrl-label">Registration No</label>
+            <input type="text" id="id_doctor_regno" class="ctrl-input" value="{{ doctor_reg_no }}" autocomplete="off">
         </div>
     </div>
-    <div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        {% if ai_enabled %}
-        <button type="button" id="cert-ai-btn" onclick="generateCertificateText()" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer;">🤖 AI Generate Certificate</button>
-        {% else %}
-        <span title="AI features not configured" style="color:#94a3b8;border:1px dashed #cbd5e1;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;">🤖 AI Generate Certificate (not configured)</span>
-        {% endif %}
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;">
+        <div style="flex:2;min-width:260px;">
+            <label class="ctrl-label">Suffering From (diagnosis)</label>
+            <input type="text" id="id_diagnosis" class="ctrl-input" value="{{ diagnosis_prefill }}" placeholder="e.g. Acute viral fever" autocomplete="off">
+        </div>
+        <div style="flex:1;min-width:120px;">
+            <label class="ctrl-label">Days Absent</label>
+            <input type="number" min="0" id="id_days_absent" class="ctrl-input" value="{{ days_absent_initial|default_if_none:'' }}">
+        </div>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;">
+        <div style="flex:1;min-width:160px;">
+            <label class="ctrl-label">Absence From</label>
+            <input type="date" id="id_absence_from" class="ctrl-input" value="{{ absence_from_initial|date:'Y-m-d' }}">
+        </div>
+        <div style="flex:1;min-width:160px;">
+            <label class="ctrl-label">Absence To</label>
+            <input type="date" id="id_absence_to" class="ctrl-input" value="{{ absence_to_initial|date:'Y-m-d' }}">
+        </div>
+        <div style="flex:1;min-width:160px;">
+            <label class="ctrl-label">Fitness Effective Date (Part B)</label>
+            <input type="date" id="id_fitness_date" class="ctrl-input" value="{{ fitness_effective_initial|date:'Y-m-d' }}">
+        </div>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;">
+        <div style="flex:2;min-width:260px;">
+            <label class="ctrl-label">Place of Examination</label>
+            <input type="text" id="id_place_exam" class="ctrl-input" value="{{ place_of_examination_initial }}" autocomplete="off">
+        </div>
+        <div style="flex:1;min-width:160px;">
+            <label class="ctrl-label">Date of Issue</label>
+            <input type="date" id="id_date_issue" class="ctrl-input" value="{{ date_of_issue_initial|date:'Y-m-d' }}">
+        </div>
+    </div>
+
+    <div style="margin-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <button type="button" id="cert-save-btn" onclick="saveMedicalCertificate()" style="background:#0369a1;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer;">💾 Save Certificate</button>
-        <span id="cert-ai-loading" style="display:none;font-size:12px;color:#888;">⏳ Generating…</span>
         <span id="cert-save-status" style="font-size:11px;color:#888;"></span>
     </div>
-    <div id="cert-ai-error" style="display:none;margin-top:6px;font-size:12px;color:#dc2626;"></div>
 </div>
 
-<!-- ── Certificate Statement — single auto-growing, editable paragraph ── -->
-<div class="cert-line">
-    <textarea id="id_cert_text" class="cert-textarea" rows="1" spellcheck="false">{{ default_cert_text }}</textarea>
+<!-- ── PART A: Sickness / Leave ── -->
+<div id="part-a-block">
+    <div class="cert-para">
+        I, Dr. <span class="fill fill-wide" id="pv-a-doctor"></span>, after careful clinical examination
+        of the case, hereby certify that Mr./Ms. <span class="fill fill-wide" id="pv-a-patient">{{ appointment.patient.full_name|title }}</span>,
+        whose signature/thumb impression is given below, is suffering from
+        <span class="fill fill-wide" id="pv-a-diagnosis"></span>.
+    </div>
+    <div class="cert-para">
+        I consider that a period of absence from duty of <span class="fill" id="pv-a-days"></span> days,
+        with effect from <span class="fill" id="pv-a-from"></span> to <span class="fill" id="pv-a-to"></span>,
+        is absolutely necessary for the restoration of their health.
+    </div>
 </div>
 
-<!-- ── Signature ── -->
+<!-- ── PART B: Fitness ── -->
+<div id="part-b-block">
+    <div class="part-title">PART B — CERTIFICATE OF FITNESS</div>
+    <div class="cert-para">
+        I, Dr. <span class="fill fill-wide" id="pv-b-doctor"></span>, after careful clinical re-examination
+        of the case, hereby certify that Mr./Ms. <span class="fill fill-wide" id="pv-b-patient">{{ appointment.patient.full_name|title }}</span>,
+        on restoration of health, is now clinically fit to join service/routine activities with effect
+        from <span class="fill" id="pv-b-fitdate"></span>.
+    </div>
+</div>
+
+<!-- ── Common footer ── -->
+<table class="footer-block">
+    <tr><td style="font-weight:700;width:180px;">Place of Examination:</td><td><span class="fill fill-wide" id="pv-place"></span></td></tr>
+    <tr><td style="font-weight:700;">Date of Issue:</td><td><span class="fill" id="pv-issue"></span></td></tr>
+</table>
+
 <div class="sign-row">
+    <div class="sign-box" id="patient-sign-box">
+        <div style="height:50px;"></div>
+        <div class="sig-name">&nbsp;</div>
+        <div class="sig-caption">Patient's Signature / Thumb Impression</div>
+    </div>
     <div class="sign-box">
         <div style="height:50px;"></div>
-        <div class="sig-name" contenteditable="true" spellcheck="false">Dr. {{ doctor_name }}</div>
-        <div class="sig-caption">Consultant — Signature &amp; Stamp</div>
+        <div class="sig-name" id="pv-sig-name"></div>
+        <div class="sig-caption">Signature of Medical Attendant</div>
+        <div class="sig-caption">Registration No: <span id="pv-sig-regno"></span></div>
     </div>
 </div>
 
 <!-- ── Print Button (hidden when printing) ── -->
 <div style="text-align:center; margin: 24px 0 8px 0;" class="no-print">
-    <p style="font-size:11px; color:#666;">Edit the certificate text, or any underlined field, before printing.</p>
+    <p style="font-size:11px; color:#666;">Review every field above before printing — nothing is generated automatically.</p>
     <button onclick="printCertificate()" style="
         background: #374151;
         color: #fff;
@@ -247,98 +307,110 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
 
 {% csrf_token %}
 <script>
-/* ── Auto-growing certificate textarea ── */
-function autoGrowTextarea(el) {
-    if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = el.scrollHeight + 'px';
+/* ── Date formatting: YYYY-MM-DD (input value) → DD-MM-YYYY (printed) ── */
+function formatDate(iso) {
+    if (!iso) return '';
+    var parts = iso.split('-');
+    if (parts.length !== 3) return iso;
+    return parts[2] + '-' + parts[1] + '-' + parts[0];
 }
+
+/* ── Live preview: fills every blank in the fixed wording from the
+   control-bar inputs, and shows only the selected part(s) ── */
+function renderCertificatePreview() {
+    var doctorName  = document.getElementById('id_doctor_name').value.trim();
+    var doctorRegNo = document.getElementById('id_doctor_regno').value.trim();
+    var diagnosis   = document.getElementById('id_diagnosis').value.trim();
+    var daysAbsent  = document.getElementById('id_days_absent').value.trim();
+    var fromDate    = formatDate(document.getElementById('id_absence_from').value);
+    var toDate      = formatDate(document.getElementById('id_absence_to').value);
+    var fitDate     = formatDate(document.getElementById('id_fitness_date').value);
+    var placeExam   = document.getElementById('id_place_exam').value.trim();
+    var issueDate   = formatDate(document.getElementById('id_date_issue').value);
+    var part        = (document.querySelector('input[name=cert_part]:checked') || {}).value || 'A';
+
+    document.getElementById('pv-a-doctor').textContent = doctorName;
+    document.getElementById('pv-a-diagnosis').textContent = diagnosis;
+    document.getElementById('pv-a-days').textContent = daysAbsent;
+    document.getElementById('pv-a-from').textContent = fromDate;
+    document.getElementById('pv-a-to').textContent = toDate;
+
+    document.getElementById('pv-b-doctor').textContent = doctorName;
+    document.getElementById('pv-b-fitdate').textContent = fitDate;
+
+    document.getElementById('pv-place').textContent = placeExam;
+    document.getElementById('pv-issue').textContent = issueDate;
+    document.getElementById('pv-sig-name').textContent = doctorName;
+    document.getElementById('pv-sig-regno').textContent = doctorRegNo;
+
+    var showPartA = (part === 'A' || part === 'both');
+    document.getElementById('part-a-block').style.display = showPartA ? '' : 'none';
+    document.getElementById('part-b-block').style.display = (part === 'B' || part === 'both') ? '' : 'none';
+    // The patient's signature/thumb impression is only referenced by the
+    // Part A wording ("whose signature/thumb impression is given below") —
+    // hide it when printing Part B alone, it has nothing to attach to.
+    document.getElementById('patient-sign-box').style.visibility = showPartA ? 'visible' : 'hidden';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    var el = document.getElementById('id_cert_text');
-    if (!el) return;
-    autoGrowTextarea(el);
-    el.addEventListener('input', function() { autoGrowTextarea(el); });
+    renderCertificatePreview();
+    var ids = [
+        'id_doctor_name', 'id_doctor_regno', 'id_diagnosis', 'id_days_absent',
+        'id_absence_from', 'id_absence_to', 'id_fitness_date', 'id_place_exam', 'id_date_issue'
+    ];
+    ids.forEach(function(id) {
+        document.getElementById(id).addEventListener('input', renderCertificatePreview);
+    });
+    document.querySelectorAll('input[name=cert_part]').forEach(function(r) {
+        r.addEventListener('change', renderCertificatePreview);
+    });
+
+    // Absence-to change (or from change) refreshes a suggested day count,
+    // but only while the doctor hasn't typed their own value over it.
+    var daysTouched = false;
+    document.getElementById('id_days_absent').addEventListener('input', function() { daysTouched = true; });
+    function recalcDays() {
+        if (daysTouched) return;
+        var from = document.getElementById('id_absence_from').value;
+        var to = document.getElementById('id_absence_to').value;
+        if (!from || !to) return;
+        var f = new Date(from), t = new Date(to);
+        var diff = Math.round((t - f) / 86400000) + 1;
+        if (diff > 0) {
+            document.getElementById('id_days_absent').value = diff;
+            renderCertificatePreview();
+        }
+    }
+    document.getElementById('id_absence_from').addEventListener('input', recalcDays);
+    document.getElementById('id_absence_to').addEventListener('input', recalcDays);
 });
 
-/* ── Reason selector: show free-text field only for "Other" ── */
-function toggleCertReasonOther() {
-    var reason = document.getElementById('id_cert_reason').value;
-    document.getElementById('cert-reason-other-wrap').style.display = (reason === 'other') ? 'block' : 'none';
-}
-document.addEventListener('DOMContentLoaded', toggleCertReasonOther);
-
-{% if ai_enabled %}
-function generateCertificateText() {
-    var reason = document.getElementById('id_cert_reason').value;
-    var reasonOther = document.getElementById('id_cert_reason_other').value.trim();
-    var diagnosis = document.getElementById('id_cert_diagnosis').value.trim();
-    if (!diagnosis) {
-        alert('Please fill in Diagnosis / Clinical Details first.');
-        return;
-    }
-    if (reason === 'other' && !reasonOther) {
-        alert('Please specify the reason for the certificate.');
-        return;
-    }
-    var btn = document.getElementById('cert-ai-btn');
-    var loading = document.getElementById('cert-ai-loading');
-    var errBox = document.getElementById('cert-ai-error');
-    btn.disabled = true;
-    loading.style.display = 'inline';
-    errBox.style.display = 'none';
-
-    var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
-    var csrf = csrfEl ? csrfEl.value : '';
-
-    fetch('/generate-medical-certificate-text/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-        body: JSON.stringify({
-            appointment_id: {{ appointment.id }},
-            reason: reason,
-            reason_other: reasonOther,
-            diagnosis: diagnosis
-        })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-        if (data.error) { throw new Error(data.error); }
-        var certEl = document.getElementById('id_cert_text');
-        certEl.value = data.cert_text || '';
-        autoGrowTextarea(certEl);
-        saveMedicalCertificate();
-    })
-    .catch(function(err) {
-        errBox.textContent = '⚠️ ' + err.message;
-        errBox.style.display = 'block';
-    })
-    .finally(function() {
-        btn.disabled = false;
-        loading.style.display = 'none';
-    });
-}
-{% endif %}
-
-/* ── Save: persists reason/text and assigns certificate_no once ── */
+/* ── Save: persists the structured fields (no free text, no AI) ── */
 function saveMedicalCertificate() {
-    var reason = document.getElementById('id_cert_reason').value;
-    var reasonOther = document.getElementById('id_cert_reason_other').value.trim();
-    var certText = document.getElementById('id_cert_text').value.trim();
     var statusEl = document.getElementById('cert-save-status');
     var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
     var csrf = csrfEl ? csrfEl.value : '';
+    var part = (document.querySelector('input[name=cert_part]:checked') || {}).value || 'A';
 
     statusEl.textContent = 'Saving…';
 
     return fetch('{% url "hms:save_medical_certificate" appointment.id %}', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-        body: JSON.stringify({ reason: reason, reason_other: reasonOther, cert_text: certText })
+        body: JSON.stringify({
+            certificate_part: part,
+            sickness_diagnosis: document.getElementById('id_diagnosis').value.trim(),
+            days_absent: document.getElementById('id_days_absent').value.trim(),
+            absence_from_date: document.getElementById('id_absence_from').value,
+            absence_to_date: document.getElementById('id_absence_to').value,
+            fitness_effective_date: document.getElementById('id_fitness_date').value,
+            place_of_examination: document.getElementById('id_place_exam').value.trim(),
+            date_of_issue: document.getElementById('id_date_issue').value
+        })
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
         if (data.error) { throw new Error(data.error); }
-        document.getElementById('cert-no-display').textContent = data.certificate_no;
         statusEl.textContent = '✅ Saved';
         return data;
     })
@@ -348,7 +420,7 @@ function saveMedicalCertificate() {
     });
 }
 
-/* ── Print: save first (so a number is assigned) then open print dialog ── */
+/* ── Print: save first, then open the print dialog ── */
 function printCertificate() {
     saveMedicalCertificate()
         .catch(function() { /* still let the doctor print even if the save failed */ })
