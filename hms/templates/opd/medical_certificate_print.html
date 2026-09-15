@@ -18,7 +18,7 @@ body {
     margin: 0;
     padding: 0;
     font-family: Arial, sans-serif;
-    font-size: 11px;
+    font-size: 12.5px;
     color: #000;
     text-align: left;
 }
@@ -28,22 +28,22 @@ body {
     text-align: center;
     border-bottom: 2px solid #000;
     padding-bottom: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
 .hosp-name {
-    font-size: 20px;
+    font-size: 21px;
     font-weight: 900;
     letter-spacing: 1px;
     text-transform: uppercase;
     color: #000;
 }
 .hosp-sub {
-    font-size: 11px;
+    font-size: 12px;
     color: #333;
-    margin-top: 2px;
+    margin-top: 3px;
 }
 .hosp-contact {
-    font-size: 10px;
+    font-size: 11px;
     color: #333;
     margin-top: 3px;
 }
@@ -53,11 +53,11 @@ body {
     background: #0369a1;
     color: #fff;
     text-align: center;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
-    padding: 7px;
+    padding: 8px;
     letter-spacing: 1px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     border-radius: 3px;
 }
 
@@ -65,32 +65,41 @@ body {
 .sec-title {
     background: #e8e8e8;
     color: #000;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
-    padding: 4px 7px;
-    margin: 14px 0 4px 0;
+    padding: 5px 8px;
+    margin: 12px 0 6px 0;
     letter-spacing: 0.5px;
 }
 .part-title {
     background: #0369a1;
     color: #fff;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
-    padding: 5px 7px;
-    margin: 18px 0 8px 0;
+    padding: 6px 8px;
+    margin: 16px 0 8px 0;
     letter-spacing: 0.5px;
+}
+
+/* Divider used in place of a Part A heading, so the certificate doesn't
+   run straight from the patient-details table into the Part A paragraph
+   with no visual break. */
+.part-a-divider {
+    border: none;
+    border-top: 1px solid #ccc;
+    margin: 14px 0 10px 0;
 }
 
 /* ── Tables ── */
 table.details { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
-table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top; font-size: 11px; }
+table.details td { border: 1px solid #999; padding: 5px 8px; vertical-align: top; font-size: 12px; }
 .lbl { font-weight: 700; background: #f5f5f5; width: 20%; white-space: nowrap; }
 
 /* ── Certificate body ── */
 .cert-para {
     margin: 10px 0;
-    font-size: 12px;
-    line-height: 2;
+    font-size: 12.5px;
+    line-height: 1.9;
     text-align: justify;
 }
 
@@ -99,21 +108,20 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
    wording can never drift out of sync. */
 .fill {
     display: inline-block;
-    min-width: 60px;
+    min-width: 30px;
     padding: 0 4px;
-    border-bottom: 1px dashed #666;
     font-weight: 700;
 }
-.fill-wide { min-width: 220px; }
+.fill-wide { min-width: 100px; }
 .fill:empty:before { content: "________"; color: #999; font-weight: 400; }
 
 /* ── Footer / signature ── */
-table.footer-block { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+table.footer-block { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12.5px; }
 table.footer-block td { padding: 3px 0; vertical-align: top; }
 .sign-row {
     display: flex;
     justify-content: space-between;
-    margin-top: 40px;
+    margin-top: 36px;
 }
 .sign-box {
     text-align: center;
@@ -122,11 +130,11 @@ table.footer-block td { padding: 3px 0; vertical-align: top; }
 .sig-name {
     border-top: 1px solid #000;
     padding-top: 4px;
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 700;
 }
 .sig-caption {
-    font-size: 10px;
+    font-size: 10.5px;
     color: #333;
     margin-top: 2px;
 }
@@ -139,7 +147,6 @@ table.footer-block td { padding: 3px 0; vertical-align: top; }
 
 @media print {
     .no-print { display: none !important; }
-    .fill { border-bottom: 1px solid #000; }
 }
 </style>
 </head>
@@ -153,11 +160,6 @@ table.footer-block td { padding: 3px 0; vertical-align: top; }
 </div>
 
 <div class="doc-title-bar">MEDICAL CERTIFICATE OF SICKNESS / LEAVE &amp; FITNESS</div>
-
-<!-- ── Date ── -->
-<div style="display:flex;justify-content:flex-end;font-size:11px;font-weight:700;margin:-4px 0 10px 0;">
-    <span>Date: {{ printed_on|date:"d-m-Y" }}</span>
-</div>
 
 <!-- ── Patient Details ── -->
 <div class="sec-title">PATIENT DETAILS</div>
@@ -175,6 +177,11 @@ table.footer-block td { padding: 3px 0; vertical-align: top; }
         <td>Dr. {{ doctor_name }}</td>
     </tr>
 </table>
+
+<!-- ── Date ── -->
+<div style="display:flex;justify-content:flex-end;font-size:12.5px;font-weight:400;margin:6px 0 0 0;">
+    <span>Date: {{ printed_on|date:"d-m-Y" }}</span>
+</div>
 
 <!-- ── Controls: which part(s) to print, and every fill-in-the-blank field
      (hidden when printing). Nothing here is typed directly into the fixed
@@ -245,6 +252,7 @@ table.footer-block td { padding: 3px 0; vertical-align: top; }
 
 <!-- ── PART A: Sickness / Leave ── -->
 <div id="part-a-block">
+    <hr class="part-a-divider">
     <div class="cert-para">
         I, Dr. <span class="fill fill-wide" id="pv-a-doctor"></span>, after careful clinical examination
         of the case, hereby certify that Mr./Ms. <span class="fill fill-wide" id="pv-a-patient">{{ appointment.patient.full_name|title }}</span>,
@@ -271,8 +279,8 @@ table.footer-block td { padding: 3px 0; vertical-align: top; }
 
 <!-- ── Common footer ── -->
 <table class="footer-block">
-    <tr><td style="font-weight:700;width:180px;">Place of Examination:</td><td><span class="fill fill-wide" id="pv-place"></span></td></tr>
-    <tr><td style="font-weight:700;">Date of Issue:</td><td><span class="fill" id="pv-issue"></span></td></tr>
+    <tr><td style="font-weight:700;width:180px;">Place of Examination:</td><td><span id="pv-place" style="font-weight:400;"></span></td></tr>
+    <tr><td style="font-weight:700;">Date of Issue:</td><td><span class="fill" id="pv-issue" style="font-weight:400;"></span></td></tr>
 </table>
 
 <div class="sign-row">
@@ -315,6 +323,14 @@ function formatDate(iso) {
     return parts[2] + '-' + parts[1] + '-' + parts[0];
 }
 
+/* The "Certifying Doctor" control already includes a "Dr." prefix (it also
+   feeds the plain signature line, where that prefix belongs) — but the
+   fixed wording writes "I, Dr. ___" with its own literal "Dr.", so the
+   blank itself must have the prefix stripped or it prints "Dr. Dr. Name". */
+function stripDrPrefix(name) {
+    return name.replace(/^dr\.?\s+/i, '');
+}
+
 /* ── Live preview: fills every blank in the fixed wording from the
    control-bar inputs, and shows only the selected part(s) ── */
 function renderCertificatePreview() {
@@ -329,13 +345,13 @@ function renderCertificatePreview() {
     var issueDate   = formatDate(document.getElementById('id_date_issue').value);
     var part        = (document.querySelector('input[name=cert_part]:checked') || {}).value || 'A';
 
-    document.getElementById('pv-a-doctor').textContent = doctorName;
+    document.getElementById('pv-a-doctor').textContent = stripDrPrefix(doctorName);
     document.getElementById('pv-a-diagnosis').textContent = diagnosis;
     document.getElementById('pv-a-days').textContent = daysAbsent;
     document.getElementById('pv-a-from').textContent = fromDate;
     document.getElementById('pv-a-to').textContent = toDate;
 
-    document.getElementById('pv-b-doctor').textContent = doctorName;
+    document.getElementById('pv-b-doctor').textContent = stripDrPrefix(doctorName);
     document.getElementById('pv-b-fitdate').textContent = fitDate;
 
     document.getElementById('pv-place').textContent = placeExam;
