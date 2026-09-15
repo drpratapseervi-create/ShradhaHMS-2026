@@ -801,14 +801,21 @@ def save_medical_certificate(request, appointment_id):
         except (TypeError, ValueError):
             return None
 
+    def to_date(value):
+        # parse_date() calls date.fromisoformat() internally, which raises
+        # TypeError (not ValueError) on None — so an empty/missing blank
+        # must short-circuit here rather than reach parse_date at all.
+        value = (value or "").strip()
+        return parse_date(value) if value else None
+
     consultation.certificate_part = (data.get("certificate_part") or "").strip()
     consultation.sickness_diagnosis = (data.get("sickness_diagnosis") or "").strip()
     consultation.days_absent = to_int(data.get("days_absent"))
-    consultation.absence_from_date = parse_date((data.get("absence_from_date") or "").strip() or None)
-    consultation.absence_to_date = parse_date((data.get("absence_to_date") or "").strip() or None)
-    consultation.fitness_effective_date = parse_date((data.get("fitness_effective_date") or "").strip() or None)
+    consultation.absence_from_date = to_date(data.get("absence_from_date"))
+    consultation.absence_to_date = to_date(data.get("absence_to_date"))
+    consultation.fitness_effective_date = to_date(data.get("fitness_effective_date"))
     consultation.place_of_examination = (data.get("place_of_examination") or "").strip()
-    consultation.date_of_issue = parse_date((data.get("date_of_issue") or "").strip() or None)
+    consultation.date_of_issue = to_date(data.get("date_of_issue"))
 
     consultation.save(update_fields=[
         "certificate_part", "sickness_diagnosis", "days_absent",
