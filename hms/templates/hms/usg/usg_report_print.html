@@ -106,7 +106,7 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
 }
 .impression-table .impression-label { white-space: nowrap; width: 90px; max-width: 90px; padding-right: 8px !important; overflow: hidden; }
 .impression-table .impression-text { width: auto; font-weight: 700; letter-spacing: normal; }
-.impression-table tr:not(:first-child) .impression-text { padding: 2px 7px 2px 0; font-size: 12px; }
+.impression-table tr:not(:first-child) .impression-text { padding: 2px 7px 2px 7px; font-size: 12px; }
 
 /* Advice: label and its content on the same row, not stacked. */
 .advice-row { display: flex; align-items: flex-start; margin: 0; }
@@ -259,7 +259,6 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
 <!-- ── Signature ── -->
 <div class="sign-row">
     <div class="sign-box">
-        <div style="height:50px;"></div>
         <div class="sig-name">Dr. {{ report.reporting_doctor.full_name|default:"Pratap Senecha" }}{% if report.reporting_doctor.qualification %}, {{ report.reporting_doctor.qualification }}{% elif not report.reporting_doctor %}, MBBS, MS{% endif %}</div>
         <div class="sig-caption">{{ report.reporting_doctor.registration_no|default:"RMC No-27994" }}</div>
     </div>
