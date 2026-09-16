@@ -150,6 +150,14 @@ Colon wall thickness __ mm. Ileal wall thickness __ mm."""
     ]
 
     @classmethod
+    def pelvic_organs_texts(cls):
+        """The two gender-specific pelvic-organ paragraphs, so the report
+        form's JS can re-sync just that paragraph when the selected patient
+        changes, without discarding anything else already typed into
+        Findings (see hms/usg/usg_report_form.html)."""
+        return {"male": cls._PELVIC_ORGANS_MALE, "female": cls._PELVIC_ORGANS_FEMALE}
+
+    @classmethod
     def default_findings_text(cls, scan_type, gender=None):
         template = cls.FINDINGS_TEMPLATES.get(scan_type, "")
         if isinstance(template, dict):

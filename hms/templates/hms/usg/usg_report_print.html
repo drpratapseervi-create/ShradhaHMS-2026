@@ -173,6 +173,16 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
 
 <div class="doc-title-bar">ULTRASONOGRAPHY {{ report.get_scan_type_display|upper }}</div>
 
+{% if report.patient.gender == "Male" and "Uterus and Ovaries:" in report.findings_text %}
+<div class="no-print" style="margin-bottom:10px;padding:10px 12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;font-size:12px;color:#991b1b;">
+    ⚠️ This patient is Male but Findings still has the female (Uterus and Ovaries) paragraph — edit the report before handing this out.
+</div>
+{% elif report.patient.gender == "Female" and "Prostate:" in report.findings_text %}
+<div class="no-print" style="margin-bottom:10px;padding:10px 12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;font-size:12px;color:#991b1b;">
+    ⚠️ This patient is Female but Findings still has the male (Prostate) paragraph — edit the report before handing this out.
+</div>
+{% endif %}
+
 <!-- ── Findings — organ labels (Liver:, Spleen:, ...) print bold as inline
      headers; the narrative sentences stay normal weight. ── -->
 <div class="report-para">{{ report.findings_text|default:"-"|bold_usg_labels|linebreaksbr }}</div>

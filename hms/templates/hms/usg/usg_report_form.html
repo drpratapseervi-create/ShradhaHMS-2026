@@ -154,6 +154,10 @@
 
     <div class="form-section">
     <div class="section-title">Findings</div>
+    <div id="gender-mismatch-warning" style="display:none;margin-bottom:10px;padding:10px 12px;background:#2a1a0a;border:1px solid #7a4a1a;border-radius:8px;font-size:12px;color:#fca5a5;">
+        ⚠️ <span id="gender-mismatch-text"></span>
+        <button type="button" class="btn btn-teal" style="padding:4px 10px;font-size:11px;margin-left:8px;" onclick="fixPelvicOrgansMismatch()">Fix it</button>
+    </div>
     <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:8px;">
         <button type="button" class="btn btn-teal" style="padding:6px 14px;font-size:12px;" onclick="loadStandardTemplate()">
             📋 Load Standard Template
@@ -242,6 +246,67 @@
 
 <script>
 var USG_FINDINGS_TEMPLATES = {{ findings_templates|default:"{}"|safe }};
+var USG_PELVIC_ORGANS = {{ pelvic_organs_texts|default:"{}"|safe }};
+
+// ── Keep the Findings paragraph's Prostate/Uterus section in sync with
+//    the selected patient's actual sex — a report saved with the wrong
+//    one loaded (e.g. template loaded before a patient was picked, then
+//    never reloaded) has printed a female paragraph for a male patient
+//    before. Runs on load and whenever the patient selection changes. ──
+function checkPelvicOrgansMismatch() {
+    var ta = document.getElementById('id_findings_text');
+    var warning = document.getElementById('gender-mismatch-warning');
+    var warningText = document.getElementById('gender-mismatch-text');
+    var patientSelect = document.getElementById('id_patient');
+    if (!ta || !warning || !patientSelect || !patientSelect.value) { if (warning) warning.style.display = 'none'; return; }
+
+    var hasProstate = ta.value.indexOf('Prostate:') !== -1;
+    var hasUterus = ta.value.indexOf('Uterus and Ovaries:') !== -1;
+    if (!hasProstate && !hasUterus) { warning.style.display = 'none'; return; }
+
+    fetch('{% url "hms:patient_gender_api" 0 %}'.replace('0', patientSelect.value))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var mismatch = (data.gender === 'Male' && hasUterus) || (data.gender === 'Female' && hasProstate);
+            if (mismatch) {
+                warningText.textContent = 'The selected patient is ' + data.gender + ', but Findings still has the ' +
+                    (hasUterus ? 'Uterus and Ovaries (female)' : 'Prostate (male)') + ' paragraph.';
+                warning.style.display = 'block';
+            } else {
+                warning.style.display = 'none';
+            }
+        })
+        .catch(function() {});
+}
+
+function fixPelvicOrgansMismatch() {
+    var ta = document.getElementById('id_findings_text');
+    var patientSelect = document.getElementById('id_patient');
+    if (!ta || !patientSelect || !patientSelect.value) return;
+
+    fetch('{% url "hms:patient_gender_api" 0 %}'.replace('0', patientSelect.value))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var wantMale = data.gender === 'Male';
+            var wrongBlock = wantMale ? USG_PELVIC_ORGANS.female : USG_PELVIC_ORGANS.male;
+            var rightBlock = wantMale ? USG_PELVIC_ORGANS.male : USG_PELVIC_ORGANS.female;
+            if (wrongBlock && ta.value.indexOf(wrongBlock) !== -1) {
+                ta.value = ta.value.split(wrongBlock).join(rightBlock);
+                autoGrowTextarea(ta);
+            } else {
+                alert('Could not auto-fix — the paragraph has already been edited by hand. Please replace it manually.');
+            }
+            checkPelvicOrgansMismatch();
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    checkPelvicOrgansMismatch();
+    var patientSelect = document.getElementById('id_patient');
+    if (patientSelect) patientSelect.addEventListener('change', checkPelvicOrgansMismatch);
+    var findingsEl = document.getElementById('id_findings_text');
+    if (findingsEl) findingsEl.addEventListener('blur', checkPelvicOrgansMismatch);
+});
 
 function autoGrowTextarea(el) {
     if (!el) return;

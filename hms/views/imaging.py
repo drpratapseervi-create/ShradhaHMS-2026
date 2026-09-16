@@ -265,6 +265,7 @@ def usg_report_create(request, patient_id=None, bill_item_id=None):
         "title":              "New USG Report",
         "findings_templates": json.dumps(USGReport.FINDINGS_TEMPLATES),
         "measurement_fields": USGReport.MEASUREMENT_FIELDS,
+        "pelvic_organs_texts": json.dumps(USGReport.pelvic_organs_texts()),
         "advice_quick_options": USG_ADVICE_QUICK_OPTIONS,
         "impression_groups": _usg_impression_groups(),
     })
@@ -291,6 +292,7 @@ def usg_report_edit(request, pk):
         "title":              f"Edit {report.report_no}",
         "findings_templates": json.dumps(USGReport.FINDINGS_TEMPLATES),
         "measurement_fields": USGReport.MEASUREMENT_FIELDS,
+        "pelvic_organs_texts": json.dumps(USGReport.pelvic_organs_texts()),
         "advice_quick_options": USG_ADVICE_QUICK_OPTIONS,
         "impression_groups": _usg_impression_groups(),
     })
