@@ -290,6 +290,19 @@ def _tpa_parse_date(raw):
             return _dt.datetime.strptime(s, fmt).date()
         except ValueError:
             continue
+    # Government-scheme portal exports (e.g. MAA Yojana / Ayushman Bharat
+    # "Generic Search Report") write dates as "02,August   , 2026" — comma
+    # separated with irregular internal whitespace, sometimes with a
+    # trailing " 12:00 AM". Strip that off and re-join on single spaces.
+    s_no_time = re.sub(r'\s+\d{1,2}:\d{2}\s*[AP]M\s*$', '', s, flags=re.IGNORECASE)
+    parts = [p.strip() for p in s_no_time.split(',') if p.strip()]
+    if len(parts) == 3:
+        joined = ' '.join(parts)
+        for fmt in ('%d %B %Y', '%d %b %Y'):
+            try:
+                return _dt.datetime.strptime(joined, fmt).date()
+            except ValueError:
+                continue
     return None
 
 
@@ -298,7 +311,7 @@ def _tpa_normalize_status(raw):
         return None
     s = str(raw).strip().lower()
     for kw, val in [('approv', 'approved'), ('settl', 'settled'), ('reject', 'rejected'),
-                     ('query', 'query_raised'), ('pend', 'pending')]:
+                     ('query', 'query_raised'), ('paid', 'settled'), ('pend', 'pending')]:
         if kw in s:
             return val
     return None
@@ -326,19 +339,44 @@ def _run_tpa_import(batch):
             return None
         return row_dict.get(h)
 
-    updated = created = skipped = 0
+    # First pass: some source reports (e.g. government-scheme "Generic Search
+    # Report" exports) list one row per claim LINE ITEM (main procedure,
+    # implant/consumable add-ons, ...) all sharing the same TID rather than
+    # one row per claim. Pre-sum the approved amount across every row that
+    # shares a TID so the total isn't silently overwritten down to just the
+    # last line's amount.
+    parsed_rows = []
     row_num = 1
     for raw_row in rows_iter:
         row_num += 1
         if raw_row is None or all(c is None or str(c).strip() == '' for c in raw_row):
             continue
-
         row_dict = dict(zip(headers, raw_row))
-        raw_data = {k: _tpa_json_safe(v) for k, v in row_dict.items()}
-
         tid_val = str(cell(row_dict, 'tid') or '').strip()
-        policy_val = str(cell(row_dict, 'policy_no') or '').strip()
-        name_val = str(cell(row_dict, 'patient_name') or '').strip()
+        parsed_rows.append({
+            'row_num': row_num,
+            'row_dict': row_dict,
+            'raw_data': {k: _tpa_json_safe(v) for k, v in row_dict.items()},
+            'tid_val': tid_val,
+            'policy_val': str(cell(row_dict, 'policy_no') or '').strip(),
+            'name_val': str(cell(row_dict, 'patient_name') or '').strip(),
+        })
+
+    tid_totals = {}
+    for pr in parsed_rows:
+        if pr['tid_val']:
+            amt = _tpa_parse_amount(cell(pr['row_dict'], 'approved_amount')) or Decimal('0')
+            tid_totals[pr['tid_val']] = tid_totals.get(pr['tid_val'], Decimal('0')) + amt
+
+    updated = created = merged = skipped = 0
+    tid_seen = {}  # tid_val -> the TPAPatient object handling that TID's total, once processed
+    for pr in parsed_rows:
+        row_num = pr['row_num']
+        row_dict = pr['row_dict']
+        raw_data = pr['raw_data']
+        tid_val = pr['tid_val']
+        policy_val = pr['policy_val']
+        name_val = pr['name_val']
 
         if not tid_val and not policy_val and not name_val:
             TPAImportRow.objects.create(
@@ -347,6 +385,21 @@ def _run_tpa_import(batch):
                 error_message='No TID, Policy No. or Patient Name in this row.',
             )
             skipped += 1
+            continue
+
+        if tid_val and tid_val in tid_seen:
+            # A later line item for a TID already processed above — its
+            # amount is already folded into that row's total, so this row
+            # just records the audit trail, no further DB change.
+            TPAImportRow.objects.create(
+                batch=batch, row_number=row_num, raw_data=raw_data,
+                match_type='tid', tpa_patient=tid_seen[tid_val], action='merged',
+                error_message=(
+                    f"Line item amount merged into TID {tid_val}'s total "
+                    f"(₹{tid_totals[tid_val]})."
+                ),
+            )
+            merged += 1
             continue
 
         qs = TPAPatient.objects.filter(scheme_type=batch.scheme_type)
@@ -364,7 +417,9 @@ def _run_tpa_import(batch):
                 match_type = 'policy_name'
 
         status_val = _tpa_normalize_status(cell(row_dict, 'status'))
-        amount_val = _tpa_parse_amount(cell(row_dict, 'approved_amount'))
+        # Use the pre-summed total for this TID (covers files with one row
+        # per claim line item) rather than just this row's own amount.
+        amount_val = tid_totals[tid_val] if tid_val else _tpa_parse_amount(cell(row_dict, 'approved_amount'))
         package_val = cell(row_dict, 'package_code')
         package_val = str(package_val).strip() if package_val not in (None, '') else None
         admission_val = _tpa_parse_date(cell(row_dict, 'admission_date'))
@@ -408,6 +463,8 @@ def _run_tpa_import(batch):
                 action='updated', field_changes=changes,
             )
             updated += 1
+            if tid_val:
+                tid_seen[tid_val] = target_obj
         else:
             new_obj = TPAPatient.objects.create(
                 scheme_type=batch.scheme_type,
@@ -427,13 +484,16 @@ def _run_tpa_import(batch):
                 match_type='none', tpa_patient=new_obj, action='created',
             )
             created += 1
+            if tid_val:
+                tid_seen[tid_val] = new_obj
 
     wb.close()
     batch.updated_count = updated
     batch.created_count = created
+    batch.merged_count = merged
     batch.skipped_count = skipped
     batch.status = 'done'
-    batch.save(update_fields=['updated_count', 'created_count', 'skipped_count', 'status'])
+    batch.save(update_fields=['updated_count', 'created_count', 'merged_count', 'skipped_count', 'status'])
 
 
 _TPA_UNDO_CASTERS = {

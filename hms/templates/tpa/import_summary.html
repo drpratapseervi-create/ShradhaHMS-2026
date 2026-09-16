@@ -60,6 +60,7 @@
               <td>
                 {% if r.action == 'updated' %}<span class="badge bg-primary">Updated</span>
                 {% elif r.action == 'created' %}<span class="badge bg-warning text-dark">New Draft</span>
+                {% elif r.action == 'merged' %}<span class="badge bg-info text-dark">Merged (same TID)</span>
                 {% elif r.action == 'skipped' %}<span class="badge bg-secondary">Skipped</span>
                 {% else %}<span class="badge bg-danger">Error</span>{% endif %}
               </td>

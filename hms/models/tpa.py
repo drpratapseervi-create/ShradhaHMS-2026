@@ -171,6 +171,7 @@ class TPAImportBatch(models.Model):
 
     updated_count = models.PositiveIntegerField(default=0)
     created_count = models.PositiveIntegerField(default=0)
+    merged_count = models.PositiveIntegerField(default=0)
     skipped_count = models.PositiveIntegerField(default=0)
     error_message = models.TextField(blank=True, default="")
 
@@ -187,8 +188,9 @@ class TPAImportBatch(models.Model):
 
     @property
     def summary_text(self):
+        merged = f", {self.merged_count} merged into another row's total" if self.merged_count else ""
         skipped = f", {self.skipped_count} skipped -- no match" if self.skipped_count else ""
-        return f"{self.updated_count} updated, {self.created_count} new{skipped}"
+        return f"{self.updated_count} updated, {self.created_count} new{merged}{skipped}"
 
 
 class TPAImportRow(models.Model):
@@ -196,6 +198,7 @@ class TPAImportRow(models.Model):
     ACTION_CHOICES = [
         ("updated", "Updated existing record"),
         ("created", "Created new draft record"),
+        ("merged", "Merged into another row's total (same TID)"),
         ("skipped", "Skipped -- no match"),
         ("error", "Error"),
     ]
