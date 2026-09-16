@@ -159,6 +159,27 @@
             📋 Load Standard Template
         </button>
     </div>
+
+    <div class="ch-group-label" onclick="toggleChGroup(this)" style="margin-bottom:0;">
+        <span class="ch-group-chevron">▶</span> 📏 Measurements
+        <span class="ch-group-count">fill in, then Apply</span>
+    </div>
+    <div class="ch-group-body" id="measurements-panel" style="display:none;flex-direction:column;gap:8px;padding:10px 4px 4px;">
+        <div style="font-size:11px;color:#555;margin-bottom:2px;">
+            Load the standard template above first — each field below fills in that organ's blank in the Findings paragraph. A field does nothing if its blank isn't in the current text (e.g. wrong scan type, or already filled in by hand).
+        </div>
+        {% for label, token, unit in measurement_fields %}
+        <div style="display:flex;align-items:center;gap:8px;">
+            <label style="flex:0 0 140px;margin:0;">{{ label }} <span style="opacity:.65;font-weight:500;">({{ unit }})</span></label>
+            <input type="text" class="meas-input" id="meas_{{ token }}" data-token="{{ token }}" placeholder="e.g. 12.5" style="max-width:120px;">
+        </div>
+        {% endfor %}
+        <div style="margin-top:6px;">
+            <button type="button" class="btn btn-green" style="padding:7px 16px;font-size:12px;" onclick="applyMeasurements()">✅ Apply to Findings</button>
+            <span id="measurements-status" style="margin-left:10px;font-size:11px;color:#8892a4;"></span>
+        </div>
+    </div>
+
     {{ form.findings_text }}
     <div style="margin-top:6px;font-size:11px;color:#555;">
         Loads the standard normal-study wording for the selected scan type — edit
@@ -235,6 +256,38 @@ document.addEventListener('DOMContentLoaded', function() {
     autoGrowTextarea(el);
     el.addEventListener('input', function() { autoGrowTextarea(el); });
 });
+
+// ── Measurements panel: fill each organ's __TOKEN__ blank in Findings ──
+function applyMeasurements() {
+    var ta = document.getElementById('id_findings_text');
+    var statusEl = document.getElementById('measurements-status');
+    var inputs = document.querySelectorAll('#measurements-panel .meas-input');
+    var applied = [], notFound = [];
+
+    inputs.forEach(function(input) {
+        var val = input.value.trim();
+        if (!val) return;
+        var token = '__' + input.getAttribute('data-token') + '__';
+        if (ta.value.indexOf(token) === -1) {
+            notFound.push(token);
+            return;
+        }
+        ta.value = ta.value.split(token).join(val);
+        applied.push(token);
+    });
+
+    autoGrowTextarea(ta);
+
+    if (!applied.length && !notFound.length) {
+        statusEl.textContent = 'Type a value in at least one field first.';
+    } else if (!applied.length) {
+        statusEl.textContent = '⚠️ None of those blanks are in the current Findings text — load the standard template first.';
+    } else if (notFound.length) {
+        statusEl.textContent = '✓ Applied ' + applied.length + ' — ' + notFound.length + ' field(s) had no matching blank.';
+    } else {
+        statusEl.textContent = '✓ Applied ' + applied.length + ' measurement' + (applied.length > 1 ? 's' : '') + ' to Findings.';
+    }
+}
 
 function applyTemplateText(template, gender) {
     var text = template;

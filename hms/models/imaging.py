@@ -89,18 +89,25 @@ class USGReport(models.Model):
     # wording, used to prefill the findings box on a new report of that
     # scan type. Scan types not listed here just start with an empty
     # findings box until a standard template is supplied for them.
-    _ABDOMEN_PELVIS_COMMON = """Liver: The liver is normal in size measuring __ cm. The echotexture is normal. No focal hepatic lesion is seen. The intrahepatic ducts are not dilated. The portal vein and common bile duct show normal calibre.
-Portal Vein: Measuring __ mm.
+    # Named __TOKEN__ placeholders (instead of a bare "__") for the
+    # measurements the "Measurements" panel on the report form fills in —
+    # each is looked up by name in the JS, so it can target the right blank
+    # regardless of where it falls in the paragraph. Kept human-readable
+    # (still reads as an obvious fill-in-the-blank if edited by hand without
+    # the panel) and always followed by its unit so the doctor never has to
+    # guess cm vs mm while typing.
+    _ABDOMEN_PELVIS_COMMON = """Liver: The liver is normal in size measuring __LIVER__ cm. The echotexture is normal. No focal hepatic lesion is seen. The intrahepatic ducts are not dilated. The portal vein and common bile duct show normal calibre.
+Portal Vein: Measuring __PORTAL_VEIN__ mm.
 
 Gallbladder: The gallbladder is distended and shows smooth walls. No gallstones or biliary sludge is seen. The wall thickness is within normal limits. No evidence of pericholecystic fluid.
-CBD: Measuring __ size normal.
+CBD: Measuring __CBD__ mm, size normal.
 
 Pancreas: The pancreas is normal in size and echotexture. The pancreatic duct is not dilated.
-Spleen: The spleen is normal in size, measuring __ cm. No splenic lesion is seen.
+Spleen: The spleen is normal in size, measuring __SPLEEN__ cm. No splenic lesion is seen.
 
 Kidneys: Both kidneys are normal in size, shape and position and show normal cortico-medullary differentiation.
-Right kidney measures __
-Left kidney measures __
+Right kidney measures __RIGHT_KIDNEY__ cm
+Left kidney measures __LEFT_KIDNEY__ cm
 
 Bladder: The urinary bladder is adequately filled. Its wall is not thickened. No evidence of diverticulum or calculus.
 
@@ -108,8 +115,8 @@ Bladder: The urinary bladder is adequately filled. Its wall is not thickened. No
 
 Colon wall thickness __ mm. Ileal wall thickness __ mm."""
 
-    _PELVIC_ORGANS_FEMALE = "Uterus and Ovaries: The uterus is __ size, cm, anteverted shape, homogenous echotexture, myometrium and endometrial thickness __ mm, and ovaries are of normal size."
-    _PELVIC_ORGANS_MALE = "Prostate: The prostate gland is normal in size and shows homogenous echotexture. No focal lesion is seen. Post-void residual urine is minimal."
+    _PELVIC_ORGANS_FEMALE = "Uterus and Ovaries: The uterus is __UTERUS__ cm size, anteverted shape, homogenous echotexture, myometrium and endometrial thickness __ mm, and ovaries are of normal size."
+    _PELVIC_ORGANS_MALE = "Prostate: The prostate gland is normal in size, measuring __PROSTATE__ cm, and shows homogenous echotexture. No focal lesion is seen. Post-void residual urine is minimal."
 
     # Standard normal-study narrative per scan type — the doctor's own
     # wording, used to prefill the findings box on a new report of that
@@ -124,6 +131,21 @@ Colon wall thickness __ mm. Ileal wall thickness __ mm."""
             "default": _ABDOMEN_PELVIS_COMMON.replace("{PELVIC_ORGANS}", _PELVIC_ORGANS_FEMALE),
         },
     }
+
+    # (display label, __TOKEN__ name, unit) for the report form's
+    # "Measurements" panel — one row per organ blank in the templates
+    # above. A field is a harmless no-op if its token isn't in the
+    # currently-loaded findings text (wrong scan type, or filled by hand).
+    MEASUREMENT_FIELDS = [
+        ("Liver",        "LIVER",        "cm"),
+        ("Portal Vein",  "PORTAL_VEIN",  "mm"),
+        ("CBD",          "CBD",          "mm"),
+        ("Spleen",       "SPLEEN",       "cm"),
+        ("Right Kidney", "RIGHT_KIDNEY", "cm"),
+        ("Left Kidney",  "LEFT_KIDNEY",  "cm"),
+        ("Uterus",       "UTERUS",       "cm"),
+        ("Prostate",     "PROSTATE",     "cm"),
+    ]
 
     @classmethod
     def default_findings_text(cls, scan_type, gender=None):
