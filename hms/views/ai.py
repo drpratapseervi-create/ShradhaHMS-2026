@@ -313,14 +313,152 @@ def ai_clinical_review(request, appointment_id):
     return JsonResponse({"success": True, "review": review, "context_used": context_block})
 
 
+def _scribe_gather_context(consultation):
+    """Pulls the same kind of saved consultation data 'Full Consultation
+    Review' already reads automatically (vitals, complaints, examination,
+    diagnosis, investigations, prescription) — so the AI Clinical Scribe
+    doesn't require the doctor to retype what's already on the record."""
+    def field(value):
+        return (value or "").strip()
+
+    vitals_parts = []
+    if field(consultation.pulse):
+        vitals_parts.append(f"Pulse {field(consultation.pulse)}")
+    if field(consultation.bp):
+        vitals_parts.append(f"BP {field(consultation.bp)}")
+    if field(consultation.spo2):
+        vitals_parts.append(f"SpO2 {field(consultation.spo2)}")
+    if field(consultation.weight):
+        vitals_parts.append(f"Weight {field(consultation.weight)}")
+
+    complaints = list(consultation.symptoms.values_list("name", flat=True))
+    if field(consultation.chief_complaints):
+        complaints.append(field(consultation.chief_complaints))
+    if field(consultation.custom_symptoms):
+        complaints.append(field(consultation.custom_symptoms))
+
+    exam_findings = list(consultation.signs.values_list("name", flat=True))
+    if field(consultation.examination):
+        exam_findings.append(field(consultation.examination))
+    if field(consultation.custom_signs):
+        exam_findings.append(field(consultation.custom_signs))
+
+    diagnosis_parts = []
+    if field(consultation.diagnosis_text):
+        diagnosis_parts.append(field(consultation.diagnosis_text))
+    diagnosis_parts += [
+        f"{icd.code} - {icd.description}" for icd in consultation.icd_codes.all()
+    ]
+
+    investigations_advised = list(consultation.investigations.values_list("name", flat=True))
+    if field(consultation.custom_investigations):
+        investigations_advised.append(field(consultation.custom_investigations))
+
+    qlv = consultation.quick_lab_values or {}
+    qlv_labels = {
+        "hb": "Hb", "tlc": "TLC", "platelet": "Platelet", "rbs": "RBS",
+        "creatinine": "Creatinine", "urea": "Urea", "sgot": "SGOT", "sgpt": "SGPT",
+        "tsh": "TSH", "typhoid": "Typhoid", "mp_test": "MP", "esr": "ESR",
+    }
+    result_parts = []
+    for key, label in qlv_labels.items():
+        val = field(qlv.get(key))
+        if val:
+            result_parts.append(f"{label}: {val}")
+    other_label = field(qlv.get("other_label"))
+    other_value = field(qlv.get("other_value"))
+    if other_label and other_value:
+        result_parts.append(f"{other_label}: {other_value}")
+    if field(consultation.usg_findings):
+        result_parts.append(f"USG: {field(consultation.usg_findings)}")
+
+    rx_lines = [
+        f"{p.medicine} {p.dose} {p.frequency} x {p.duration}"
+        + (f" ({p.instructions})" if p.instructions else "")
+        for p in consultation.prescriptions.all()
+    ]
+
+    return {
+        "vitals": ", ".join(vitals_parts),
+        "complaints": ", ".join(complaints),
+        "examination": ", ".join(exam_findings),
+        "diagnosis": ", ".join(diagnosis_parts),
+        "investigations_advised": ", ".join(investigations_advised),
+        "investigation_results": ", ".join(result_parts),
+        "prescription": "; ".join(rx_lines),
+    }
+
+
+def _scribe_context_has_data(ctx):
+    return any(ctx.values())
+
+
+def _scribe_context_to_prompt(ctx):
+    lines = []
+    if ctx["vitals"]:
+        lines.append(f"Vitals: {ctx['vitals']}")
+    if ctx["complaints"]:
+        lines.append(f"Complaints: {ctx['complaints']}")
+    if ctx["examination"]:
+        lines.append(f"Examination Findings: {ctx['examination']}")
+    if ctx["diagnosis"]:
+        lines.append(f"Diagnosis already recorded: {ctx['diagnosis']}")
+    if ctx["investigations_advised"]:
+        lines.append(f"Investigations Advised: {ctx['investigations_advised']}")
+    if ctx["investigation_results"]:
+        lines.append(f"Investigation Results: {ctx['investigation_results']}")
+    if ctx["prescription"]:
+        lines.append(f"Current Prescription: {ctx['prescription']}")
+    return "\n".join(lines) or "No consultation data recorded yet."
+
+
+def _scribe_context_preview(ctx):
+    parts = []
+    if ctx["vitals"]:
+        parts.append(ctx["vitals"])
+    if ctx["complaints"]:
+        parts.append(f"Complaints: {ctx['complaints']}")
+    if ctx["examination"]:
+        parts.append(f"Examination: {ctx['examination']}")
+    if ctx["diagnosis"]:
+        parts.append(f"Diagnosis: {ctx['diagnosis']}")
+    inv = ctx["investigations_advised"]
+    if ctx["investigation_results"]:
+        inv = (inv + "; " if inv else "") + f"Results: {ctx['investigation_results']}"
+    if inv:
+        parts.append(f"Investigations: {inv}")
+    if ctx["prescription"]:
+        parts.append(f"Prescription: {ctx['prescription']}")
+    return "; ".join(parts)
+
+
+@login_required
+@role_required("doctor", "admin")
+def ai_scribe_context(request, appointment_id):
+    """Read-only preview of the consultation data the AI Clinical Scribe
+    will auto-pull, shown to the doctor before they click Generate."""
+    if request.method != "GET":
+        return JsonResponse({"error": "GET required"}, status=405)
+    appointment = get_object_or_404(Appointment, id=appointment_id)
+    consultation, _ = Consultation.objects.get_or_create(appointment=appointment)
+    ctx = _scribe_gather_context(consultation)
+    return JsonResponse({
+        "summary": _scribe_context_preview(ctx),
+        "has_data": _scribe_context_has_data(ctx),
+    })
+
+
 @login_required
 @role_required("doctor", "admin")
 def ai_clinical_scribe(request, appointment_id):
     """AI Clinical Scribe: turns the doctor's rough shorthand notes, typed
     during/after the consultation, into a structured clinical note (HPI /
-    Examination / Diagnosis / Plan). Documentation aid only — the doctor
-    reviews and edits the result before it is ever saved, same as every
-    other AI-assisted field on this model."""
+    Examination / Diagnosis / Plan) — automatically combined with whatever
+    vitals/complaints/examination/diagnosis/investigations/prescription are
+    already saved on the consultation, same as 'Full Consultation Review'
+    already reads. Documentation aid only — the doctor reviews and edits
+    the result before it is ever saved, same as every other AI-assisted
+    field on this model."""
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=405)
     if not settings.AI_FEATURES_ENABLED:
@@ -338,36 +476,38 @@ def ai_clinical_scribe(request, appointment_id):
         return JsonResponse({"error": "Invalid request"}, status=400)
 
     raw_notes = (data.get("raw_notes") or "").strip()
-    if not raw_notes:
-        return JsonResponse({"error": "Please type some quick notes first."}, status=400)
-
-    diagnosis_parts = []
-    if (consultation.diagnosis_text or "").strip():
-        diagnosis_parts.append(consultation.diagnosis_text.strip())
-    diagnosis_parts += [
-        f"{icd.code} - {icd.description}" for icd in consultation.icd_codes.all()
-    ]
+    saved_ctx = _scribe_gather_context(consultation)
+    if not raw_notes and not _scribe_context_has_data(saved_ctx):
+        return JsonResponse({
+            "error": "No consultation data recorded yet and no quick notes typed — "
+                     "enter something first, or save vitals/complaints/examination on this consultation."
+        }, status=400)
 
     patient_line = (
         f"{patient.age if patient.age is not None else 'age not recorded'} "
         f"year old {patient.gender}"
     )
-    known_diagnosis_line = ", ".join(diagnosis_parts) or "Not yet entered"
 
     system_prompt = (
         "You are an AI clinical scribe for a doctor in an Indian OPD setting. "
-        "Convert the doctor's rough, shorthand consultation notes into a clean, "
-        "structured clinical note. Use only information stated or clearly implied "
-        "in the notes or the known patient context — never invent findings, "
-        "vitals, or history that aren't there. If a section has nothing to go on, "
-        "write 'Not documented' for that section instead of guessing. Write each "
-        "section as plain prose suitable for a medical record, not a bare "
-        "restatement of the shorthand. Return ONLY valid JSON matching the given schema."
+        "You are given the consultation data already saved in the record (vitals, "
+        "complaints, examination findings, diagnosis, investigations, prescription) "
+        "and optionally some additional rough shorthand notes the doctor just typed. "
+        "Combine both into a clean, structured clinical note. Use only information "
+        "stated or clearly implied by the saved data or the notes — never invent "
+        "findings, vitals, or history that aren't there. If any vitals (pulse, BP, "
+        "SpO2, weight) were given, state them explicitly in Examination Findings — "
+        "don't drop them even if the rest of that section is about physical signs. "
+        "If a section has nothing to go on, write 'Not documented' for that section "
+        "instead of guessing. Write each section as plain prose suitable for a "
+        "medical record, not a bare list restatement. Return ONLY valid JSON "
+        "matching the given schema."
     )
     user_prompt = (
-        f"Patient: {patient_line}.\n"
-        f"Diagnosis already recorded for this visit (if any): {known_diagnosis_line}.\n\n"
-        f"Doctor's rough notes:\n\"{raw_notes}\""
+        f"Patient: {patient_line}.\n\n"
+        f"Saved consultation data:\n{_scribe_context_to_prompt(saved_ctx)}\n\n"
+        f"Additional notes just typed by the doctor (if any): "
+        f"{raw_notes or 'None — use only the saved consultation data above.'}"
     )
 
     try:

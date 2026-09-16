@@ -141,6 +141,7 @@ from .ai import (
     ai_full_opd,
     ai_clinical_review,
     ai_clinical_scribe,
+    ai_scribe_context,
     generate_diet,
     ai_polish_discharge,
     transcribe_dictation,

@@ -1804,9 +1804,17 @@ html { scroll-behavior: smooth; }
         <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px dashed #e0e0e0;">
             <div style="font-size:12px;font-weight:700;color:#333;margin-bottom:6px;">📝 AI Clinical Scribe</div>
             <div style="font-size:11px;color:#777;margin-bottom:8px;">
-                Type rough, shorthand notes during or after the consultation — the AI turns them into a
-                structured note (History / Examination / Diagnosis / Plan). Review and edit the result
-                below before saving; nothing is finalized automatically.
+                Automatically uses the Vitals, Complaints, Examination Findings, Diagnosis, Investigations
+                and Prescription already saved on this consultation — save the consultation first so this
+                reflects the latest data. Add Quick Notes below only for anything not already captured
+                (clinical reasoning, extra context); it's optional. The AI turns all of it into a structured
+                note (History / Examination / Diagnosis / Plan). Review and edit the result below before
+                saving; nothing is finalized automatically.
+            </div>
+            <div style="margin-bottom:10px;padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;color:#475569;">
+                <strong>Using saved consultation data:</strong>
+                <span id="scribe-context-summary" style="color:#64748b;">Loading…</span>
+                <a href="#" id="scribe-context-refresh" onclick="loadScribeContext();return false;" style="margin-left:8px;color:#2563eb;text-decoration:none;">🔄 Refresh</a>
             </div>
             <!-- Voice input: the floating 🎙️ Voice Dock on this page (Whisper-based,
                  hms:transcribe_dictation) already transcribes speech to a text box the
@@ -1815,7 +1823,7 @@ html { scroll-behavior: smooth; }
                  textarea (Web Speech API or similar) is a possible future enhancement,
                  not implemented in this pass. -->
             <textarea class="ai-inv-input" id="scribe-raw-notes" name="scribe_raw_notes" form="consultation-form" rows="3" autocomplete="off"
-                placeholder="e.g. 52F, fever 3 days, cough, no vomiting, BP 130/85, chest clear, likely viral, paracetamol + rest">{{ consultation.scribe_raw_notes|default:'' }}</textarea>
+                placeholder="Optional — anything not already captured above, e.g. your clinical reasoning or extra context">{{ consultation.scribe_raw_notes|default:'' }}</textarea>
             <div style="margin-top:10px;">
                 <button class="ai-btn" id="scribe-generate-btn" type="button" onclick="generateClinicalScribeNote()">
                     📝 Generate Clinical Note
@@ -2621,7 +2629,23 @@ function renderClinicalReview(review, contextUsed) {
     document.getElementById("ai-review-panel").style.display = "block";
 }
 
-/* ── AI Clinical Scribe: rough notes → structured note ── */
+/* ── AI Clinical Scribe: auto-pulled consultation data (+ optional rough notes) → structured note ── */
+function loadScribeContext() {
+    var summaryEl = document.getElementById('scribe-context-summary');
+    summaryEl.textContent = 'Loading…';
+    fetch("{% url 'hms:ai_scribe_context' appointment.id %}")
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            summaryEl.textContent = data.has_data
+                ? data.summary
+                : 'Nothing saved yet on this consultation — save vitals/complaints/examination first, or just type Quick Notes below.';
+        })
+        .catch(function() {
+            summaryEl.textContent = '⚠️ Could not load consultation data.';
+        });
+}
+document.addEventListener('DOMContentLoaded', loadScribeContext);
+
 function generateClinicalScribeNote() {
     var rawNotes = document.getElementById('scribe-raw-notes').value.trim();
     var btn      = document.getElementById('scribe-generate-btn');
@@ -2632,12 +2656,6 @@ function generateClinicalScribeNote() {
 
     errBox.style.display  = 'none';
     warning.style.display = 'none';
-
-    if (!rawNotes) {
-        errBox.textContent = '⚠️ Please type some quick notes first.';
-        errBox.style.display = 'block';
-        return;
-    }
 
     btn.disabled = true;
     btn.innerHTML = '⏳ Generating…';

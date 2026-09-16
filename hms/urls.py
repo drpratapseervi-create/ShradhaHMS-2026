@@ -40,6 +40,7 @@ urlpatterns = [
     path("ai-full-opd/", views.ai_full_opd, name="ai_full_opd"),
     path("consultation/<int:appointment_id>/ai-clinical-review/", views.ai_clinical_review, name="ai_clinical_review"),
     path("consultation/<int:appointment_id>/ai-clinical-scribe/", views.ai_clinical_scribe, name="ai_clinical_scribe"),
+    path("consultation/<int:appointment_id>/ai-clinical-scribe/context/", views.ai_scribe_context, name="ai_scribe_context"),
     path("consultation/<int:appointment_id>/scribe/save/", views.save_clinical_scribe, name="save_clinical_scribe"),
     path("consultation/transcribe/", views.transcribe_dictation, name="transcribe_dictation"),
     path('prescriptions/template/save/',          views.save_prescription_template,  name='save_prescription_template'),
