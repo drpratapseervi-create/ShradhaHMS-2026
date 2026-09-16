@@ -7,7 +7,10 @@
 <style>
 @page {
     size: A4;
-    margin-top: 1.5cm;
+    /* Printed on pre-printed hospital letterhead (name/address already on
+       the paper) — leave that space blank instead of printing our own
+       header over it. */
+    margin-top: 5cm;
     margin-bottom: 2cm;
     margin-left: 2cm;
     margin-right: 1.5cm;
@@ -24,31 +27,6 @@ body {
     text-align: left;
 }
 
-/* ── Hospital Header ── */
-.hosp-header {
-    text-align: center;
-    border-bottom: 2px solid #000;
-    padding-bottom: 8px;
-    margin-bottom: 10px;
-}
-.hosp-name {
-    font-size: 20px;
-    font-weight: 900;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: #000;
-}
-.hosp-sub {
-    font-size: 11px;
-    color: #333;
-    margin-top: 2px;
-}
-.hosp-contact {
-    font-size: 10px;
-    color: #333;
-    margin-top: 3px;
-}
-
 /* ── Document Title Bar ── */
 .doc-title-bar {
     background: #0369a1;
@@ -62,17 +40,6 @@ body {
     border-radius: 3px;
 }
 
-/* ── Section heading ── */
-.sec-title {
-    background: #e8e8e8;
-    color: #000;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 7px;
-    margin: 14px 0 4px 0;
-    letter-spacing: 0.5px;
-}
-
 /* ── Tables ── */
 table.details { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
 table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top; font-size: 11px; }
@@ -84,6 +51,7 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
     font-size: 12px;
     line-height: 1.8;
     text-align: justify;
+    font-weight: 700; /* manually-typed content (Findings) prints bold */
 }
 .impression-list {
     margin: 2px 0 14px 18px;
@@ -92,7 +60,6 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
     line-height: 1.4;
 }
 .impression-list li { margin-bottom: 3px; }
-.impression-first { font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: normal; color: #000; }
 
 /* Numbered impression as a two-column table so item 2, 3, 4... line up
    directly under item 1 instead of under the IMPRESSION label. */
@@ -121,7 +88,7 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
     flex-shrink: 0;
     white-space: nowrap;
 }
-.advice-text { padding: 4px 7px; font-size: 12px; flex: 1; }
+.advice-text { padding: 4px 7px; font-size: 12px; flex: 1; font-weight: 700; }
 
 .status-badge {
     display: inline-block;
@@ -174,12 +141,8 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
 </head>
 <body>
 
-<!-- ── Hospital Header ── -->
-<div class="hosp-header">
-    <div class="hosp-name">Shradha Hospital &amp; Multispeciality Centre</div>
-    <div class="hosp-sub">Pani Ki Do Tanki, Surajpole, Pali (Raj.) — 306401</div>
-    <div class="hosp-contact">📞 9414122542 &nbsp;|&nbsp; Emergency: 9414122542</div>
-</div>
+<!-- No hospital header here — printed on letterhead stationery; the
+     @page margin-top above reserves the blank space for it. -->
 
 <!-- ── Patient Details ── -->
 <table class="details">
@@ -214,9 +177,8 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
 <!-- ── Findings ── -->
 <div class="report-para">{{ report.findings_text|default:"-"|linebreaksbr }}</div>
 
-<!-- ── Impression ── -->
+<!-- ── Impression — always a numbered vertical list, even a single item ── -->
 {% with impression_items=report.impression|comma_split %}
-{% if impression_items|length > 1 %}
 <table class="impression-table">
     <tr>
         <td class="impression-label">
@@ -227,7 +189,7 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
                 <span class="status-badge status-inconclusive">Inconclusive</span>
             {% endif %}
         </td>
-        <td class="impression-text">1. {{ impression_items.0 }}</td>
+        <td class="impression-text">{% if impression_items %}1. {{ impression_items.0 }}{% else %}-{% endif %}</td>
     </tr>
     {% for item in impression_items|slice:"1:" %}
     <tr>
@@ -236,17 +198,6 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
     </tr>
     {% endfor %}
 </table>
-{% else %}
-<div class="sec-title">
-    IMPRESSION
-    {% if report.impression_status == "ABNORMAL" %}
-        <span class="status-badge status-abnormal">Abnormal Findings</span>
-    {% elif report.impression_status == "INCONCLUSIVE" %}
-        <span class="status-badge status-inconclusive">Inconclusive</span>
-    {% endif %}
-</div>
-<div class="report-para" style="font-weight:700;">{{ report.impression|default:"-"|linebreaksbr }}</div>
-{% endif %}
 {% endwith %}
 
 {% if report.advice %}
