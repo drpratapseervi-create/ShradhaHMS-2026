@@ -1801,6 +1801,43 @@ html { scroll-behavior: smooth; }
             </div>
         </div>
 
+        <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px dashed #e0e0e0;">
+            <div style="font-size:12px;font-weight:700;color:#333;margin-bottom:6px;">📝 AI Clinical Scribe</div>
+            <div style="font-size:11px;color:#777;margin-bottom:8px;">
+                Type rough, shorthand notes during or after the consultation — the AI turns them into a
+                structured note (History / Examination / Diagnosis / Plan). Review and edit the result
+                below before saving; nothing is finalized automatically.
+            </div>
+            <!-- Voice input: the floating 🎙️ Voice Dock on this page (Whisper-based,
+                 hms:transcribe_dictation) already transcribes speech to a text box the
+                 doctor copy-pastes from — reuse that here rather than adding a second
+                 dictation mechanism. A dedicated mic button wired directly into this
+                 textarea (Web Speech API or similar) is a possible future enhancement,
+                 not implemented in this pass. -->
+            <textarea class="ai-inv-input" id="scribe-raw-notes" name="scribe_raw_notes" form="consultation-form" rows="3" autocomplete="off"
+                placeholder="e.g. 52F, fever 3 days, cough, no vomiting, BP 130/85, chest clear, likely viral, paracetamol + rest">{{ consultation.scribe_raw_notes|default:'' }}</textarea>
+            <div style="margin-top:10px;">
+                <button class="ai-btn" id="scribe-generate-btn" type="button" onclick="generateClinicalScribeNote()">
+                    📝 Generate Clinical Note
+                </button>
+            </div>
+            <div class="ai-loading" id="scribe-loading">⏳ &nbsp;Structuring your notes, please wait…</div>
+            <div class="ai-error"   id="scribe-error"></div>
+            <div class="ai-warning" id="scribe-draft-warning" style="display:none;">
+                ⚠️ <strong>AI Draft — Review before saving.</strong>
+                This note is AI-generated and must be verified by the treating physician.
+            </div>
+            <div id="scribe-preview-wrap" style="{% if not consultation.scribe_structured_note %}display:none;{% endif %}margin-top:10px;">
+                <label class="ctrl-label" style="font-size:11px;color:#555;font-weight:600;display:block;margin-bottom:4px;">Structured Note (editable)</label>
+                <textarea id="scribe-structured-note" name="scribe_structured_note" form="consultation-form" rows="10"
+                    style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;font-size:12.5px;font-family:inherit;line-height:1.6;">{{ consultation.scribe_structured_note|default:'' }}</textarea>
+                <div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <button type="button" id="scribe-save-btn" onclick="saveClinicalScribeNote()" style="background:#0369a1;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:11px;font-weight:600;cursor:pointer;">💾 Save Clinical Note</button>
+                    <span id="scribe-save-status" style="font-size:11px;color:#888;"></span>
+                </div>
+            </div>
+        </div>
+
         <div style="font-size:12px;font-weight:700;color:#333;margin-bottom:2px;">✍️ Quick Check (manual entry)</div>
         <div style="font-size:11px;color:#777;margin-bottom:4px;">For a quick check on specific values without pulling the full consultation context.</div>
         <textarea class="ai-inv-input" id="investigation_results" name="ai_investigation_input" form="consultation-form" rows="2" autocomplete="off"
@@ -2582,6 +2619,74 @@ function renderClinicalReview(review, contextUsed) {
     if (ctxBox) ctxBox.textContent = contextUsed || "";
 
     document.getElementById("ai-review-panel").style.display = "block";
+}
+
+/* ── AI Clinical Scribe: rough notes → structured note ── */
+function generateClinicalScribeNote() {
+    var rawNotes = document.getElementById('scribe-raw-notes').value.trim();
+    var btn      = document.getElementById('scribe-generate-btn');
+    var loading  = document.getElementById('scribe-loading');
+    var errBox   = document.getElementById('scribe-error');
+    var warning  = document.getElementById('scribe-draft-warning');
+    var wrap     = document.getElementById('scribe-preview-wrap');
+
+    errBox.style.display  = 'none';
+    warning.style.display = 'none';
+
+    if (!rawNotes) {
+        errBox.textContent = '⚠️ Please type some quick notes first.';
+        errBox.style.display = 'block';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Generating…';
+    loading.style.display = 'block';
+
+    fetch("{% url 'hms:ai_clinical_scribe' appointment.id %}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ raw_notes: rawNotes })
+    })
+    .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+    .then(function(res) {
+        if (!res.ok || res.data.error) throw new Error(res.data.error || 'Server error');
+        document.getElementById('scribe-structured-note').value = res.data.structured_note;
+        wrap.style.display = 'block';
+        warning.style.display = 'block';
+        document.getElementById('scribe-save-status').textContent = '';
+    })
+    .catch(function(err) {
+        errBox.textContent = '⚠️ AI request failed: ' + err.message;
+        errBox.style.display = 'block';
+    })
+    .finally(function() {
+        btn.disabled = false;
+        btn.innerHTML = '📝 Generate Clinical Note';
+        loading.style.display = 'none';
+    });
+}
+
+function saveClinicalScribeNote() {
+    var statusEl = document.getElementById('scribe-save-status');
+    var rawNotes = document.getElementById('scribe-raw-notes').value.trim();
+    var structuredNote = document.getElementById('scribe-structured-note').value.trim();
+
+    statusEl.textContent = 'Saving…';
+
+    fetch("{% url 'hms:save_clinical_scribe' appointment.id %}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ raw_notes: rawNotes, structured_note: structuredNote })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.error) { throw new Error(data.error); }
+        statusEl.textContent = '✅ Saved';
+    })
+    .catch(function(err) {
+        statusEl.textContent = '⚠️ Save failed: ' + err.message;
+    });
 }
 
 /* ── Quick Lab Values → AI Clinical Assist auto-link ── */

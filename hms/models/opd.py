@@ -135,6 +135,14 @@ class Consultation(models.Model):
     ai_probable_diagnosis = models.TextField(blank=True)
     ai_required_investigations = models.TextField(blank=True)
 
+    # ===== AI CLINICAL SCRIBE =====
+    # Doctor's rough shorthand notes, and the AI-structured note generated
+    # from them (History/Examination/Diagnosis/Plan) — the doctor reviews
+    # and edits the structured note before it is saved, same as every other
+    # AI-assisted field on this model.
+    scribe_raw_notes = models.TextField(blank=True)
+    scribe_structured_note = models.TextField(blank=True)
+
     # ===== INVESTIGATIONS & LAB STATUS =====
     investigations = models.ManyToManyField("Investigation", blank=True)
     lab_advised    = models.BooleanField(default=False)

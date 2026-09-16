@@ -314,6 +314,111 @@ def ai_clinical_review(request, appointment_id):
 
 
 @login_required
+@role_required("doctor", "admin")
+def ai_clinical_scribe(request, appointment_id):
+    """AI Clinical Scribe: turns the doctor's rough shorthand notes, typed
+    during/after the consultation, into a structured clinical note (HPI /
+    Examination / Diagnosis / Plan). Documentation aid only — the doctor
+    reviews and edits the result before it is ever saved, same as every
+    other AI-assisted field on this model."""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    if not settings.AI_FEATURES_ENABLED:
+        return JsonResponse({"error": "AI features are not configured on this system."})
+
+    appointment = get_object_or_404(
+        Appointment.objects.select_related("patient"), id=appointment_id
+    )
+    patient = appointment.patient
+    consultation, _ = Consultation.objects.get_or_create(appointment=appointment)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid request"}, status=400)
+
+    raw_notes = (data.get("raw_notes") or "").strip()
+    if not raw_notes:
+        return JsonResponse({"error": "Please type some quick notes first."}, status=400)
+
+    diagnosis_parts = []
+    if (consultation.diagnosis_text or "").strip():
+        diagnosis_parts.append(consultation.diagnosis_text.strip())
+    diagnosis_parts += [
+        f"{icd.code} - {icd.description}" for icd in consultation.icd_codes.all()
+    ]
+
+    patient_line = (
+        f"{patient.age if patient.age is not None else 'age not recorded'} "
+        f"year old {patient.gender}"
+    )
+    known_diagnosis_line = ", ".join(diagnosis_parts) or "Not yet entered"
+
+    system_prompt = (
+        "You are an AI clinical scribe for a doctor in an Indian OPD setting. "
+        "Convert the doctor's rough, shorthand consultation notes into a clean, "
+        "structured clinical note. Use only information stated or clearly implied "
+        "in the notes or the known patient context — never invent findings, "
+        "vitals, or history that aren't there. If a section has nothing to go on, "
+        "write 'Not documented' for that section instead of guessing. Write each "
+        "section as plain prose suitable for a medical record, not a bare "
+        "restatement of the shorthand. Return ONLY valid JSON matching the given schema."
+    )
+    user_prompt = (
+        f"Patient: {patient_line}.\n"
+        f"Diagnosis already recorded for this visit (if any): {known_diagnosis_line}.\n\n"
+        f"Doctor's rough notes:\n\"{raw_notes}\""
+    )
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            max_tokens=800,
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "clinical_scribe_note",
+                    "strict": True,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "history_of_present_illness": {"type": "string"},
+                            "examination_findings": {"type": "string"},
+                            "diagnosis_impression": {"type": "string"},
+                            "plan": {"type": "string"},
+                        },
+                        "required": [
+                            "history_of_present_illness", "examination_findings",
+                            "diagnosis_impression", "plan",
+                        ],
+                        "additionalProperties": False,
+                    },
+                },
+            },
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+        sections = json.loads(response.choices[0].message.content or "{}")
+    except Exception as e:
+        return JsonResponse({"error": f"AI request failed: {e}"}, status=502)
+
+    structured_note = (
+        "HISTORY OF PRESENT ILLNESS\n"
+        f"{sections.get('history_of_present_illness', '').strip()}\n\n"
+        "EXAMINATION FINDINGS\n"
+        f"{sections.get('examination_findings', '').strip()}\n\n"
+        "DIAGNOSIS / IMPRESSION\n"
+        f"{sections.get('diagnosis_impression', '').strip()}\n\n"
+        "PLAN\n"
+        f"{sections.get('plan', '').strip()}"
+    )
+
+    return JsonResponse({"success": True, "structured_note": structured_note})
+
+
+@login_required
 def generate_diet(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST only'}, status=405)

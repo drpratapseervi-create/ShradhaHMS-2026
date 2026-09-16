@@ -550,6 +550,24 @@ def save_medical_certificate(request, appointment_id):
 
 
 @login_required
+@role_required("doctor", "admin")
+def save_clinical_scribe(request, appointment_id):
+    """Persists the AI Clinical Scribe's raw notes + reviewed structured
+    note only — never the rest of the consultation, so this can be saved
+    independently without touching anything else on the record."""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+    appointment = get_object_or_404(Appointment, id=appointment_id)
+    consultation, _ = Consultation.objects.get_or_create(appointment=appointment)
+    data = json.loads(request.body)
+
+    consultation.scribe_raw_notes = (data.get("raw_notes") or "").strip()
+    consultation.scribe_structured_note = (data.get("structured_note") or "").strip()
+    consultation.save(update_fields=["scribe_raw_notes", "scribe_structured_note"])
+    return JsonResponse({"success": True})
+
+
+@login_required
 def export_opd_csv(request):
     response = HttpResponse(content_type="text/csv")
     response["Content-Disposition"] = 'attachment; filename="opd_register.csv"'
