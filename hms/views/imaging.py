@@ -1,8 +1,9 @@
 import os
 import json
+import re
 
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.db.models import Q
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -11,6 +12,7 @@ from ..decorators import role_required
 from ..models import Patient, Doctor, Consultation, MedicalImage, USGReport
 from ..forms import USGReportForm
 from ..utils import render_to_pdf
+from ..templatetags.hms_extras import _USG_ORGAN_LABELS, comma_split
 
 
 @login_required
@@ -320,7 +322,147 @@ def usg_report_pdf(request, pk):
     return render_to_pdf("hms/usg/usg_report_print.html", {"report": report})
 
 
-@login_required 
+def _shade_cell(cell, color_hex):
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
+    shd.set(qn("w:fill"), color_hex)
+    cell._tc.get_or_add_tcPr().append(shd)
+
+
+_USG_LABEL_LINE_RE = re.compile(
+    r"^(" + "|".join(re.escape(l) for l in _USG_ORGAN_LABELS) + r"):(.*)$"
+)
+
+
+def _build_usg_report_docx(report):
+    """Word version of the USG print report — same content/emphasis rules
+    (organ labels bold, Impression numbered + bold, Advice bold, 5cm top
+    space reserved for letterhead) as hms/usg/usg_report_print.html."""
+    from docx import Document
+    from docx.shared import Cm, Pt, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+
+    doc = Document()
+    section = doc.sections[0]
+    # Printed on pre-printed hospital letterhead — same 5cm reserved space
+    # as the print template's @page margin-top.
+    section.top_margin = Cm(5)
+    section.bottom_margin = Cm(2)
+    section.left_margin = Cm(2)
+    section.right_margin = Cm(1.5)
+
+    style = doc.styles["Normal"]
+    style.font.name = "Arial"
+    style.font.size = Pt(10.5)
+
+    # ── Patient Details table ──
+    rows = [
+        ("Patient Name", (report.patient.full_name or "").title(), "Age / Sex",
+         f"{report.patient.age_years} Yrs" if report.patient.age_years else "-",
+         f" / {report.patient.gender}"),
+        ("UHID", report.patient.uhid, "Referred By",
+         report.referred_by.full_name if report.referred_by else "-", ""),
+        ("Scan Type", report.get_scan_type_display(), "Clinical Indication",
+         report.clinical_indication or "-", ""),
+        ("Report No.", report.report_no, "Date",
+         report.report_date.strftime("%d-%m-%Y") if report.report_date else "-", ""),
+    ]
+    table = doc.add_table(rows=len(rows), cols=4)
+    table.style = "Table Grid"
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for r, (lbl1, val1, lbl2, val2, suffix2) in enumerate(rows):
+        cells = table.rows[r].cells
+        cells[0].paragraphs[0].add_run(lbl1).bold = True
+        cells[1].paragraphs[0].add_run(str(val1 or "-"))
+        cells[2].paragraphs[0].add_run(lbl2).bold = True
+        cells[3].paragraphs[0].add_run(str(val2 or "-") + suffix2)
+        _shade_cell(cells[0], "F5F5F5")
+        _shade_cell(cells[2], "F5F5F5")
+
+    doc.add_paragraph()
+
+    # ── Title bar ──
+    title_table = doc.add_table(rows=1, cols=1)
+    title_cell = title_table.rows[0].cells[0]
+    _shade_cell(title_cell, "0369A1")
+    p = title_cell.paragraphs[0]
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = p.add_run(f"ULTRASONOGRAPHY {report.get_scan_type_display().upper()}")
+    run.bold = True
+    run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+
+    doc.add_paragraph()
+
+    # ── Findings — organ labels bold, narrative normal, same as print ──
+    for line in (report.findings_text or "-").split("\n"):
+        para = doc.add_paragraph()
+        m = _USG_LABEL_LINE_RE.match(line)
+        if m:
+            para.add_run(m.group(1) + ":").bold = True
+            para.add_run(m.group(2))
+        else:
+            para.add_run(line)
+
+    doc.add_paragraph()
+
+    # ── Impression — numbered vertical list, always bold ──
+    impression_items = comma_split(report.impression)
+    heading = doc.add_paragraph()
+    heading.add_run("IMPRESSION").bold = True
+    if not impression_items:
+        doc.add_paragraph().add_run("-").bold = True
+    else:
+        for i, item in enumerate(impression_items, start=1):
+            doc.add_paragraph().add_run(f"{i}. {item}").bold = True
+
+    # ── Advice — bold, same as print ──
+    if report.advice:
+        doc.add_paragraph()
+        advice_p = doc.add_paragraph()
+        advice_p.add_run("ADVICE: ").bold = True
+        advice_p.add_run(report.advice).bold = True
+
+    # ── Signature ──
+    doc.add_paragraph()
+    doc.add_paragraph()
+    sig = doc.add_paragraph()
+    sig.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    doctor_name = f"Dr. {report.reporting_doctor.full_name if report.reporting_doctor else 'Pratap Senecha'}"
+    qualification = (
+        report.reporting_doctor.qualification if report.reporting_doctor and report.reporting_doctor.qualification
+        else ("MBBS, MS" if not report.reporting_doctor else "")
+    )
+    sig.add_run(doctor_name + (f", {qualification}" if qualification else "")).bold = True
+    reg = doc.add_paragraph()
+    reg.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    reg.add_run(report.reporting_doctor.registration_no if report.reporting_doctor else "RMC No-27994")
+
+    return doc
+
+
+@login_required
+def usg_report_download_word(request, pk):
+    """Download the USG report as an editable .docx (same content/emphasis
+    as the print/PDF version)."""
+    report = get_object_or_404(
+        USGReport.objects.select_related("patient", "reporting_doctor", "referred_by"),
+        pk=pk
+    )
+    doc = _build_usg_report_docx(report)
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+    response["Content-Disposition"] = f'attachment; filename="{report.report_no or ("USG-" + str(report.pk))}.docx"'
+    doc.save(response)
+    return response
+
+
+@login_required
 def usg_report_delete(request, pk):
     report = get_object_or_404(USGReport, pk=pk)
     if request.method == "POST":

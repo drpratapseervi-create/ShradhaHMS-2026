@@ -106,8 +106,8 @@ Pancreas: The pancreas is normal in size and echotexture. The pancreatic duct is
 Spleen: The spleen is normal in size, measuring __SPLEEN__ cm. No splenic lesion is seen.
 
 Kidneys: Both kidneys are normal in size, shape and position and show normal cortico-medullary differentiation.
-Right kidney measures __RIGHT_KIDNEY__ cm
-Left kidney measures __LEFT_KIDNEY__ cm
+Right Kidney: measures __RIGHT_KIDNEY__ cm
+Left Kidney: measures __LEFT_KIDNEY__ cm
 
 Bladder: The urinary bladder is adequately filled. Its wall is not thickened. No evidence of diverticulum or calculus.
 

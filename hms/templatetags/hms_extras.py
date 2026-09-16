@@ -14,7 +14,8 @@ _LEADING_NUMBER_RE = re.compile(r"^\s*\d+[\.\)]\s*")
 # wording or something the doctor typed/edited in.
 _USG_ORGAN_LABELS = [
     "Liver", "Portal Vein", "Gallbladder", "CBD", "Pancreas", "Spleen",
-    "Kidneys", "Bladder", "Uterus and Ovaries", "Prostate",
+    "Kidneys", "Right Kidney", "Left Kidney", "Bladder",
+    "Uterus and Ovaries", "Prostate",
 ]
 _USG_LABEL_RE = re.compile(
     r"(?m)^(" + "|".join(re.escape(l) for l in _USG_ORGAN_LABELS) + r"):"

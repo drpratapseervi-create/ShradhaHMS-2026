@@ -87,7 +87,7 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
     flex-shrink: 0;
     white-space: nowrap;
 }
-.advice-text { padding: 4px 7px; font-size: 12px; flex: 1; }
+.advice-text { padding: 4px 7px; font-size: 12px; flex: 1; font-weight: 700; }
 
 .status-badge {
     display: inline-block;
@@ -227,6 +227,7 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
 <div style="text-align:center; margin: 24px 0 8px 0;" class="no-print">
     <a href="{% url 'hms:usg_report_list' %}" style="background:#e5e7eb;color:#111;text-decoration:none;border-radius:8px;padding:10px 22px;font-size:13px;font-weight:600;letter-spacing:0.5px;margin-right:8px;">← Back</a>
     <a href="{% url 'hms:usg_report_edit' pk=report.pk %}" style="background:#0369a1;color:#fff;text-decoration:none;border-radius:8px;padding:10px 22px;font-size:13px;font-weight:600;letter-spacing:0.5px;margin-right:8px;">✏️ Edit</a>
+    <a href="{% url 'hms:usg_report_download_word' pk=report.pk %}" style="background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;padding:10px 22px;font-size:13px;font-weight:600;letter-spacing:0.5px;margin-right:8px;">📄 Download Word</a>
     <button onclick="window.print()" style="
         background: #374151;
         color: #fff;
