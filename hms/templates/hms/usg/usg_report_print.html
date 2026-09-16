@@ -51,7 +51,6 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
     font-size: 12px;
     line-height: 1.8;
     text-align: justify;
-    font-weight: 700; /* manually-typed content (Findings) prints bold */
 }
 .impression-list {
     margin: 2px 0 14px 18px;
@@ -88,7 +87,7 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
     flex-shrink: 0;
     white-space: nowrap;
 }
-.advice-text { padding: 4px 7px; font-size: 12px; flex: 1; font-weight: 700; }
+.advice-text { padding: 4px 7px; font-size: 12px; flex: 1; }
 
 .status-badge {
     display: inline-block;
@@ -174,8 +173,9 @@ table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top
 
 <div class="doc-title-bar">ULTRASONOGRAPHY {{ report.get_scan_type_display|upper }}</div>
 
-<!-- ── Findings ── -->
-<div class="report-para">{{ report.findings_text|default:"-"|linebreaksbr }}</div>
+<!-- ── Findings — organ labels (Liver:, Spleen:, ...) print bold as inline
+     headers; the narrative sentences stay normal weight. ── -->
+<div class="report-para">{{ report.findings_text|default:"-"|bold_usg_labels|linebreaksbr }}</div>
 
 <!-- ── Impression — always a numbered vertical list, even a single item ── -->
 {% with impression_items=report.impression|comma_split %}
