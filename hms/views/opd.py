@@ -480,6 +480,10 @@ def medical_certificate_print(request, appointment_id):
     )
     date_of_issue = (consultation.date_of_issue if consultation else None) or timezone.now().date()
 
+    # Certificate No: auto-generated from the appointment id, not stored —
+    # deterministic per appointment so reprints always show the same number.
+    certificate_no = f"SHMC/MC/{date_of_issue.year}/{appointment.id:05d}"
+
     # Which part(s) to default to: nothing saved yet → Part A; a Part A
     # already issued for this consultation → default to showing both (the
     # doctor is now also certifying recovery); anything else saved → keep it.
@@ -502,6 +506,7 @@ def medical_certificate_print(request, appointment_id):
         "fitness_effective_initial":    fitness_effective,
         "place_of_examination_initial": place_of_examination,
         "date_of_issue_initial":        date_of_issue,
+        "certificate_no":               certificate_no,
         "printed_on":                   timezone.now(),
     })
 
