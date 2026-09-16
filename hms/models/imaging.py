@@ -116,7 +116,7 @@ Bladder: The urinary bladder is adequately filled. Its wall is not thickened. No
 Colon wall thickness __ mm. Ileal wall thickness __ mm."""
 
     _PELVIC_ORGANS_FEMALE = "Uterus and Ovaries: The uterus is __UTERUS__ cm size, anteverted shape, homogenous echotexture, myometrium and endometrial thickness __ET__ mm, and ovaries are of normal size."
-    _PELVIC_ORGANS_MALE = "Prostate: The prostate gland is normal in size, volume __PROSTATE__ cc, and shows homogenous echotexture. No focal lesion is seen. Post-void residual urine is minimal."
+    _PELVIC_ORGANS_MALE = "Prostate: The prostate gland is normal in size, measuring __PROSTATE__ cm, volume __PROSTATE_VOL__ cc, and shows homogenous echotexture. No focal lesion is seen. Post-void residual urine is minimal."
 
     # Standard normal-study narrative per scan type — the doctor's own
     # wording, used to prefill the findings box on a new report of that
@@ -145,7 +145,8 @@ Colon wall thickness __ mm. Ileal wall thickness __ mm."""
         ("Left Kidney",  "LEFT_KIDNEY",  "cm"),
         ("Uterus",       "UTERUS",       "cm"),
         ("ET", "ET", "mm"),
-        ("Prostate Volume", "PROSTATE", "cc"),
+        ("Prostate",        "PROSTATE",     "cm"),
+        ("Prostate Volume", "PROSTATE_VOL", "cc"),
     ]
 
     @classmethod
