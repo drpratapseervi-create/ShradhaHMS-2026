@@ -207,6 +207,16 @@ class IPDVitalForm(forms.ModelForm):
 # ===================== USG REPORT FORM =====================
 class USGReportForm(forms.ModelForm):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # The tabbed entry page (hms/usg/usg_report_form.html) saves each
+        # section independently via "Save & Next", well before the doctor
+        # has reached the final Impression & Advice tab — so Impression
+        # can't be required at the form level the way the model's own
+        # TextField (no blank=True) implies. The print template already
+        # renders "-" for an empty impression, so this is safe.
+        self.fields["impression"].required = False
+
     class Meta:
         model = USGReport
         exclude = [
@@ -243,8 +253,7 @@ class USGReportForm(forms.ModelForm):
 
             # ── FINDINGS / IMPRESSION / ADVICE ─────────────────────────
             "findings_text":        forms.Textarea(attrs={"class": "form-control", "rows": 1,
-                                        "id": "id_findings_text",
-                                        "placeholder": "Organ-wise findings — use “Load Standard Template” for the selected scan type, then edit."}),
+                                        "id": "id_findings_text"}),
             "impression":           forms.Textarea(attrs={"class": "form-control", "rows": 4,
                                         "placeholder": "1. Normal study.\n2. ..."}),
             "advice":               forms.Textarea(attrs={"class": "form-control", "rows": 2}),

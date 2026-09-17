@@ -1,10 +1,10 @@
-{% extends "base.html" %}
+{% extends "base_bare.html" %}
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
 <style>
 .usg-container, .usg-container *{ box-sizing:border-box; }
-.usg-container{ max-width:900px; margin:0 auto; }
+.usg-container{ max-width:1100px; margin:0 auto; }
 .usg-container .card{ background:#111111; border-radius:14px; box-shadow:0 4px 24px rgba(0,0,0,0.7); overflow:hidden; border:1px solid #2a2a2a; }
 .usg-container .card-header{
     background:linear-gradient(135deg,#005555,#007676);
@@ -77,7 +77,8 @@
 .usg-container .btn-green{ background:#166534; color:#4ade80; border:1px solid #166534; } .usg-container .btn-green:hover{ background:#14532d; color:#86efac; }
 .usg-container .btn-teal{ background:#1e3a3a; color:#00b8a9; border:1px solid #00b8a9; } .usg-container .btn-teal:hover{ background:#155555; }
 .usg-container .btn-gray{ background:#1e1e1e; color:#8892a4; border:1px solid #2a2a2a; } .usg-container .btn-gray:hover{ background:#2a2a2a; color:#e2e8f0; }
-.usg-container .form-actions{ margin-top:22px; display:flex; gap:10px; flex-wrap:wrap; }
+.usg-container .btn:disabled{ opacity:.6; cursor:not-allowed; }
+.usg-container .form-actions{ margin-top:22px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
 
 .usg-container .error-banner{ background:#2a0a0a; border:1px solid #5a2d2d; border-radius:8px; margin-bottom:18px; padding:12px 16px; }
 .usg-container .error-banner strong{ color:#fca5a5; }
@@ -87,6 +88,68 @@
     .usg-container .form-grid{ grid-template-columns:1fr; }
     .usg-container .span2{ grid-column:auto; }
 }
+
+/* ── Report Identity — collapsible, always above the tabs (not itself a
+     step in the Save & Next sequence — mirrors how OPD keeps
+     patient/date/doctor out of its tab flow entirely). ── */
+.usg-identity{ border:1px solid #2a2a2a; border-radius:12px; background:#141414; margin-bottom:18px; overflow:hidden; }
+.usg-identity summary{
+    cursor:pointer; list-style:none; padding:12px 18px; font-size:13px; font-weight:700;
+    color:#8892a4; display:flex; align-items:center; gap:8px; user-select:none;
+}
+.usg-identity summary::-webkit-details-marker{ display:none; }
+.usg-identity summary:before{ content:'▶'; font-size:9px; transition:transform .2s; }
+.usg-identity[open] summary:before{ transform:rotate(90deg); }
+.usg-identity .form-grid{ padding:4px 18px 18px; }
+
+/* ── Tab layout — sidebar nav + content, dark/teal to match this page ── */
+.usg-tab-layout{ display:flex; align-items:flex-start; gap:16px; }
+.usg-tab-content{ flex:1 1 auto; min-width:0; }
+.usg-tab-nav{
+    position:sticky; top:10px; z-index:50;
+    flex:0 0 190px; width:190px; max-height:calc(100vh - 20px); overflow-y:auto;
+    background:#141414; border:1px solid #2a2a2a; border-radius:10px; padding:8px;
+    display:flex; flex-direction:column; gap:4px;
+}
+.usg-tab-nav a{
+    display:block; padding:8px 12px; border-radius:7px; background:#1a1a1a; color:#8892a4;
+    font-size:12px; font-weight:600; text-decoration:none; border:1px solid #2a2a2a;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:.15s;
+}
+.usg-tab-nav a:hover{ background:#1e3a3a; border-color:#00b8a9; color:#00b8a9; }
+.usg-tab-nav a.active{ background:#00b8a9; border-color:#00b8a9; color:#000; font-weight:800; }
+@media (max-width: 860px) {
+    .usg-tab-layout{ flex-direction:column; }
+    .usg-tab-nav{ position:static; width:100%; max-height:none; flex-direction:row; flex-wrap:wrap; }
+}
+[data-usgtab]{ display:none; }
+[data-usgtab].tab-active{ display:block; }
+
+.usg-findings-ta{ min-height:70px; resize:vertical; }
+
+/* ── Structured per-organ card: Size field(s) + one-click Normal/
+     Pathology chips (same toggle pattern as OPD's "Procedures Performed
+     Today" — click a chip to insert/remove its canned line) + a free-text
+     Content box that is what actually gets saved for that organ. ── */
+.organ-card-row{ display:flex; flex-wrap:wrap; gap:14px; }
+.organ-card{ flex:1 1 100%; border:1px solid #2a2a2a; border-radius:10px; padding:12px 14px; background:#181818; margin-bottom:4px; }
+.organ-card-half{ flex:1 1 calc(50% - 7px); }
+@media (max-width: 720px) { .organ-card-half{ flex:1 1 100%; } }
+.organ-card-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+.organ-card-head{ font-weight:700; color:#00b8a9; font-size:13px; white-space:nowrap; margin-right:4px; }
+.organ-card-top .ch-pill{ margin:0; }
+.organ-size-field{ display:flex; align-items:center; gap:6px; flex:0 0 auto; }
+.organ-size-field label{ font-size:11px; margin:0; white-space:nowrap; }
+.organ-size-field input{ width:90px; padding:6px 8px; }
+.organ-content-ta{ min-height:56px; resize:vertical; }
+
+#usg-toast{
+    position:fixed; bottom:20px; right:20px; z-index:99999;
+    padding:10px 18px; border-radius:8px; color:#fff; font-size:13px; font-weight:600;
+    box-shadow:0 4px 16px rgba(0,0,0,.4); opacity:0; transform:translateY(8px);
+    transition:opacity .2s, transform .2s; pointer-events:none;
+}
+#usg-toast.show{ opacity:1; transform:translateY(0); }
 </style>
 
 <div class="usg-container">
@@ -101,141 +164,188 @@
 <div class="error-banner"><strong>⚠️ Please correct the errors below and resubmit.</strong></div>
 {% endif %}
 
-<form method="post" novalidate>
+<form method="post" id="usg-report-form" novalidate>
     {% csrf_token %}
 
-    <div class="form-section">
-    <div class="section-title">Report Identity</div>
-    <div class="form-grid">
-        <div>
-            <label>Patient</label>
-            {{ form.patient }}
-            {% if form.patient.errors %}<div class="field-error">{{ form.patient.errors|join:", " }}</div>{% endif %}
-        </div>
-        <div>
-            <label>Scan Type</label>
-            {{ form.scan_type }}
-        </div>
-        <div>
-            <label>Report Date</label>
-            {{ form.report_date }}
-        </div>
-        <div>
-            <label>Report Time</label>
-            {{ form.report_time }}
-        </div>
-        <div>
-            <label>Referred By</label>
-            {{ form.referred_by }}
-        </div>
-        <div>
-            <label>Reporting Doctor</label>
-            {{ form.reporting_doctor }}
-        </div>
-        <div>
-            <label>Registration No. <span style="font-weight:400;color:#555;">(optional — auto-generated if left blank)</span></label>
-            {{ form.report_no }}
-            {% if form.report_no.errors %}<div class="field-error">{{ form.report_no.errors|join:", " }}</div>{% endif %}
-        </div>
-        <div>
-            <label>Linked Consultation <span style="font-weight:400;color:#555;">(optional)</span></label>
-            {{ form.consultation }}
-        </div>
-        <div>
-            <label>Linked Lab Bill Item <span style="font-weight:400;color:#555;">(optional)</span></label>
-            {{ form.bill_item }}
-        </div>
-        <div class="full inline-field">
-            <label>Clinical Indication</label>
-            {{ form.clinical_indication }}
-        </div>
-    </div>
-    </div>
-
-    <div class="form-section">
-    <div class="section-title">Findings</div>
-    <div id="gender-mismatch-warning" style="display:none;margin-bottom:10px;padding:10px 12px;background:#2a1a0a;border:1px solid #7a4a1a;border-radius:8px;font-size:12px;color:#fca5a5;">
-        ⚠️ <span id="gender-mismatch-text"></span>
-        <button type="button" class="btn btn-teal" style="padding:4px 10px;font-size:11px;margin-left:8px;" onclick="fixPelvicOrgansMismatch()">Fix it</button>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:8px;">
-        <button type="button" class="btn btn-teal" style="padding:6px 14px;font-size:12px;" onclick="loadStandardTemplate()">
-            📋 Load Standard Template
-        </button>
-    </div>
-
-    <div class="ch-group-label" onclick="toggleChGroup(this)" style="margin-bottom:0;">
-        <span class="ch-group-chevron">▶</span> 📏 Measurements
-        <span class="ch-group-count">fill in, then Apply</span>
-    </div>
-    <div class="ch-group-body" id="measurements-panel" style="display:none;flex-direction:column;gap:8px;padding:10px 4px 4px;">
-        <div style="font-size:11px;color:#555;margin-bottom:2px;">
-            Load the standard template above first — each field below fills in that organ's blank in the Findings paragraph. A field does nothing if its blank isn't in the current text (e.g. wrong scan type, or already filled in by hand).
-        </div>
-        {% for label, token, unit in measurement_fields %}
-        <div style="display:flex;align-items:center;gap:8px;">
-            <label style="flex:0 0 140px;margin:0;">{{ label }} <span style="opacity:.65;font-weight:500;">({{ unit }})</span></label>
-            <input type="text" class="meas-input" id="meas_{{ token }}" data-token="{{ token }}" placeholder="e.g. 12.5" style="max-width:120px;">
-        </div>
-        {% endfor %}
-        <div style="margin-top:6px;">
-            <button type="button" class="btn btn-green" style="padding:7px 16px;font-size:12px;" onclick="applyMeasurements()">✅ Apply to Findings</button>
-            <span id="measurements-status" style="margin-left:10px;font-size:11px;color:#8892a4;"></span>
-        </div>
-    </div>
-
-    {{ form.findings_text }}
-    <div style="margin-top:6px;font-size:11px;color:#555;">
-        Loads the standard normal-study wording for the selected scan type — edit
-        the measurements/values before saving. Scan types without a saved
-        template yet start blank.
-    </div>
-    </div>
-
-    <div class="form-section">
-    <div class="section-title">Impression &amp; Advice</div>
-    <div class="form-grid">
-        <div>
-            <label>Impression Status</label>
-            {{ form.impression_status }}
-        </div>
-        <div class="span2">
-            <div class="consent-row" style="margin-top:28px;">
-                {{ form.is_verified }}
-                <label for="{{ form.is_verified.id_for_label }}">Radiologist Verified</label>
+    <details class="usg-identity" {% if not report %}open{% endif %}>
+        <summary>🗂️ Report Identity — patient, scan type &amp; referral details</summary>
+        <div class="form-grid">
+            <div>
+                <label>Patient</label>
+                {{ form.patient }}
+                {% if form.patient.errors %}<div class="field-error">{{ form.patient.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div>
+                <label>Scan Type</label>
+                {{ form.scan_type }}
+            </div>
+            <div>
+                <label>Report Date</label>
+                {{ form.report_date }}
+            </div>
+            <div>
+                <label>Report Time</label>
+                {{ form.report_time }}
+            </div>
+            <div>
+                <label>Referred By</label>
+                {{ form.referred_by }}
+            </div>
+            <div>
+                <label>Reporting Doctor</label>
+                {{ form.reporting_doctor }}
+            </div>
+            <div>
+                <label>Registration No. <span style="font-weight:400;color:#555;">(optional — auto-generated if left blank)</span></label>
+                {{ form.report_no }}
+                {% if form.report_no.errors %}<div class="field-error">{{ form.report_no.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div>
+                <label>Linked Consultation <span style="font-weight:400;color:#555;">(optional)</span></label>
+                {{ form.consultation }}
+            </div>
+            <div>
+                <label>Linked Lab Bill Item <span style="font-weight:400;color:#555;">(optional)</span></label>
+                {{ form.bill_item }}
+            </div>
+            <div class="full">
+                <label>Clinical Indication <span style="font-weight:400;color:#555;">(chief complaints / brief history for this scan)</span></label>
+                {{ form.clinical_indication }}
             </div>
         </div>
-        <div class="full">
-            <label>Impression</label>
-            <div id="impression-pill-container">
-                {% for group_label, items in impression_groups %}
-                <div class="ch-group-label" onclick="toggleChGroup(this)">
-                    <span class="ch-group-chevron">▶</span> {{ group_label }}
-                    <span class="ch-group-count">{{ items|length }}</span>
+    </details>
+
+    <!-- ═══ TAB LAYOUT ═══ -->
+    <div class="usg-tab-layout">
+
+    <nav class="usg-tab-nav" aria-label="Jump to section">
+        <a href="#" data-usgtab="liver_pv" onclick="return switchUsgTab('liver_pv');">🫀 Liver / Portal Vein</a>
+        <a href="#" data-usgtab="gb_cbd" onclick="return switchUsgTab('gb_cbd');">🫙 Gall Bladder / CBD</a>
+        <a href="#" data-usgtab="sp" onclick="return switchUsgTab('sp');">🩸 Spleen / Pancreas</a>
+        <a href="#" data-usgtab="kidneys" onclick="return switchUsgTab('kidneys');">🫘 Kidneys</a>
+        <a href="#" data-usgtab="bladder" onclick="return switchUsgTab('bladder');">🚻 Bladder / Pelvic</a>
+        <a href="#" data-usgtab="other" onclick="return switchUsgTab('other');">🔍 Other Findings</a>
+        <a href="#" data-usgtab="impression" onclick="return switchUsgTab('impression');">📝 Impression &amp; Advice</a>
+    </nav>
+
+    <div class="usg-tab-content">
+
+    <!-- ═══ LIVER / PORTAL VEIN ═══ -->
+    <div class="form-section" data-usgtab="liver_pv">
+        <div class="section-title">Liver &amp; Portal Vein</div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+            <button type="button" class="btn btn-teal" style="padding:6px 14px;font-size:12px;" onclick="resetAllOrgansToNormal()">
+                ↺ Reset All Organs to Normal
+            </button>
+        </div>
+        <div class="organ-card-row" id="organ-cards-liver_pv"></div>
+    </div>
+
+    <!-- ═══ GALL BLADDER / CBD ═══ -->
+    <div class="form-section" data-usgtab="gb_cbd">
+        <div class="section-title">Gall Bladder &amp; CBD</div>
+        <div class="organ-card-row" id="organ-cards-gb_cbd"></div>
+    </div>
+
+    <!-- ═══ SPLEEN / PANCREAS ═══ -->
+    <div class="form-section" data-usgtab="sp">
+        <div class="section-title">Spleen &amp; Pancreas</div>
+        <div class="organ-card-row" id="organ-cards-sp"></div>
+    </div>
+
+    <!-- ═══ KIDNEYS ═══ -->
+    <div class="form-section" data-usgtab="kidneys">
+        <div class="section-title">Kidneys</div>
+        <div class="organ-card-row" id="organ-cards-kidneys"></div>
+    </div>
+
+    <!-- ═══ URINARY BLADDER + PROSTATE / UTERUS ═══ -->
+    <div class="form-section" data-usgtab="bladder">
+        <div class="section-title">Urinary Bladder, Prostate / Uterus</div>
+
+        <div id="pelvic-hidden-data-warning" style="display:none;margin-bottom:10px;padding:10px 12px;background:#2a1a0a;border:1px solid #7a4a1a;border-radius:8px;font-size:12px;color:#fca5a5;">
+            ⚠️ Existing <span class="hidden-organ-name"></span> data was found but is hidden for this patient's sex —
+            <a href="#" onclick="revealHiddenPelvicCard(); return false;" style="color:#00b8a9;">show it</a> to review/move it before saving.
+        </div>
+
+        <div class="organ-card-row" id="organ-cards-bladder"></div>
+
+        <div id="usg-pelvic-male-wrap" style="display:none;margin-top:10px;">
+            <div class="organ-card-row" id="organ-card-slot-male"></div>
+        </div>
+        <div id="usg-pelvic-female-wrap" style="margin-top:10px;">
+            <div class="organ-card-row" id="organ-card-slot-female"></div>
+        </div>
+        <div style="margin-top:6px;font-size:11px;color:#555;">Only the box matching the selected patient's sex is saved.</div>
+    </div>
+
+    <!-- ═══ OTHER FINDINGS ═══ -->
+    <div class="form-section" data-usgtab="other">
+        <div class="section-title">Other Findings</div>
+        <div class="ch-grid" id="other-findings-pill-container">
+            <div class="ch-pill" data-val="Appendix is normal in caliber, no evidence of acute appendicitis." data-target="tab-other" onclick="toggleUsgLineChip(this)">Appendicitis</div>
+            <div class="ch-pill" data-val="No evidence of anterior abdominal wall hernia." data-target="tab-other" onclick="toggleUsgLineChip(this)">Hernia</div>
+            <div class="ch-pill" data-val="No significant intra-abdominal lymphadenopathy." data-target="tab-other" onclick="toggleUsgLineChip(this)">Lymphadenopathy</div>
+            <div class="ch-pill" data-val="No free fluid / ascites seen in the abdominal cavity." data-target="tab-other" onclick="toggleUsgLineChip(this)">Ascites</div>
+            <div class="ch-pill" data-val="Bowel loops are normal in caliber, no obvious wall thickening." data-target="tab-other" onclick="toggleUsgLineChip(this)">Bowel</div>
+        </div>
+        <label style="margin-top:10px;">Free Text</label>
+        <textarea id="tab-other" class="usg-findings-ta" placeholder="Appendix, hernia, lymphadenopathy, ascites, bowel…"></textarea>
+    </div>
+
+    <!-- ═══ IMPRESSION & ADVICE ═══ -->
+    <div class="form-section" data-usgtab="impression">
+        <div class="section-title">Impression &amp; Advice</div>
+        <div class="form-grid">
+            <div>
+                <label>Impression Status</label>
+                {{ form.impression_status }}
+            </div>
+            <div class="span2">
+                <div class="consent-row" style="margin-top:28px;">
+                    {{ form.is_verified }}
+                    <label for="{{ form.is_verified.id_for_label }}">Radiologist Verified</label>
                 </div>
-                <div class="ch-grid ch-group-body" style="display:none;">
-                    {% for item in items %}
-                    <div class="ch-pill" data-val="{{ item }}" data-target="id_impression" onclick="toggleChipInto(this)">{{ item }}</div>
+            </div>
+            <div class="full">
+                <label>Impression</label>
+                <div id="impression-pill-container">
+                    {% for group_label, items in impression_groups %}
+                    <div class="ch-group-label" onclick="toggleChGroup(this)">
+                        <span class="ch-group-chevron">▶</span> {{ group_label }}
+                        <span class="ch-group-count">{{ items|length }}</span>
+                    </div>
+                    <div class="ch-grid ch-group-body" style="display:none;">
+                        {% for item in items %}
+                        <div class="ch-pill" data-val="{{ item }}" data-target="id_impression" onclick="toggleChipInto(this)">{{ item }}</div>
+                        {% endfor %}
+                    </div>
                     {% endfor %}
                 </div>
-                {% endfor %}
+                {{ form.impression }}
             </div>
-            {{ form.impression }}
-        </div>
-        <div class="full">
-            <label>Advice</label>
-            <div class="ch-grid" id="advice-pill-container">
-                {% for item in advice_quick_options %}
-                <div class="ch-pill" data-val="{{ item }}" data-target="id_advice" onclick="toggleChipInto(this)">{{ item }}</div>
-                {% endfor %}
+            <div class="full">
+                <label>Advice</label>
+                <div class="ch-grid" id="advice-pill-container">
+                    {% for item in advice_quick_options %}
+                    <div class="ch-pill" data-val="{{ item }}" data-target="id_advice" onclick="toggleChipInto(this)">{{ item }}</div>
+                    {% endfor %}
+                </div>
+                {{ form.advice }}
             </div>
-            {{ form.advice }}
         </div>
-    </div>
     </div>
 
+    </div><!-- /usg-tab-content -->
+    </div><!-- /usg-tab-layout -->
+
+    <!-- The real bound field the print/PDF/Word export reads from — kept
+         hidden; its value is reassembled from the organ cards above right
+         before every save (see reconstructFindingsText() below). -->
+    <div style="display:none;">{{ form.findings_text }}</div>
+
     <div class="form-actions">
-        <button type="submit" class="btn btn-green">💾 Save Report</button>
+        <button type="button" id="usg-next-btn" class="btn btn-green" onclick="goToNextUsgTab()">Save &amp; Next ➜</button>
         <a href="{% url 'hms:usg_report_list' %}" class="btn btn-gray">← Cancel</a>
     </div>
 </form>
@@ -244,158 +354,428 @@
 </div>
 </div>
 
+<div id="usg-toast"></div>
+
 <script>
-var USG_FINDINGS_TEMPLATES = {{ findings_templates|default:"{}"|safe }};
-var USG_PELVIC_ORGANS = {{ pelvic_organs_texts|default:"{}"|safe }};
+var USG_REPORT_ID = {{ report.pk|default:"null" }};
+var USG_EDIT_URL_TPL  = '{% url "hms:usg_report_edit" pk=999999999 %}';
+var USG_PRINT_URL_TPL = '{% url "hms:usg_report_print" pk=999999999 %}';
 
-// ── Keep the Findings paragraph's Prostate/Uterus section in sync with
-//    the selected patient's actual sex — a report saved with the wrong
-//    one loaded (e.g. template loaded before a patient was picked, then
-//    never reloaded) has printed a female paragraph for a male patient
-//    before. Runs on load and whenever the patient selection changes. ──
-function checkPelvicOrgansMismatch() {
-    var ta = document.getElementById('id_findings_text');
-    var warning = document.getElementById('gender-mismatch-warning');
-    var warningText = document.getElementById('gender-mismatch-text');
-    var patientSelect = document.getElementById('id_patient');
-    if (!ta || !warning || !patientSelect || !patientSelect.value) { if (warning) warning.style.display = 'none'; return; }
-
-    var hasProstate = ta.value.indexOf('Prostate:') !== -1;
-    var hasUterus = ta.value.indexOf('Uterus and Ovaries:') !== -1;
-    if (!hasProstate && !hasUterus) { warning.style.display = 'none'; return; }
-
-    fetch('{% url "hms:patient_gender_api" 0 %}'.replace('0', patientSelect.value))
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            var mismatch = (data.gender === 'Male' && hasUterus) || (data.gender === 'Female' && hasProstate);
-            if (mismatch) {
-                warningText.textContent = 'The selected patient is ' + data.gender + ', but Findings still has the ' +
-                    (hasUterus ? 'Uterus and Ovaries (female)' : 'Prostate (male)') + ' paragraph.';
-                warning.style.display = 'block';
-            } else {
-                warning.style.display = 'none';
-            }
-        })
-        .catch(function() {});
+// ── Toast ──────────────────────────────────────────────────────────
+function showUsgToast(msg, color) {
+    var el = document.getElementById('usg-toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.background = color || '#374151';
+    el.classList.add('show');
+    clearTimeout(el._hideTimer);
+    el._hideTimer = setTimeout(function() { el.classList.remove('show'); }, 3000);
 }
-
-function fixPelvicOrgansMismatch() {
-    var ta = document.getElementById('id_findings_text');
-    var patientSelect = document.getElementById('id_patient');
-    if (!ta || !patientSelect || !patientSelect.value) return;
-
-    fetch('{% url "hms:patient_gender_api" 0 %}'.replace('0', patientSelect.value))
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            var wantMale = data.gender === 'Male';
-            var wrongBlock = wantMale ? USG_PELVIC_ORGANS.female : USG_PELVIC_ORGANS.male;
-            var rightBlock = wantMale ? USG_PELVIC_ORGANS.male : USG_PELVIC_ORGANS.female;
-            if (wrongBlock && ta.value.indexOf(wrongBlock) !== -1) {
-                ta.value = ta.value.split(wrongBlock).join(rightBlock);
-                autoGrowTextarea(ta);
-            } else {
-                alert('Could not auto-fix — the paragraph has already been edited by hand. Please replace it manually.');
-            }
-            checkPelvicOrgansMismatch();
-        });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    checkPelvicOrgansMismatch();
-    var patientSelect = document.getElementById('id_patient');
-    if (patientSelect) patientSelect.addEventListener('change', checkPelvicOrgansMismatch);
-    var findingsEl = document.getElementById('id_findings_text');
-    if (findingsEl) findingsEl.addEventListener('blur', checkPelvicOrgansMismatch);
-});
 
 function autoGrowTextarea(el) {
     if (!el) return;
     el.style.height = 'auto';
     el.style.height = el.scrollHeight + 'px';
 }
-document.addEventListener('DOMContentLoaded', function() {
-    var el = document.getElementById('id_findings_text');
-    if (!el) return;
-    el.style.resize = 'none';
-    el.style.overflow = 'hidden';
-    autoGrowTextarea(el);
-    el.addEventListener('input', function() { autoGrowTextarea(el); });
-});
 
-// ── Measurements panel: fill each organ's __TOKEN__ blank in Findings ──
-function applyMeasurements() {
-    var ta = document.getElementById('id_findings_text');
-    var statusEl = document.getElementById('measurements-status');
-    var inputs = document.querySelectorAll('#measurements-panel .meas-input');
-    var applied = [], notFound = [];
+function linesOf(id) {
+    var el = document.getElementById(id);
+    var v = el ? el.value.replace(/\r\n/g, "\n") : "";
+    return v === "" ? [] : v.split("\n");
+}
 
-    inputs.forEach(function(input) {
-        var val = input.value.trim();
-        if (!val) return;
-        var token = '__' + input.getAttribute('data-token') + '__';
-        if (ta.value.indexOf(token) === -1) {
-            notFound.push(token);
-            return;
-        }
-        ta.value = ta.value.split(token).join(val);
-        applied.push(token);
+function getPatientGenderAsync(cb) {
+    var patientSelect = document.getElementById('id_patient');
+    if (!patientSelect || !patientSelect.value) { cb(null); return; }
+    fetch('{% url "hms:patient_gender_api" 0 %}'.replace('0', patientSelect.value))
+        .then(function(r) { return r.json(); })
+        .then(function(data) { cb(data.gender); })
+        .catch(function() { cb(null); });
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// STRUCTURED ORGAN CARDS
+//
+// Each organ = Size field(s) + one-click Normal/Pathology chips (same
+// toggle-a-canned-line pattern as OPD's "Procedures Performed Today") +
+// a free-text Content box, which is literally what gets saved for that
+// organ. On load, the single findings_text field is parsed by its
+// existing "Liver:"/"Right Kidney:"/... labels (the same labels
+// hms_extras.usg_findings_line_parts already recognizes for bold
+// rendering) into each organ's Content box. Before every save, the
+// organs are recomposed back into that one field in the exact layout
+// the standard template already uses — so print/PDF/Word, which only
+// ever read the final findings_text value, are completely unaffected
+// by how this page collects it.
+// ═════════════════════════════════════════════════════════════════════
+var ORGAN_DEFS = [
+    { key:'liver', displayLabel:'Liver', printLabel:'Liver', tab:'lpg',
+      sizes:[{name:'size', label:'Size', unit:'cm'}],
+      options:[
+        {name:'Normal', text:'The liver is normal in size measuring {size} cm. The echotexture is normal. No focal hepatic lesion is seen. The intrahepatic ducts are not dilated. The portal vein and common bile duct show normal calibre.'},
+        {name:'Fatty Liver', text:'The liver is normal in size measuring {size} cm with diffusely increased echogenicity, suggestive of fatty infiltration (Grade I). No focal hepatic lesion is seen. The intrahepatic ducts are not dilated.'},
+        {name:'Hepatomegaly', text:'The liver is enlarged measuring {size} cm with normal echotexture. No focal hepatic lesion is seen. The intrahepatic ducts are not dilated.'}
+      ] },
+    { key:'portal_vein', displayLabel:'Portal Vein', printLabel:'Portal Vein', tab:'lpg',
+      sizes:[{name:'size', label:'Size', unit:'mm'}],
+      options:[
+        {name:'Normal', text:'Measuring {size} mm.'},
+        {name:'Dilated', text:'Measuring {size} mm — dilated, ? portal hypertension. Clinical correlation advised.'}
+      ] },
+    { key:'gallbladder', displayLabel:'Gallbladder', printLabel:'Gallbladder', tab:'lpg',
+      sizes:[],
+      options:[
+        {name:'Normal', text:'The gallbladder is distended and shows smooth walls. No gallstones or biliary sludge is seen. The wall thickness is within normal limits. No evidence of pericholecystic fluid.'},
+        {name:'Cholelithiasis', text:'The gallbladder shows a mobile echogenic calculus with posterior acoustic shadowing. Wall thickness is normal. No pericholecystic fluid.'},
+        {name:'Cholecystitis', text:'The gallbladder is distended with thickened wall and pericholecystic fluid — features suggestive of acute cholecystitis. Clinical correlation advised.'}
+      ] },
+    { key:'cbd', displayLabel:'CBD', printLabel:'CBD', tab:'lpg',
+      sizes:[{name:'size', label:'Size', unit:'mm'}],
+      options:[
+        {name:'Normal', text:'Measuring {size} mm, size normal.'},
+        {name:'Dilated', text:'Measuring {size} mm — dilated. ? Choledocholithiasis / distal obstruction. Clinical correlation advised.'}
+      ] },
+    { key:'pancreas', displayLabel:'Pancreas', printLabel:'Pancreas', tab:'sp',
+      sizes:[],
+      options:[
+        {name:'Normal', text:'The pancreas is normal in size and echotexture. The pancreatic duct is not dilated.'},
+        {name:'Pancreatitis', text:'The pancreas is bulky with altered echotexture and peripancreatic fat stranding — features suggestive of acute pancreatitis. Clinical correlation advised.'}
+      ] },
+    { key:'spleen', displayLabel:'Spleen', printLabel:'Spleen', tab:'sp',
+      sizes:[{name:'size', label:'Size', unit:'cm'}],
+      options:[
+        {name:'Normal', text:'The spleen is normal in size, measuring {size} cm. No splenic lesion is seen.'},
+        {name:'Splenomegaly', text:'The spleen is enlarged measuring {size} cm with normal echotexture. No splenic lesion is seen.'}
+      ] },
+    { key:'kid_common', displayLabel:'Kidneys (General)', printLabel:'Kidneys', tab:'kidneys',
+      sizes:[],
+      options:[
+        {name:'Normal', text:'Both kidneys are normal in size, shape and position and show normal cortico-medullary differentiation.'},
+        {name:'Altered Echogenicity', text:'Both kidneys show mildly increased cortical echogenicity with normal cortico-medullary differentiation — features suggestive of medical renal disease. Clinical correlation advised.'}
+      ] },
+    { key:'kid_right', displayLabel:'Right Kidney', printLabel:'Right Kidney', tab:'kidneys', half:true,
+      sizes:[{name:'size', label:'Size', unit:'cm'}],
+      options:[
+        {name:'Normal', text:'measures {size} cm'},
+        {name:'Calculus', text:'measures {size} cm with an echogenic calculus with posterior acoustic shadowing'},
+        {name:'Hydronephrosis', text:'measures {size} cm with mild pelvicalyceal dilatation (hydronephrosis)'}
+      ] },
+    { key:'kid_left', displayLabel:'Left Kidney', printLabel:'Left Kidney', tab:'kidneys', half:true,
+      sizes:[{name:'size', label:'Size', unit:'cm'}],
+      options:[
+        {name:'Normal', text:'measures {size} cm'},
+        {name:'Calculus', text:'measures {size} cm with an echogenic calculus with posterior acoustic shadowing'},
+        {name:'Hydronephrosis', text:'measures {size} cm with mild pelvicalyceal dilatation (hydronephrosis)'}
+      ] },
+    { key:'bladder', displayLabel:'Urinary Bladder', printLabel:'Bladder', tab:'bladder',
+      sizes:[],
+      options:[
+        {name:'Normal', text:'The urinary bladder is adequately filled. Its wall is not thickened. No evidence of diverticulum or calculus.'},
+        {name:'Cystitis', text:'The urinary bladder wall appears thickened and irregular — features suggestive of cystitis. Clinical correlation advised.'},
+        {name:'Calculus', text:'A mobile echogenic calculus with posterior acoustic shadowing is seen within the bladder lumen.'}
+      ] },
+    { key:'prostate', displayLabel:'Prostate', printLabel:'Prostate', tab:'bladder', gender:'male',
+      sizes:[{name:'size', label:'Size', unit:'cm'}, {name:'vol', label:'Volume', unit:'cc'}],
+      options:[
+        {name:'Normal', text:'The prostate gland is normal in size, measuring {size} cm, volume {vol} cc, and shows homogenous echotexture. No focal lesion is seen. Post-void residual urine is minimal.'},
+        {name:'BPH', text:'The prostate gland is enlarged measuring {size} cm, volume {vol} cc, with homogenous echotexture, features suggestive of benign prostatic hyperplasia (BPH). Post-void residual urine is mildly increased.'}
+      ] },
+    { key:'uterus', displayLabel:'Uterus & Adnexa', printLabel:'Uterus and Ovaries', tab:'bladder', gender:'female',
+      sizes:[{name:'size', label:'Size', unit:'cm'}, {name:'et', label:'Endometrial Thickness', unit:'mm'}],
+      options:[
+        {name:'Normal', text:'The uterus is {size} cm size, anteverted shape, homogenous echotexture, myometrium and endometrial thickness {et} mm, and ovaries are of normal size.'},
+        {name:'Fibroid', text:'The uterus is {size} cm size, anteverted shape, with a heterogeneous myometrial lesion suggestive of a fibroid. Endometrial thickness {et} mm. Ovaries are of normal size.'},
+        {name:'Ovarian Cyst', text:'The uterus is {size} cm size, anteverted shape, homogenous echotexture, endometrial thickness {et} mm. A cystic lesion is noted in one ovary — correlate clinically.'}
+      ] }
+];
+
+var ORGAN_DEFS_BY_KEY = {};
+var USG_ORGAN_LABEL_TEXT = {};
+ORGAN_DEFS.forEach(function(d) { ORGAN_DEFS_BY_KEY[d.key] = d; USG_ORGAN_LABEL_TEXT[d.key] = d.printLabel; });
+
+var CONTAINER_FOR = {
+    liver: 'organ-cards-liver_pv', portal_vein: 'organ-cards-liver_pv', gallbladder: 'organ-cards-gb_cbd', cbd: 'organ-cards-gb_cbd',
+    pancreas: 'organ-cards-sp', spleen: 'organ-cards-sp',
+    kid_common: 'organ-cards-kidneys', kid_right: 'organ-cards-kidneys', kid_left: 'organ-cards-kidneys',
+    bladder: 'organ-cards-bladder',
+    prostate: 'organ-card-slot-male', uterus: 'organ-card-slot-female'
+};
+
+function fillPlaceholders(text, values) {
+    return text.replace(/\{(\w+)\}/g, function(_, key) {
+        var v = values[key];
+        return (v && String(v).trim()) ? v : '__';
+    });
+}
+
+function currentOrganSizes(def) {
+    var values = {};
+    def.sizes.forEach(function(s) {
+        var inp = document.getElementById('organ-size-' + def.key + '-' + s.name);
+        values[s.name] = inp ? inp.value.trim() : '';
+    });
+    return values;
+}
+
+// Click a chip: insert its canned line (with {size}/{vol}/{et} filled in
+// from that organ's Size inputs at the moment of the click) if it isn't
+// already there, or remove it if it is — same one-click toggle pattern
+// as OPD's "Procedures Performed Today" chips.
+function toggleOrganChip(key, optionIndex, chipEl) {
+    var def = ORGAN_DEFS_BY_KEY[key];
+    var opt = def.options[optionIndex];
+    var filled = fillPlaceholders(opt.text, currentOrganSizes(def));
+    var ta = document.getElementById('organ-content-' + key);
+    var lines = (ta.value || '').replace(/\r\n/g, '\n').split('\n').filter(function(l) { return l.trim() !== ''; });
+    var idx = lines.indexOf(filled);
+    if (idx === -1) {
+        lines.push(filled);
+        chipEl.classList.add('active');
+    } else {
+        lines.splice(idx, 1);
+        chipEl.classList.remove('active');
+    }
+    ta.value = lines.join('\n');
+    autoGrowTextarea(ta);
+}
+
+function setOrganToNormal(key) {
+    var def = ORGAN_DEFS_BY_KEY[key];
+    var normal = def.options[0]; // "Normal" is always index 0 by convention
+    var filled = fillPlaceholders(normal.text, currentOrganSizes(def));
+    var ta = document.getElementById('organ-content-' + key);
+    ta.value = filled;
+    autoGrowTextarea(ta);
+    def.options.forEach(function(_, i) {
+        var chip = document.getElementById('organ-chip-' + key + '-' + i);
+        if (chip) chip.classList.toggle('active', i === 0);
+    });
+}
+
+function resetAllOrgansToNormal() {
+    if (!confirm('Reset Liver, Portal Vein, Gallbladder, CBD, Pancreas, Spleen, Kidneys and Bladder to their standard Normal wording? This replaces any custom text already entered in those sections.')) return;
+    ['liver', 'portal_vein', 'gallbladder', 'cbd', 'pancreas', 'spleen', 'kid_common', 'kid_right', 'kid_left', 'bladder'].forEach(setOrganToNormal);
+    setOrganToNormal(USG_ACTIVE_PELVIC === 'male' ? 'prostate' : 'uterus');
+}
+
+function createOrganCard(def) {
+    var card = document.createElement('div');
+    card.className = 'organ-card' + (def.half ? ' organ-card-half' : '');
+
+    var top = document.createElement('div');
+    top.className = 'organ-card-top';
+
+    var head = document.createElement('div');
+    head.className = 'organ-card-head';
+    head.textContent = def.displayLabel;
+    top.appendChild(head);
+
+    def.sizes.forEach(function(s) {
+        var wrap = document.createElement('div');
+        wrap.className = 'organ-size-field';
+        var lbl = document.createElement('label');
+        lbl.textContent = s.label + ' (' + s.unit + ')';
+        var inp = document.createElement('input');
+        inp.type = 'text';
+        inp.id = 'organ-size-' + def.key + '-' + s.name;
+        inp.placeholder = 'e.g. 10';
+        wrap.appendChild(lbl);
+        wrap.appendChild(inp);
+        top.appendChild(wrap);
     });
 
-    autoGrowTextarea(ta);
+    def.options.forEach(function(opt, i) {
+        var chip = document.createElement('div');
+        chip.className = 'ch-pill';
+        chip.id = 'organ-chip-' + def.key + '-' + i;
+        chip.textContent = opt.name;
+        chip.addEventListener('click', function() { toggleOrganChip(def.key, i, chip); });
+        top.appendChild(chip);
+    });
 
-    if (!applied.length && !notFound.length) {
-        statusEl.textContent = 'Type a value in at least one field first.';
-    } else if (!applied.length) {
-        statusEl.textContent = '⚠️ None of those blanks are in the current Findings text — load the standard template first.';
-    } else if (notFound.length) {
-        statusEl.textContent = '✓ Applied ' + applied.length + ' — ' + notFound.length + ' field(s) had no matching blank.';
-    } else {
-        statusEl.textContent = '✓ Applied ' + applied.length + ' measurement' + (applied.length > 1 ? 's' : '') + ' to Findings.';
-    }
+    card.appendChild(top);
+
+    var contentLabel = document.createElement('label');
+    contentLabel.textContent = 'Content';
+    card.appendChild(contentLabel);
+
+    var ta = document.createElement('textarea');
+    ta.className = 'usg-findings-ta organ-content-ta';
+    ta.id = 'organ-content-' + def.key;
+    ta.placeholder = 'Click a chip above or type findings for ' + def.displayLabel + '…';
+    ta.addEventListener('input', function() { autoGrowTextarea(ta); });
+    card.appendChild(ta);
+
+    return card;
 }
 
-function applyTemplateText(template, gender) {
-    var text = template;
-    if (template && typeof template === 'object') {
-        var key = gender === 'Male' ? 'male' : gender === 'Female' ? 'female' : 'default';
-        text = template[key] || template['default'] || '';
-    }
-    if (!text) {
-        alert('No standard template saved yet for this scan type.');
-        return;
-    }
-    var el = document.getElementById('id_findings_text');
-    if (el.value.trim() && !confirm('Replace the current findings text with the standard template?')) {
-        return;
-    }
-    el.value = text;
+function buildAllOrganCards() {
+    ORGAN_DEFS.forEach(function(def) {
+        var container = document.getElementById(CONTAINER_FOR[def.key]);
+        if (container) container.appendChild(createOrganCard(def));
+    });
+}
+
+// ── Parse the single findings_text field into each organ's Content box ──
+var USG_LABEL_BUCKET = {
+    "Liver": "lpg", "Portal Vein": "lpg", "Gallbladder": "lpg", "CBD": "lpg",
+    "Pancreas": "sp", "Spleen": "sp",
+    "Kidneys": "kid", "Right Kidney": "kid", "Left Kidney": "kid",
+    "Bladder": "bpu", "Uterus and Ovaries": "bpu", "Prostate": "bpu"
+};
+var USG_LABEL_RE = new RegExp("^(" + Object.keys(USG_LABEL_BUCKET).sort(function(a, b) {
+    return b.length - a.length;
+}).map(function(l) { return l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join("|") + "):");
+var USG_BOWEL_BOILERPLATE = "Colon wall thickness __ mm. Ileal wall thickness __ mm.";
+
+function splitFindingsIntoBuckets(text) {
+    var buckets = { lpg: [], sp: [], kid: [], bpu: [], other: [] };
+    var current = "lpg";
+    (text || "").replace(/\r\n/g, "\n").split("\n").forEach(function(line) {
+        var m = line.match(USG_LABEL_RE);
+        if (m && USG_LABEL_BUCKET[m[1]]) {
+            current = USG_LABEL_BUCKET[m[1]];
+        } else if (line.trim() === USG_BOWEL_BOILERPLATE) {
+            current = "other";
+        }
+        buckets[current].push(line);
+    });
+    return buckets;
+}
+
+function labelRe(key) {
+    var t = USG_ORGAN_LABEL_TEXT[key];
+    return new RegExp('^' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ':');
+}
+
+function splitByLabels(lines, order) {
+    var buckets = {};
+    order.forEach(function(o) { buckets[o.key] = []; });
+    var current = order[0].key;
+    lines.forEach(function(line) {
+        for (var i = 0; i < order.length; i++) {
+            if (order[i].re.test(line)) { current = order[i].key; break; }
+        }
+        buckets[current].push(line);
+    });
+    return buckets;
+}
+
+function stripLabel(lines, key) {
+    if (!lines.length) return '';
+    var re = new RegExp('^' + USG_ORGAN_LABEL_TEXT[key].replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ':\\s*');
+    var first = lines[0].replace(re, '');
+    return [first].concat(lines.slice(1)).join('\n').replace(/\n+$/, '');
+}
+
+function setOrganContentFromLines(key, lines) {
+    var el = document.getElementById('organ-content-' + key);
+    if (!el) return;
+    el.value = stripLabel(lines || [], key);
     autoGrowTextarea(el);
 }
 
-function loadStandardTemplate() {
-    var scanType = document.getElementById('id_scan_type').value;
-    var template = USG_FINDINGS_TEMPLATES[scanType];
-    if (!template) {
-        alert('No standard template saved yet for this scan type.');
-        return;
-    }
-    if (typeof template !== 'object') {
-        applyTemplateText(template, null);
-        return;
-    }
-    var patientSelect = document.getElementById('id_patient');
-    var patientId = patientSelect ? patientSelect.value : '';
-    if (!patientId) {
-        applyTemplateText(template, null);
-        return;
-    }
-    fetch('{% url "hms:patient_gender_api" 0 %}'.replace('0', patientId))
-        .then(function(r) { return r.json(); })
-        .then(function(data) { applyTemplateText(template, data.gender); })
-        .catch(function() { applyTemplateText(template, null); });
+function loadOrganContentsFromFindingsText() {
+    var ta = document.getElementById('id_findings_text');
+    var buckets = splitFindingsIntoBuckets(ta ? ta.value : '');
+
+    var lpgSplit = splitByLabels(buckets.lpg, [
+        { key: 'liver', re: labelRe('liver') },
+        { key: 'portal_vein', re: labelRe('portal_vein') },
+        { key: 'gallbladder', re: labelRe('gallbladder') },
+        { key: 'cbd', re: labelRe('cbd') },
+    ]);
+    var spSplit = splitByLabels(buckets.sp, [
+        { key: 'pancreas', re: labelRe('pancreas') },
+        { key: 'spleen', re: labelRe('spleen') },
+    ]);
+    var kidSplit = splitByLabels(buckets.kid, [
+        { key: 'kid_common', re: labelRe('kid_common') },
+        { key: 'kid_right', re: labelRe('kid_right') },
+        { key: 'kid_left', re: labelRe('kid_left') },
+    ]);
+    var bpuSplit = splitByLabels(buckets.bpu, [
+        { key: 'bladder', re: labelRe('bladder') },
+        { key: 'prostate', re: labelRe('prostate') },
+        { key: 'uterus', re: labelRe('uterus') },
+    ]);
+
+    ['liver', 'portal_vein', 'gallbladder', 'cbd'].forEach(function(k) { setOrganContentFromLines(k, lpgSplit[k]); });
+    ['pancreas', 'spleen'].forEach(function(k) { setOrganContentFromLines(k, spSplit[k]); });
+    ['kid_common', 'kid_right', 'kid_left'].forEach(function(k) { setOrganContentFromLines(k, kidSplit[k]); });
+    setOrganContentFromLines('bladder', bpuSplit.bladder);
+    setOrganContentFromLines('prostate', bpuSplit.prostate);
+    setOrganContentFromLines('uterus', bpuSplit.uterus);
+
+    document.getElementById('tab-other').value = buckets.other.join('\n');
+    autoGrowTextarea(document.getElementById('tab-other'));
+    syncOtherFindingsChips();
 }
 
-// ── Quick-select pills (Advice / Impression) ───────────────────
+// ── Recompose the organ Content boxes back into the one findings_text
+//    field, in the same layout the standard template already uses, so
+//    print/PDF/Word (which only ever read that final value) render
+//    exactly as before regardless of how this page collected it. ──
+function organLine(key) {
+    var el = document.getElementById('organ-content-' + key);
+    var content = el ? el.value.replace(/\r\n/g, '\n') : '';
+    if (content.trim() === '') return [];
+    var lines = content.split('\n');
+    lines[0] = USG_ORGAN_LABEL_TEXT[key] + ': ' + lines[0];
+    return lines;
+}
+
+var USG_ACTIVE_PELVIC = 'female';
+
+function reconstructFindingsText() {
+    var lpgLines = organLine('liver').concat(organLine('portal_vein'), [''], organLine('gallbladder'), organLine('cbd'));
+    var spLines = organLine('pancreas').concat(organLine('spleen'));
+    var kidLines = organLine('kid_common').concat(organLine('kid_right'), organLine('kid_left'));
+    var pelvicLines = (USG_ACTIVE_PELVIC === 'male') ? organLine('prostate') : organLine('uterus');
+    var bpuLines = organLine('bladder').concat([''], pelvicLines);
+    var otherLines = linesOf('tab-other');
+
+    var all = lpgLines.concat([''], spLines, [''], kidLines, [''], bpuLines, [''], otherLines);
+    document.getElementById('id_findings_text').value = all.join('\n');
+}
+
+// ── Gender-conditional Prostate / Uterus card — Prostate only for male
+//    patients, Uterus & Adnexa only for female (reuses the existing
+//    patient_gender_api). If the hidden card already has content (e.g. an
+//    older report saved before this redesign, or the patient's sex was
+//    just changed), a small warning offers to reveal it instead of
+//    silently dropping it on save. ──
+function updatePelvicGenderVisibility() {
+    var maleWrap = document.getElementById('usg-pelvic-male-wrap');
+    var femaleWrap = document.getElementById('usg-pelvic-female-wrap');
+    getPatientGenderAsync(function(gender) {
+        USG_ACTIVE_PELVIC = (gender === 'Male') ? 'male' : 'female';
+        maleWrap.style.display = (USG_ACTIVE_PELVIC === 'male') ? '' : 'none';
+        femaleWrap.style.display = (USG_ACTIVE_PELVIC === 'female') ? '' : 'none';
+        checkHiddenPelvicData();
+    });
+}
+
+function checkHiddenPelvicData() {
+    var hiddenKey = (USG_ACTIVE_PELVIC === 'male') ? 'uterus' : 'prostate';
+    var hiddenEl = document.getElementById('organ-content-' + hiddenKey);
+    var warn = document.getElementById('pelvic-hidden-data-warning');
+    if (!warn) return;
+    if (hiddenEl && hiddenEl.value.trim() !== '') {
+        warn.style.display = 'block';
+        warn.querySelector('.hidden-organ-name').textContent = ORGAN_DEFS_BY_KEY[hiddenKey].displayLabel;
+    } else {
+        warn.style.display = 'none';
+    }
+}
+
+function revealHiddenPelvicCard() {
+    document.getElementById('usg-pelvic-male-wrap').style.display = '';
+    document.getElementById('usg-pelvic-female-wrap').style.display = '';
+    document.getElementById('pelvic-hidden-data-warning').style.display = 'none';
+}
+
+// ── Quick-select pills (Advice / Impression) — comma-joined field ──────
 function toggleChipInto(el) {
     var val = el.getAttribute('data-val');
     var ta = document.getElementById(el.getAttribute('data-target'));
@@ -412,7 +792,33 @@ function toggleChipInto(el) {
     autoGrowTextarea(ta);
 }
 
-// ── Collapsible category headers (Impression groups) ───────────
+// ── Quick-select pills (Other Findings) — one canned line per chip ─────
+function toggleUsgLineChip(el) {
+    var val = el.getAttribute('data-val');
+    var ta = document.getElementById(el.getAttribute('data-target'));
+    var lines = (ta.value || '').replace(/\r\n/g, '\n').split('\n').filter(function(l) { return l.trim() !== ''; });
+    var idx = lines.indexOf(val);
+    if (idx === -1) {
+        lines.push(val);
+        el.classList.add('active');
+    } else {
+        lines.splice(idx, 1);
+        el.classList.remove('active');
+    }
+    ta.value = lines.join('\n');
+    autoGrowTextarea(ta);
+}
+
+function syncOtherFindingsChips() {
+    var ta = document.getElementById('tab-other');
+    if (!ta) return;
+    var lines = (ta.value || '').replace(/\r\n/g, '\n').split('\n').map(function(l) { return l.trim(); });
+    document.querySelectorAll('#other-findings-pill-container .ch-pill').forEach(function(p) {
+        p.classList.toggle('active', lines.indexOf(p.getAttribute('data-val')) !== -1);
+    });
+}
+
+// ── Collapsible category headers (Impression groups) ────────────────────
 function toggleChGroup(header) {
     var body = header.nextElementSibling;
     var open = header.classList.contains('open');
@@ -420,7 +826,110 @@ function toggleChGroup(header) {
     body.style.display = open ? 'none' : 'flex';
 }
 
+// ── Tab switching ───────────────────────────────────────────────────
+function getUsgTabOrder() {
+    return Array.prototype.map.call(
+        document.querySelectorAll('.usg-tab-nav a[data-usgtab]'),
+        function(a) { return a.dataset.usgtab; }
+    );
+}
+
+function switchUsgTab(tabName) {
+    document.querySelectorAll('[data-usgtab]').forEach(function(el) {
+        el.classList.toggle('tab-active', el.dataset.usgtab === tabName);
+    });
+    document.querySelectorAll('.usg-tab-nav a').forEach(function(a) {
+        a.classList.toggle('active', a.dataset.usgtab === tabName);
+    });
+    updateUsgNextButtonUI();
+    return false;
+}
+
+function updateUsgNextButtonUI() {
+    var btn = document.getElementById('usg-next-btn');
+    if (!btn) return;
+    var order = getUsgTabOrder();
+    var current = document.querySelector('.usg-tab-nav a.active');
+    var currentTab = current ? current.dataset.usgtab : order[0];
+    var idx = order.indexOf(currentTab);
+    var isLast = (idx === -1) || (idx === order.length - 1);
+    btn.textContent = isLast ? '💾 Save' : 'Save & Next ➜';
+    btn.dataset.isLast = isLast ? '1' : '';
+}
+
+function usgSaveUrl() {
+    return USG_REPORT_ID ? USG_EDIT_URL_TPL.replace('999999999', USG_REPORT_ID) : window.location.href;
+}
+
+function saveUsgAjax(onSuccess, onError) {
+    reconstructFindingsText();
+    var form = document.getElementById('usg-report-form');
+    var data = new FormData(form);
+    fetch(usgSaveUrl(), {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: data,
+    })
+    .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, data: j }; }); })
+    .then(function(result) {
+        if (!result.ok || !result.data.success) {
+            throw new Error((result.data && result.data.error) || 'Could not save the USG report.');
+        }
+        if (!USG_REPORT_ID && result.data.report_id) {
+            USG_REPORT_ID = result.data.report_id;
+            if (window.history && window.history.replaceState) {
+                window.history.replaceState(null, '', USG_EDIT_URL_TPL.replace('999999999', USG_REPORT_ID));
+            }
+        }
+        showUsgToast('✅ Saved.', '#16a34a');
+        if (onSuccess) onSuccess(result.data);
+    })
+    .catch(function(err) {
+        showUsgToast('⚠️ ' + err.message, '#dc3545');
+        if (onError) onError(err);
+    });
+}
+
+function goToNextUsgTab() {
+    var btn = document.getElementById('usg-next-btn');
+    if (!btn || btn.disabled) return;
+    var order = getUsgTabOrder();
+    var current = document.querySelector('.usg-tab-nav a.active');
+    var currentTab = current ? current.dataset.usgtab : order[0];
+    var idx = order.indexOf(currentTab);
+    var isLast = (idx === -1) || (idx === order.length - 1);
+
+    btn.disabled = true;
+    var prevLabel = btn.textContent;
+    btn.textContent = 'Saving…';
+
+    saveUsgAjax(function() {
+        btn.disabled = false;
+        if (!isLast) {
+            switchUsgTab(order[idx + 1]);
+        } else {
+            btn.textContent = prevLabel;
+            if (USG_REPORT_ID) {
+                window.location.href = USG_PRINT_URL_TPL.replace('999999999', USG_REPORT_ID);
+            }
+        }
+    }, function() {
+        btn.disabled = false;
+        btn.textContent = prevLabel;
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    buildAllOrganCards();
+    loadOrganContentsFromFindingsText();
+    updatePelvicGenderVisibility();
+    switchUsgTab('liver_pv');
+
+    var patientSelect = document.getElementById('id_patient');
+    if (patientSelect) {
+        patientSelect.addEventListener('change', updatePelvicGenderVisibility);
+    }
+
     ['id_advice', 'id_impression'].forEach(function(taId) {
         var ta = document.getElementById(taId);
         if (!ta) return;
@@ -429,8 +938,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.ch-pill[data-target="' + taId + '"]').forEach(function(p) {
             if (items.indexOf(p.getAttribute('data-val')) !== -1) {
                 p.classList.add('active');
-                // Auto-expand any group that already has a selected item,
-                // so an existing report's impression stays visible on Edit.
                 var body = p.closest('.ch-group-body');
                 if (body) {
                     var header = body.previousElementSibling;

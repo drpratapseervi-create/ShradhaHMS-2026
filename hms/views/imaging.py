@@ -1,6 +1,5 @@
 import os
 import json
-import re
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
@@ -12,7 +11,7 @@ from ..decorators import role_required
 from ..models import Patient, Doctor, Consultation, MedicalImage, USGReport
 from ..forms import USGReportForm
 from ..utils import render_to_pdf
-from ..templatetags.hms_extras import _USG_ORGAN_LABELS, comma_split
+from ..templatetags.hms_extras import comma_split, usg_findings_line_parts
 
 
 @login_required
@@ -256,7 +255,7 @@ def usg_report_create(request, patient_id=None, bill_item_id=None):
         messages.success(request, f"USG Report {report.report_no} saved successfully.")
         return redirect("hms:usg_report_print", pk=report.pk)
     elif request.method == "POST" and is_ajax:
-        return JsonResponse({"success": False, "error": "Please check the form for errors."}, status=400)
+        return JsonResponse({"success": False, "error": form.errors.as_text()}, status=400)
 
     return render(request, "hms/usg/usg_report_form.html", {
         "form":               form,
@@ -284,7 +283,7 @@ def usg_report_edit(request, pk):
         messages.success(request, f"Report {report.report_no} updated.")
         return redirect("hms:usg_report_print", pk=report.pk)
     elif request.method == "POST" and is_ajax:
-        return JsonResponse({"success": False, "error": "Please check the form for errors."}, status=400)
+        return JsonResponse({"success": False, "error": form.errors.as_text()}, status=400)
 
     return render(request, "hms/usg/usg_report_form.html", {
         "form":               form,
@@ -332,11 +331,6 @@ def _shade_cell(cell, color_hex):
     shd.set(qn("w:color"), "auto")
     shd.set(qn("w:fill"), color_hex)
     cell._tc.get_or_add_tcPr().append(shd)
-
-
-_USG_LABEL_LINE_RE = re.compile(
-    r"^(" + "|".join(re.escape(l) for l in _USG_ORGAN_LABELS) + r"):(.*)$"
-)
 
 
 def _build_usg_report_docx(report):
@@ -399,15 +393,12 @@ def _build_usg_report_docx(report):
 
     doc.add_paragraph()
 
-    # ── Findings — organ labels bold, narrative normal, same as print ──
-    for line in (report.findings_text or "-").split("\n"):
+    # ── Findings — organ labels + manually-added lines bold, standard
+    #    narrative normal, same classification as the print template ──
+    for line in (report.findings_text or "-").replace("\r\n", "\n").split("\n"):
         para = doc.add_paragraph()
-        m = _USG_LABEL_LINE_RE.match(line)
-        if m:
-            para.add_run(m.group(1) + ":").bold = True
-            para.add_run(m.group(2))
-        else:
-            para.add_run(line)
+        for bold, text in usg_findings_line_parts(line):
+            para.add_run(text).bold = bold
 
     doc.add_paragraph()
 
