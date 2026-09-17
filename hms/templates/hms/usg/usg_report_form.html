@@ -17,9 +17,8 @@
 .usg-container .section-title{ margin:0 0 12px; padding-bottom:7px; border-bottom:2px solid #22c55e; color:#22c55e; font-size:14px; font-weight:700; }
 
 .usg-container .form-section{
-    border:1.5px solid #22c55e; border-radius:12px;
-    padding:18px 20px; margin-bottom:20px;
-    background:#141414;
+    padding:4px 2px 20px;
+    margin-bottom:20px;
 }
 
 .usg-container .form-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
@@ -107,20 +106,34 @@
 .usg-tab-content{ flex:1 1 auto; min-width:0; }
 .usg-tab-nav{
     position:sticky; top:10px; z-index:50;
-    flex:0 0 190px; width:190px; max-height:calc(100vh - 20px); overflow-y:auto;
-    background:#141414; border:1px solid #2a2a2a; border-radius:10px; padding:8px;
-    display:flex; flex-direction:column; gap:4px;
+    flex:0 0 200px; width:200px; max-height:calc(100vh - 20px); overflow-y:auto;
+    background:linear-gradient(180deg,#161616,#101010); border:1px solid #262626; border-radius:14px;
+    padding:10px; display:flex; flex-direction:column; gap:3px;
+    box-shadow:0 6px 20px rgba(0,0,0,.35);
+}
+.usg-tab-nav-title{
+    font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
+    color:#5b6472; padding:2px 10px 9px; margin-bottom:3px; border-bottom:1px solid #232323;
 }
 .usg-tab-nav a{
-    display:block; padding:8px 12px; border-radius:7px; background:#1a1a1a; color:#8892a4;
-    font-size:12px; font-weight:600; text-decoration:none; border:1px solid #2a2a2a;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:.15s;
+    display:block; padding:9px 12px; border-radius:8px; background:transparent; color:#9aa4b2;
+    font-size:12.5px; font-weight:600; text-decoration:none;
+    border-left:3px solid transparent;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    transition:background .15s, color .15s, border-color .15s;
 }
-.usg-tab-nav a:hover{ background:#1e3a3a; border-color:#00b8a9; color:#00b8a9; }
-.usg-tab-nav a.active{ background:#00b8a9; border-color:#00b8a9; color:#000; font-weight:800; }
+.usg-tab-nav a:hover{ background:#17302e; color:#5eead4; border-left-color:#0f766e; }
+.usg-tab-nav a.active{
+    background:linear-gradient(135deg,#0f766e,#0b544e); color:#eafffb;
+    border-left-color:#2dd4bf; font-weight:700;
+}
 @media (max-width: 860px) {
     .usg-tab-layout{ flex-direction:column; }
     .usg-tab-nav{ position:static; width:100%; max-height:none; flex-direction:row; flex-wrap:wrap; }
+    .usg-tab-nav-title{ display:none; }
+    .usg-tab-nav a{ border-left:none; border-bottom:3px solid transparent; }
+    .usg-tab-nav a:hover{ border-bottom-color:#0f766e; }
+    .usg-tab-nav a.active{ border-bottom-color:#2dd4bf; }
 }
 [data-usgtab]{ display:none; }
 [data-usgtab].tab-active{ display:block; }
@@ -132,7 +145,8 @@
      Today" — click a chip to insert/remove its canned line) + a free-text
      Content box that is what actually gets saved for that organ. ── */
 .organ-card-row{ display:flex; flex-wrap:wrap; gap:14px; }
-.organ-card{ flex:1 1 100%; border:1px solid #2a2a2a; border-radius:10px; padding:12px 14px; background:#181818; margin-bottom:4px; }
+.organ-card{ flex:1 1 100%; padding:6px 0; margin-bottom:4px; border-bottom:1px solid #232323; }
+.organ-card:last-child{ border-bottom:none; }
 .organ-card-half{ flex:1 1 calc(50% - 7px); }
 @media (max-width: 720px) { .organ-card-half{ flex:1 1 100%; } }
 .organ-card-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
@@ -219,13 +233,14 @@
     <div class="usg-tab-layout">
 
     <nav class="usg-tab-nav" aria-label="Jump to section">
-        <a href="#" data-usgtab="liver_pv" onclick="return switchUsgTab('liver_pv');">🫀 Liver / Portal Vein</a>
-        <a href="#" data-usgtab="gb_cbd" onclick="return switchUsgTab('gb_cbd');">🫙 Gall Bladder / CBD</a>
-        <a href="#" data-usgtab="sp" onclick="return switchUsgTab('sp');">🩸 Spleen / Pancreas</a>
-        <a href="#" data-usgtab="kidneys" onclick="return switchUsgTab('kidneys');">🫘 Kidneys</a>
-        <a href="#" data-usgtab="bladder" onclick="return switchUsgTab('bladder');">🚻 Bladder / Pelvic</a>
-        <a href="#" data-usgtab="other" onclick="return switchUsgTab('other');">🔍 Other Findings</a>
-        <a href="#" data-usgtab="impression" onclick="return switchUsgTab('impression');">📝 Impression &amp; Advice</a>
+        <div class="usg-tab-nav-title">Sections</div>
+        <a href="#" data-usgtab="liver_pv" onclick="return switchUsgTab('liver_pv');">Liver / Portal Vein</a>
+        <a href="#" data-usgtab="gb_cbd" onclick="return switchUsgTab('gb_cbd');">Gall Bladder / CBD</a>
+        <a href="#" data-usgtab="sp" onclick="return switchUsgTab('sp');">Spleen / Pancreas</a>
+        <a href="#" data-usgtab="kidneys" onclick="return switchUsgTab('kidneys');">Kidneys</a>
+        <a href="#" data-usgtab="bladder" onclick="return switchUsgTab('bladder');">Bladder / Pelvic</a>
+        <a href="#" data-usgtab="other" onclick="return switchUsgTab('other');">Other Findings</a>
+        <a href="#" data-usgtab="impression" onclick="return switchUsgTab('impression');">Impression &amp; Advice</a>
     </nav>
 
     <div class="usg-tab-content">
@@ -517,39 +532,28 @@ function currentOrganSizes(def) {
     return values;
 }
 
-// Click a chip: insert its canned line (with {size}/{vol}/{et} filled in
-// from that organ's Size inputs at the moment of the click) if it isn't
-// already there, or remove it if it is — same one-click toggle pattern
-// as OPD's "Procedures Performed Today" chips.
-function toggleOrganChip(key, optionIndex, chipEl) {
+// Click a chip: Normal / Pathology options for one organ are mutually
+// exclusive clinical states (a liver can't be both "Normal" and "Fatty
+// Liver" at once), so clicking one *replaces* Content with that option's
+// canned line (with {size}/{vol}/{et} filled in from the Size inputs at
+// the moment of the click) and marks only that chip active — unlike the
+// independent, additive chips elsewhere (Advice, Impression, Other
+// Findings, OPD's Procedures) where more than one can apply at once.
+function selectOrganOption(key, optionIndex) {
     var def = ORGAN_DEFS_BY_KEY[key];
     var opt = def.options[optionIndex];
     var filled = fillPlaceholders(opt.text, currentOrganSizes(def));
-    var ta = document.getElementById('organ-content-' + key);
-    var lines = (ta.value || '').replace(/\r\n/g, '\n').split('\n').filter(function(l) { return l.trim() !== ''; });
-    var idx = lines.indexOf(filled);
-    if (idx === -1) {
-        lines.push(filled);
-        chipEl.classList.add('active');
-    } else {
-        lines.splice(idx, 1);
-        chipEl.classList.remove('active');
-    }
-    ta.value = lines.join('\n');
-    autoGrowTextarea(ta);
-}
-
-function setOrganToNormal(key) {
-    var def = ORGAN_DEFS_BY_KEY[key];
-    var normal = def.options[0]; // "Normal" is always index 0 by convention
-    var filled = fillPlaceholders(normal.text, currentOrganSizes(def));
     var ta = document.getElementById('organ-content-' + key);
     ta.value = filled;
     autoGrowTextarea(ta);
     def.options.forEach(function(_, i) {
         var chip = document.getElementById('organ-chip-' + key + '-' + i);
-        if (chip) chip.classList.toggle('active', i === 0);
+        if (chip) chip.classList.toggle('active', i === optionIndex);
     });
+}
+
+function setOrganToNormal(key) {
+    selectOrganOption(key, 0); // "Normal" is always index 0 by convention
 }
 
 function resetAllOrgansToNormal() {
@@ -589,7 +593,7 @@ function createOrganCard(def) {
         chip.className = 'ch-pill';
         chip.id = 'organ-chip-' + def.key + '-' + i;
         chip.textContent = opt.name;
-        chip.addEventListener('click', function() { toggleOrganChip(def.key, i, chip); });
+        chip.addEventListener('click', function() { selectOrganOption(def.key, i); });
         top.appendChild(chip);
     });
 
