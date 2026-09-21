@@ -7,6 +7,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.conf import settings
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -20,7 +21,11 @@ from ..models import (
     IPDAdmission,
 )
 from ..forms import PatientForm, AppointmentForm, ConsultationForm
-from ..services.whatsapp import send_opd_visit_thankyou, send_consultation_started, WhatsAppSendError
+from ..utils import render_to_pdf
+from ..services.whatsapp import (
+    send_opd_visit_thankyou, send_consultation_started, send_prescription_pdf,
+    WhatsAppSendError,
+)
 from ._shared import logger
 
 
@@ -367,12 +372,9 @@ def save_referral_note(request, appointment_id):
     return JsonResponse({"success": True})
 
 
-@login_required
-def consultation_pdf(request, appointment_id):
-    appointment = get_object_or_404(
-        Appointment.objects.select_related("patient", "doctor"),
-        id=appointment_id,
-    )
+def _consultation_pdf_context(appointment):
+    """Shared context for opd/consultation_pdf.html -- used by both the
+    browser-print view and the WhatsApp-send view so they render identically."""
     consultation = get_object_or_404(Consultation, appointment=appointment)
 
     def _lines(txt):
@@ -392,7 +394,7 @@ def consultation_pdf(request, appointment_id):
         for p in missing:
             p.atc_code = drug_atc_by_name.get(p.medicine.strip().lower(), "")
 
-    return render(request, "opd/consultation_pdf.html", {
+    return {
         "appointment":           appointment,
         "consultation":          consultation,
         "chief_complaints_list": consultation.symptoms.all(),
@@ -403,7 +405,37 @@ def consultation_pdf(request, appointment_id):
         "custom_signs":          _lines(consultation.custom_signs),
         "investigations":        consultation.investigations.all(),
         "prescriptions":         prescriptions,
-    })
+    }
+
+
+@login_required
+def consultation_pdf(request, appointment_id):
+    appointment = get_object_or_404(
+        Appointment.objects.select_related("patient", "doctor"),
+        id=appointment_id,
+    )
+    return render(request, "opd/consultation_pdf.html", _consultation_pdf_context(appointment))
+
+
+@login_required
+@require_POST
+def consultation_send_whatsapp(request, appointment_id):
+    appointment = get_object_or_404(
+        Appointment.objects.select_related("patient", "doctor"),
+        id=appointment_id,
+    )
+    context = _consultation_pdf_context(appointment)
+    pdf_bytes = render_to_pdf("opd/consultation_pdf.html", context).content
+
+    try:
+        send_prescription_pdf(appointment, pdf_bytes)
+    except ValueError as exc:
+        return JsonResponse({"success": False, "error": str(exc)}, status=400)
+    except WhatsAppSendError:
+        logger.exception("Failed to send prescription PDF via WhatsApp for appointment %s", appointment.id)
+        return JsonResponse({"success": False, "error": "Failed to send via WhatsApp. Please try again."}, status=502)
+
+    return JsonResponse({"success": True})
 
 
 def lama_consent_print(request, appointment_id):

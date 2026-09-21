@@ -147,6 +147,7 @@
 <body>
 
 <button class="print-btn-top" onclick="window.print()">🖨️ Print</button>
+<button class="print-btn-top" id="sendReportWhatsappBtn" style="right:120px; background:#25D366;" onclick="sendReportWhatsapp(this)">📱 Send on WhatsApp</button>
 
 <div class="sheet">
 
@@ -208,7 +209,35 @@
 
 <div class="foot-print" style="text-align:center; margin-bottom:32px;">
   <button class="btn-print" onclick="window.print()">Print Report</button>
+  <button class="btn-print" style="background:#25D366;color:#fff;border-color:#25D366;" onclick="sendReportWhatsapp(this)">Send on WhatsApp</button>
 </div>
+
+<script>
+function sendReportWhatsapp(btn) {
+    var buttons = document.querySelectorAll('#sendReportWhatsappBtn, [onclick="sendReportWhatsapp(this)"]');
+    var originalTexts = [];
+    buttons.forEach(function (b, i) { originalTexts[i] = b.textContent; b.disabled = true; b.textContent = 'Sending…'; });
+
+    fetch('{% url "hms:lab_report_send_whatsapp" item.id %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+    })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+            if (res.ok && res.d.success) {
+                alert('Report sent on WhatsApp!');
+            } else {
+                alert('Failed to send: ' + (res.d.error || 'please try again.'));
+            }
+        })
+        .catch(function () {
+            alert('Failed to send WhatsApp message. Please try again.');
+        })
+        .finally(function () {
+            buttons.forEach(function (b, i) { b.disabled = false; b.textContent = originalTexts[i]; });
+        });
+}
+</script>
 
 </body>
 </html>

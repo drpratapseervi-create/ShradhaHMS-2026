@@ -1755,6 +1755,10 @@ html { scroll-behavior: smooth; }
     <a href="{% url 'hms:consultation_pdf' appointment.id %}" target="_blank" class="btn-print">
         🖨️ Print OPD Sheet
     </a>
+    <button type="button" id="sendPrescriptionWhatsappBtn" data-tab="followup" class="btn-print" style="background:#25D366;border-color:#25D366;color:#fff;"
+            onclick="sendPrescriptionWhatsapp(this)">
+        📱 Send Prescription on WhatsApp
+    </button>
 </div>
 
 <!-- ═══ AI CLINICAL ASSIST ═══ -->
@@ -3087,6 +3091,31 @@ document.addEventListener('click', function(e) {
 
 /* ══ SYMPTOMS & SIGNS ══ */
 var CSRF = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+function sendPrescriptionWhatsapp(btn) {
+    var originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    fetch('{% url "hms:consultation_send_whatsapp" appointment.id %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF },
+    })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+            if (res.ok && res.d.success) {
+                showToast('✅ Prescription sent on WhatsApp!', '#25D366');
+            } else {
+                showToast('⚠️ ' + (res.d.error || 'Failed to send WhatsApp message.'), '#f59e0b');
+            }
+        })
+        .catch(function () {
+            showToast('⚠️ Failed to send WhatsApp message.', '#f59e0b');
+        })
+        .finally(function () {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        });
+}
 
 /* Custom free-text entries for the four history sections are now plain
    <textarea name="custom_*"> boxes (Follow-up Notes style) — no JS: the

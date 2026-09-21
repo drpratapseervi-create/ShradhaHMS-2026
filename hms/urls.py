@@ -30,6 +30,7 @@ urlpatterns = [
     # ── CONSULTATION ───────────────────────────────────
     path("consultation/<int:appointment_id>/", views.start_consultation, name="start_consultation"),
     path("consultation/<int:appointment_id>/pdf/", views.consultation_pdf, name="consultation_pdf"),
+    path("consultation/<int:appointment_id>/send-whatsapp/", views.consultation_send_whatsapp, name="consultation_send_whatsapp"),
     path("consultation/<int:appointment_id>/lama-consent/print/", views.lama_consent_print, name="lama_consent_print"),
     path("generate-lama-consent/", views.generate_lama_consent, name="generate_lama_consent"),
     path("consultation/<int:appointment_id>/referral/pdf/", views.referral_letter_print, name="referral_letter_print"),
@@ -77,6 +78,7 @@ urlpatterns = [
     path("lab/result-entry/<int:bill_item_id>/", views.lab_result_entry, name="lab_result_entry"),
     path("lab/reports/", views.lab_reports, name="lab_reports"),
     path("lab/report/print/<int:bill_item_id>/", views.lab_report_print, name="lab_report_print"),
+    path("lab/report/send-whatsapp/<int:bill_item_id>/", views.lab_report_send_whatsapp, name="lab_report_send_whatsapp"),
     path("lab/bill/print/<int:bill_id>/", views.lab_bill_print, name="lab_bill_print"),
     path("lab/radiology/", views.radiology_upload, name="radiology_upload"),
 

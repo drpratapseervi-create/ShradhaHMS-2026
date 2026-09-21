@@ -1,10 +1,12 @@
 from decimal import Decimal
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
 from django.db import transaction
 from django.db.models import Q
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.utils import timezone
 
@@ -14,6 +16,9 @@ from ..models import (
     InvestigationBill, InvestigationBillItem, InvestigationResult,
     InvestigationParameter,
 )
+from ..utils import render_to_pdf
+from ..services.whatsapp import send_lab_report_pdf, WhatsAppSendError
+from ._shared import logger
 
 
 def amount_in_words(number):
@@ -388,8 +393,9 @@ def lab_reports(request):
     return render(request, "lab/lab_reports.html", {"completed_items": completed_items})
 
 
-@login_required
-def lab_report_print(request, bill_item_id):
+def _lab_report_context(bill_item_id):
+    """Shared context for lab/report_print.html -- used by both the
+    browser-print view and the WhatsApp-send view so they render identically."""
     item = get_object_or_404(
         InvestigationBillItem.objects.select_related(
             "bill__patient",
@@ -411,7 +417,30 @@ def lab_report_print(request, bill_item_id):
 
     ctx = {"item": item, "results": results}
     ctx.update(build_lab_report_context(item, results))
+    return item, ctx
+
+
+@login_required
+def lab_report_print(request, bill_item_id):
+    _item, ctx = _lab_report_context(bill_item_id)
     return render(request, "lab/report_print.html", ctx)
+
+
+@login_required
+@require_POST
+def lab_report_send_whatsapp(request, bill_item_id):
+    item, ctx = _lab_report_context(bill_item_id)
+    pdf_bytes = render_to_pdf("lab/report_print.html", ctx).content
+
+    try:
+        send_lab_report_pdf(item, pdf_bytes)
+    except ValueError as exc:
+        return JsonResponse({"success": False, "error": str(exc)}, status=400)
+    except WhatsAppSendError:
+        logger.exception("Failed to send lab report PDF via WhatsApp for bill_item %s", item.id)
+        return JsonResponse({"success": False, "error": "Failed to send via WhatsApp. Please try again."}, status=502)
+
+    return JsonResponse({"success": True})
 
 
 @login_required

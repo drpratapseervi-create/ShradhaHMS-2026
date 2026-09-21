@@ -187,3 +187,156 @@ def send_appointment_reminder(appointment):
         template_name=APPOINTMENT_REMINDER_TEMPLATE,
         body_params=[patient.full_name, appointment.doctor.full_name, appt_dt_str],
     )
+
+
+def upload_whatsapp_media(file_bytes, filename, mime_type="application/pdf"):
+    """
+    Upload a file to Meta's Media API for attaching to an outgoing message.
+    Returns Meta's media id -- valid for a single send, not reusable.
+    """
+    if not settings.WHATSAPP_ENABLED:
+        raise WhatsAppSendError("WhatsApp is not configured (missing access token / phone number id).")
+
+    url = f"{GRAPH_BASE_URL}/{settings.WHATSAPP_API_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}/media"
+    try:
+        resp = requests.post(
+            url,
+            data={"messaging_product": "whatsapp"},
+            files={"file": (filename, file_bytes, mime_type)},
+            headers={"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"},
+            timeout=30,
+        )
+    except requests.RequestException as exc:
+        logger.exception("WhatsApp media upload failed (network error) for %s", filename)
+        raise WhatsAppSendError(f"Network error uploading WhatsApp media: {exc}") from exc
+
+    if resp.status_code >= 400:
+        logger.error("WhatsApp media upload failed (%s) for %s: %s", resp.status_code, filename, resp.text)
+        raise WhatsAppSendError(
+            f"Meta media upload returned {resp.status_code}",
+            status_code=resp.status_code,
+            response_body=resp.text,
+        )
+
+    return resp.json()["id"]
+
+
+def send_document_template(to, template_name, media_id, filename, language_code=None, body_params=None):
+    """
+    Send an approved template whose HEADER component is type DOCUMENT,
+    attaching the file behind the given (single-use) media_id.
+    """
+    if not settings.WHATSAPP_ENABLED:
+        raise WhatsAppSendError("WhatsApp is not configured (missing access token / phone number id).")
+
+    language_code = language_code or settings.WHATSAPP_TEMPLATE_LANG
+
+    components = [
+        {
+            "type": "header",
+            "parameters": [{"type": "document", "document": {"id": media_id, "filename": filename}}],
+        },
+    ]
+    if body_params:
+        components.append({
+            "type": "body",
+            "parameters": [{"type": "text", "text": str(p)} for p in body_params],
+        })
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "template",
+        "template": {
+            "name": template_name,
+            "language": {"code": language_code},
+            "components": components,
+        },
+    }
+
+    url = f"{GRAPH_BASE_URL}/{settings.WHATSAPP_API_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
+    try:
+        resp = requests.post(
+            url,
+            json=payload,
+            headers={"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"},
+            timeout=15,
+        )
+    except requests.RequestException as exc:
+        logger.exception("WhatsApp document send failed (network error) to %s template=%s", to, template_name)
+        raise WhatsAppSendError(f"Network error sending WhatsApp document: {exc}") from exc
+
+    if resp.status_code >= 400:
+        logger.error(
+            "WhatsApp document send failed (%s) to %s template=%s: %s",
+            resp.status_code, to, template_name, resp.text,
+        )
+        raise WhatsAppSendError(
+            f"Meta API returned {resp.status_code}",
+            status_code=resp.status_code,
+            response_body=resp.text,
+        )
+
+    data = resp.json()
+    logger.info("WhatsApp document template '%s' sent to %s: %s", template_name, to, data)
+    return data
+
+
+PRESCRIPTION_READY_TEMPLATE = "prescription_ready"
+
+
+def send_prescription_pdf(appointment, pdf_bytes):
+    """
+    Upload the given prescription PDF bytes and send them via the approved
+    'prescription_ready' document-header template. The caller (the view) is
+    responsible for rendering appointment's consultation to PDF bytes --
+    this function only handles the WhatsApp upload + send.
+
+    Raises WhatsAppSendError on failure; raises ValueError if the patient's
+    mobile number can't be normalized.
+    """
+    patient = appointment.patient
+    to = normalize_indian_mobile(patient.mobile_no)
+    if not to:
+        raise ValueError(f"Cannot normalize mobile number for WhatsApp: {patient.mobile_no!r}")
+
+    filename = f"Prescription_{patient.uhid}.pdf"
+    media_id = upload_whatsapp_media(pdf_bytes, filename=filename)
+
+    return send_document_template(
+        to=to,
+        template_name=PRESCRIPTION_READY_TEMPLATE,
+        media_id=media_id,
+        filename=filename,
+        body_params=[patient.full_name, appointment.doctor.full_name],
+    )
+
+
+LAB_REPORT_READY_TEMPLATE = "lab_report_ready"
+
+
+def send_lab_report_pdf(bill_item, pdf_bytes):
+    """
+    Upload the given lab report PDF bytes and send them via the approved
+    'lab_report_ready' document-header template. The caller (the view) is
+    responsible for rendering the report to PDF bytes -- this function only
+    handles the WhatsApp upload + send.
+
+    Raises WhatsAppSendError on failure; raises ValueError if the patient's
+    mobile number can't be normalized.
+    """
+    patient = bill_item.bill.patient
+    to = normalize_indian_mobile(patient.mobile_no)
+    if not to:
+        raise ValueError(f"Cannot normalize mobile number for WhatsApp: {patient.mobile_no!r}")
+
+    filename = f"LabReport_{patient.uhid}.pdf"
+    media_id = upload_whatsapp_media(pdf_bytes, filename=filename)
+
+    return send_document_template(
+        to=to,
+        template_name=LAB_REPORT_READY_TEMPLATE,
+        media_id=media_id,
+        filename=filename,
+        body_params=[patient.full_name, bill_item.investigation.name],
+    )

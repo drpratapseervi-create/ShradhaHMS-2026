@@ -16,6 +16,7 @@ from .opd import (
     start_consultation,
     save_referral_note,
     consultation_pdf,
+    consultation_send_whatsapp,
     lama_consent_print,
     referral_letter_print,
     medical_certificate_print,
@@ -45,6 +46,7 @@ from .lab import (
     lab_result_entry,
     lab_reports,
     lab_report_print,
+    lab_report_send_whatsapp,
     lab_bill_print,
 )
 
