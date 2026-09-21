@@ -98,10 +98,22 @@ class DepartmentAdmin(admin.ModelAdmin):
 # ===================== DOCTOR =====================
 @admin.register(Doctor)
 class DoctorAdmin(admin.ModelAdmin):
-    list_display = ("id", "full_name", "department", "specialization", "qualification", "registration_no", "op_fee")
-    list_editable = ("qualification", "registration_no")
-    list_filter = ("department",)
+    list_display = (
+        "id", "full_name", "department", "specialization", "qualification",
+        "registration_no", "op_fee", "is_surgeon", "is_assistant", "is_anesthetist",
+    )
+    list_editable = ("qualification", "registration_no", "is_surgeon", "is_assistant", "is_anesthetist")
+    list_filter = ("department", "is_surgeon", "is_assistant", "is_anesthetist")
     search_fields = ("full_name", "specialization")
+    fieldsets = (
+        (None, {
+            "fields": ("full_name", "department", "specialization", "qualification", "registration_no", "op_fee"),
+        }),
+        ("OT roles", {
+            "fields": ("is_surgeon", "is_assistant", "is_anesthetist"),
+            "description": "Controls which OT booking dropdown(s) this person appears in.",
+        }),
+    )
 
 
 # ===================== APPOINTMENT =====================

@@ -16,7 +16,8 @@
   <div class="card border-0 shadow-sm mb-4">
     <div class="card-body">
       <p class="text-muted small">
-        Upload a daily Excel export (e.g. the MAA Yojana TMS Case Status Tracker). Rows are matched
+        Upload a daily Excel or CSV export (e.g. the MAA Yojana TMS Case Status Tracker, or a
+        government-scheme portal's "Generic Search Report" CSV). Rows are matched
         to existing TPA cases by <strong>TID</strong> first, falling back to <strong>Policy No. + Patient Name</strong>.
         Matched rows update Status/Approved Amount/etc.; unmatched rows create a new draft case flagged
         for staff to link to the correct UHID. Nothing is overwritten silently — you'll choose the column
@@ -34,8 +35,8 @@
             </select>
           </div>
           <div class="col-12 col-md-6">
-            <label class="form-label form-label-sm">Excel File (.xlsx)</label>
-            <input type="file" name="excel_file" accept=".xlsx,.xls" class="form-control form-control-sm" required>
+            <label class="form-label form-label-sm">Excel or CSV File</label>
+            <input type="file" name="excel_file" accept=".xlsx,.xls,.csv" class="form-control form-control-sm" required>
           </div>
         </div>
         <div class="mt-3">

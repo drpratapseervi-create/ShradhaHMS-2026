@@ -15,7 +15,7 @@
           <label class="form-label">Surgeon</label>
           <select name="surgeon" class="form-select" required>
             <option value="">-- Select Surgeon --</option>
-            {% for doc in doctors %}
+            {% for doc in surgeons %}
             <option value="{{ doc.full_name }}" {% if booking.surgeon == doc.full_name %}selected{% endif %}>
               {{ doc.full_name }}
             </option>
@@ -27,7 +27,7 @@
           <label class="form-label">Assistant</label>
           <select name="assistant" class="form-select">
             <option value="">-- None --</option>
-            {% for doc in doctors %}
+            {% for doc in assistants %}
             <option value="{{ doc.full_name }}" {% if booking.assistant == doc.full_name %}selected{% endif %}>
               {{ doc.full_name }}
             </option>
@@ -39,7 +39,7 @@
           <label class="form-label">Anesthetist</label>
           <select name="anesthetist" class="form-select" required>
             <option value="">-- Select Anesthetist --</option>
-            {% for doc in doctors %}
+            {% for doc in anesthetists %}
             <option value="{{ doc.full_name }}" {% if booking.anesthetist == doc.full_name %}selected{% endif %}>
               {{ doc.full_name }}
             </option>

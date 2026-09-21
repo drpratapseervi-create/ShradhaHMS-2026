@@ -31,8 +31,12 @@ def ot_create(request):
         )
         return redirect("hms:ot_dashboard")
 
-    doctors = Doctor.objects.all().order_by("full_name")  # ← now works
-    return render(request, "ot/ot_form.html", {"doctors": doctors})
+    context = {
+        "surgeons": Doctor.objects.filter(is_surgeon=True).order_by("full_name"),
+        "assistants": Doctor.objects.filter(is_assistant=True).order_by("full_name"),
+        "anesthetists": Doctor.objects.filter(is_anesthetist=True).order_by("full_name"),
+    }
+    return render(request, "ot/ot_form.html", context)
 
 
 @login_required
@@ -44,7 +48,9 @@ def ot_detail(request, id):
 @login_required
 def ot_edit(request, id):
     booking = get_object_or_404(OTBooking, id=id)
-    doctors = Doctor.objects.all().order_by("full_name")
+    surgeons = Doctor.objects.filter(is_surgeon=True).order_by("full_name")
+    assistants = Doctor.objects.filter(is_assistant=True).order_by("full_name")
+    anesthetists = Doctor.objects.filter(is_anesthetist=True).order_by("full_name")
 
     if request.method == "POST":
         booking.surgeon        = request.POST.get("surgeon")
@@ -59,7 +65,12 @@ def ot_edit(request, id):
         booking.save()
         return redirect("hms:ot_detail", id=id)
 
-    return render(request, "ot/ot_edit.html", {"booking": booking, "doctors": doctors})
+    return render(request, "ot/ot_edit.html", {
+        "booking": booking,
+        "surgeons": surgeons,
+        "assistants": assistants,
+        "anesthetists": anesthetists,
+    })
 
 
 @login_required

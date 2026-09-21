@@ -91,10 +91,20 @@
             <tr>
               <td class="text-muted small">{{ forloop.counter }}</td>
               <td>
-                <div class="fw-semibold">{{ c.display_name }}
+                <div class="fw-semibold" style="color:#fff;">
+                  {% if c.patient %}{{ c.patient.full_name }}
+                  {% elif c.patient_name_raw %}{{ c.patient_name_raw }}
+                  {% else %}<span class="fst-italic" style="color:#8892a4;">No name on record</span>
+                  {% endif %}
                   {% if c.is_draft %}<span class="badge bg-warning text-dark ms-1">Unlinked</span>{% endif %}
                 </div>
-                <div class="text-muted small">{{ c.display_uhid }}</div>
+                {% if c.patient %}
+                  <div class="text-muted small">{{ c.patient.uhid }}</div>
+                {% elif c.is_draft %}
+                  <div class="text-muted small">(from import, not yet linked)</div>
+                {% else %}
+                  <div class="text-muted small">No patient linked</div>
+                {% endif %}
               </td>
               <td class="small">
                 {% if c.scheme_type == 'private' %}<span class="badge bg-primary mb-1">Private TPA</span>

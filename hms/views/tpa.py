@@ -233,12 +233,29 @@ def tpa_scheme_search(request):
     return JsonResponse({'schemes': data})
 
 
+def _tpa_iter_rows(path):
+    """Yield each row as a tuple of cell values, from either a .csv or an Excel file.
+
+    Government-scheme portals (e.g. the MAA Yojana / Ayushman Bharat "Generic
+    Search Report") export .csv, while others export .xlsx -- staff shouldn't
+    have to convert one to the other before importing.
+    """
+    if str(path).lower().endswith('.csv'):
+        import csv
+        with open(path, newline='', encoding='utf-8-sig') as f:
+            for row in csv.reader(f):
+                yield tuple(row)
+    else:
+        import openpyxl
+        wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
+        ws = wb.active
+        for row in ws.iter_rows(values_only=True):
+            yield row
+        wb.close()
+
+
 def _tpa_read_headers(path):
-    import openpyxl
-    wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
-    ws = wb.active
-    row = next(ws.iter_rows(values_only=True))
-    wb.close()
+    row = next(_tpa_iter_rows(path))
     return [str(c).strip() if c not in (None, '') else f'Column {i + 1}' for i, c in enumerate(row)]
 
 
@@ -318,10 +335,7 @@ def _tpa_normalize_status(raw):
 
 
 def _run_tpa_import(batch):
-    import openpyxl
-    wb = openpyxl.load_workbook(batch.file.path, data_only=True)
-    ws = wb.active
-    rows_iter = ws.iter_rows(values_only=True)
+    rows_iter = _tpa_iter_rows(batch.file.path)
     try:
         header_row = next(rows_iter)
     except StopIteration:
@@ -487,7 +501,6 @@ def _run_tpa_import(batch):
             if tid_val:
                 tid_seen[tid_val] = new_obj
 
-    wb.close()
     batch.updated_count = updated
     batch.created_count = created
     batch.merged_count = merged

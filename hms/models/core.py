@@ -164,6 +164,15 @@ class Doctor(models.Model):
         max_length=50, blank=True,
         help_text="e.g. RMC No-27994 -- printed on report signature lines"
     )
+    is_surgeon = models.BooleanField(
+        default=True, help_text="Show this person in the OT 'Surgeon' dropdown"
+    )
+    is_assistant = models.BooleanField(
+        default=True, help_text="Show this person in the OT 'Assistant' dropdown"
+    )
+    is_anesthetist = models.BooleanField(
+        default=True, help_text="Show this person in the OT 'Anesthetist' dropdown"
+    )
 
     def __str__(self):
         if self.department:
