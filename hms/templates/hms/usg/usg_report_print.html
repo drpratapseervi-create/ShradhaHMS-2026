@@ -57,22 +57,21 @@ table.details, table.details * {
 
 /* ── Document Title Bar ── */
 .doc-title-bar {
-    background: #1e3a8a;
-    color: #fff;
+    color: #000;
     text-align: center;
     font-size: 13px;
-    font-weight: 700;
-    padding: 5px;
-    letter-spacing: 2px;
+    font-weight: 400;
+    padding: 7px;
+    letter-spacing: 1px;
     margin-bottom: 10px;
-    border-radius: 3px;
+    text-decoration: underline;
     font-style: normal;
 }
 
 /* ── Tables ── */
 table.details { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
-table.details td { border: 1px solid #bfdbfe; padding: 4px 7px; vertical-align: top; font-size: 11px; }
-.lbl { font-weight: 700; background: #eff6ff; color: #1e3a8a; width: 20%; white-space: nowrap; }
+table.details td { border: 1px solid #999; padding: 4px 7px; vertical-align: top; font-size: 11px; }
+.lbl { font-weight: 700; background: #f5f5f5; width: 20%; white-space: nowrap; }
 
 /* ── Findings / Impression body ── */
 .report-para {
@@ -94,8 +93,8 @@ table.details td { border: 1px solid #bfdbfe; padding: 4px 7px; vertical-align: 
 .impression-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 0 0 14px 0; }
 .impression-table td { padding: 0; vertical-align: top; font-size: 11px; }
 .impression-table tr:first-child td {
-    background: #dbeafe;
-    color: #1e3a8a;
+    background: #e8e8e8;
+    color: #000;
     padding: 4px 7px;
     font-weight: 700;
     letter-spacing: 0.5px;
@@ -107,8 +106,8 @@ table.details td { border: 1px solid #bfdbfe; padding: 4px 7px; vertical-align: 
 /* Advice: label and its content on the same row, not stacked. */
 .advice-row { display: flex; align-items: flex-start; margin: 0; }
 .advice-label {
-    background: #dbeafe;
-    color: #1e3a8a;
+    background: #e8e8e8;
+    color: #000;
     font-weight: 700;
     letter-spacing: 0.5px;
     font-size: 11px;
@@ -130,9 +129,9 @@ table.details td { border: 1px solid #bfdbfe; padding: 4px 7px; vertical-align: 
     text-transform: uppercase;
     margin-left: 8px;
 }
-.status-normal       { background: #dcfce7; color: #166534; }
-.status-abnormal     { background: #fee2e2; color: #991b1b; }
-.status-inconclusive { background: #fef3c7; color: #92400e; }
+.status-normal       { background: #f5f5f5; color: #000; }
+.status-abnormal     { background: #f5f5f5; color: #000; }
+.status-inconclusive { background: #f5f5f5; color: #000; }
 
 /* ── Footer / signature ── */
 .sign-row {
@@ -145,11 +144,10 @@ table.details td { border: 1px solid #bfdbfe; padding: 4px 7px; vertical-align: 
     width: 260px;
 }
 .sig-name {
-    border-top: 1px solid #1e3a8a;
+    border-top: 1px solid #000;
     padding-top: 4px;
     font-size: 12px;
     font-weight: 700;
-    color: #1e3a8a;
 }
 .sig-caption {
     font-size: 10px;

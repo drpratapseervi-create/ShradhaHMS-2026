@@ -50,14 +50,14 @@ body {
 .doc-title {
     font-size: 12px;
     font-weight: 700;
-    color: #1e3a8a;
+    color: #333;
     margin-top: 4px;
 }
 
 /* ── Document Title Bar ── */
 .doc-title-bar {
-    background: #1e3a8a;
-    color: #fff;
+    background: #fff;
+    color: #000;
     text-align: center;
     font-size: 13px;
     font-weight: 700;
@@ -72,19 +72,19 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #eff6ff;
-    border: 1px solid #93c5fd;
+    background: #f7f7f7;
+    border: 1px solid #ccc;
     border-radius: 3px;
     padding: 4px 10px;
     margin-bottom: 8px;
     font-size: 11px;
 }
-.receipt-row span { font-weight: 700; color: #1e3a8a; }
+.receipt-row span { font-weight: 700; }
 
 /* ── Section heading ── */
 .sec-title {
-    background: #dbeafe;
-    color: #1e3a8a;
+    background: #e8e8e8;
+    color: #000;
     font-size: 11px;
     font-weight: 700;
     padding: 4px 7px 4px 7px;
@@ -93,7 +93,7 @@ body {
     text-align: left;
     display: block;
     width: 100%;
-    border-left: 4px solid #1e3a8a;
+    border-left: 4px solid #000;
 }
 .sec-title-followup {
     margin-top: 180px;
@@ -106,28 +106,27 @@ table {
     margin-bottom: 6px;
 }
 td, th {
-    border: 1px solid #bfdbfe;
+    border: 1px solid #999;
     padding: 4px 7px;
     vertical-align: top;
     font-size: 11px;
 }
 th {
-    background: #1e3a8a;
-    color: #fff;
+    background: #e8e8e8;
+    color: #000;
     font-weight: 700;
     text-align: left;
 }
 .lbl {
     font-weight: 700;
-    background: #eff6ff;
-    color: #1e3a8a;
+    background: #f5f5f5;
     width: 20%;
     white-space: nowrap;
 }
 
 /* ── Vitals table ── */
 .vitals-table td { text-align: center; }
-.vitals-table .vlbl { font-weight: 700; background: #eff6ff; color: #1e3a8a; text-align: left; }
+.vitals-table .vlbl { font-weight: 700; background: #f5f5f5; text-align: left; }
 
 /* ── Vital alert badges ── */
 .vital-badges { margin: 4px 0 6px 0; }
@@ -140,9 +139,9 @@ th {
     margin-right: 4px;
     border: 1px solid;
 }
-.vb-red    { background: #ffebee; color: #b71c1c; border-color: #ef9a9a; }
-.vb-yellow { background: #fff8e1; color: #e65100; border-color: #ffe082; }
-.vb-green  { background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; }
+.vb-red    { background: #f5f5f5; color: #000; border-color: #999; }
+.vb-yellow { background: #f5f5f5; color: #000; border-color: #999; }
+.vb-green  { background: #f5f5f5; color: #000; border-color: #999; }
 
 /* ── Complaints / Exam grid ── */
 .item-grid {
@@ -157,19 +156,19 @@ th {
     padding-left: 0;
 }
 .item-pill {
-    background: #eff6ff;
-    border: 1px solid #93c5fd;
+    background: #f7f7f7;
+    border: 1px solid #ccc;
     border-radius: 10px;
     padding: 3px 10px;
     font-size: 11px;
     font-weight: 600;
-    color: #1e3a8a;
+    color: #333;
 }
 
 /* ── AI Notes ── */
 .ai-section {
-    border-left: 4px solid #6366f1;
-    background: #eef2ff;
+    border-left: 4px solid #999;
+    background: #f9f9f9;
     padding: 6px 10px;
     margin-bottom: 5px;
     border-radius: 0 4px 4px 0;
@@ -177,12 +176,12 @@ th {
 .ai-section-title {
     font-weight: 700;
     font-size: 11px;
-    color: #4338ca;
+    color: #333;
     margin-bottom: 3px;
 }
 
 /* ── Prescription table ── */
-.rx-table th { background: #1e3a8a; color: #fff; }
+.rx-table th { background: #e8e8e8; color: #000; }
 
 /* ── Emergency instruction (standing, prints on every sheet) ── */
 .emergency-notice {
@@ -197,14 +196,14 @@ th {
 
 /* ── LAMA / Refusal of Admission card ── */
 .lama-card {
-    border: 2px solid #d97706;
+    border: 2px solid #555;
     border-radius: 6px;
     margin: 10px 0;
     overflow: hidden;
     page-break-inside: avoid;
 }
 .lama-card-head {
-    background: #d97706;
+    background: #333;
     color: #fff;
     font-weight: 700;
     font-size: 11px;
@@ -212,7 +211,7 @@ th {
     letter-spacing: 0.5px;
 }
 .lama-card-body {
-    background: #fffbeb;
+    background: #f9f9f9;
     color: #000;
     padding: 8px 10px;
     font-size: 11px;
@@ -222,14 +221,14 @@ th {
 
 /* ── Referral Note card ── */
 .referral-card {
-    border: 2px solid #0369a1;
+    border: 2px solid #555;
     border-radius: 6px;
     margin: 10px 0;
     overflow: hidden;
     page-break-inside: avoid;
 }
 .referral-card-head {
-    background: #0369a1;
+    background: #333;
     color: #fff;
     font-weight: 700;
     font-size: 11px;
@@ -237,7 +236,7 @@ th {
     letter-spacing: 0.5px;
 }
 .referral-card-body {
-    background: #f0f9ff;
+    background: #f9f9f9;
     color: #000;
     padding: 8px 10px;
     font-size: 11px;
@@ -247,7 +246,7 @@ th {
 
 /* ── Footer ── */
 .footer {
-    border-top: 2px solid #1e3a8a;
+    border-top: 2px solid #e8e8e8;
     margin-top: 16px;
     padding-top: 8px;
     display: flex;
@@ -259,12 +258,11 @@ th {
 }
 .sign-box {
     text-align: center;
-    border-top: 1px solid #1e3a8a;
+    border-top: 1px solid #000;
     padding-top: 3px;
     width: 180px;
     font-size: 10px;
     font-weight: 700;
-    color: #1e3a8a;
     margin-left: auto;
 }
 
