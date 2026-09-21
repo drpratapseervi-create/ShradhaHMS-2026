@@ -7,6 +7,20 @@
    page's dark background for the table's row numbers / "--" placeholders /
    sub-labels — brighten it here without touching the site-wide rule. */
 .text-muted { color: #cbd5e1 !important; }
+
+/* Bootstrap 5.3's .table-hover paints its highlight via
+   `box-shadow: inset 0 0 0 9999px var(--bs-table-accent-bg)`, not a plain
+   background-color -- so overriding background alone (as base.html's global
+   `tr:hover td` rule does) sits underneath that box-shadow and never cancels
+   it, letting Bootstrap's own light-mode hover tint (near-white) show
+   through. Overriding the custom property itself fixes it at the source and
+   matches the dark hover color (#252a40) used for list items/dropdowns
+   elsewhere on the site. */
+.table-hover > tbody > tr:hover > * {
+  --bs-table-accent-bg: #252a40 !important;
+  background-color: #252a40 !important;
+  color: #e2e8f0 !important;
+}
 </style>
 <div class="container-fluid py-3">
 
