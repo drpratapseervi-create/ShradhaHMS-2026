@@ -128,6 +128,34 @@ def send_opd_visit_thankyou(appointment):
     )
 
 
+CONSULTATION_STARTED_TEMPLATE = "consultation_started"
+
+
+def send_consultation_started(appointment):
+    """
+    Send the approved 'consultation_started' template the moment a patient's
+    OPD consultation begins (the Consultation record is created for their
+    appointment -- see start_consultation). The template body is:
+
+        Hello {{1}}, your OPD consultation has started with Dr. {{2}} at
+        Shradha Hospital & Multispeciality Centre, Pali. Your UHID is
+        {{3}}. Please keep this for your records.
+
+    Raises WhatsAppSendError on failure; raises ValueError if the patient's
+    mobile number can't be normalized.
+    """
+    patient = appointment.patient
+    to = normalize_indian_mobile(patient.mobile_no)
+    if not to:
+        raise ValueError(f"Cannot normalize mobile number for WhatsApp: {patient.mobile_no!r}")
+
+    return send_whatsapp_template(
+        to=to,
+        template_name=CONSULTATION_STARTED_TEMPLATE,
+        body_params=[patient.full_name, appointment.doctor.full_name, patient.uhid],
+    )
+
+
 APPOINTMENT_REMINDER_TEMPLATE = "appointment_reminder"
 
 

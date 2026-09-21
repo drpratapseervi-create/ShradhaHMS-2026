@@ -20,7 +20,7 @@ from ..models import (
     IPDAdmission,
 )
 from ..forms import PatientForm, AppointmentForm, ConsultationForm
-from ..services.whatsapp import send_opd_visit_thankyou, WhatsAppSendError
+from ..services.whatsapp import send_opd_visit_thankyou, send_consultation_started, WhatsAppSendError
 from ._shared import logger
 
 
@@ -91,7 +91,18 @@ def start_consultation(request, appointment_id):
         Appointment.objects.select_related("patient", "doctor"),
         id=appointment_id,
     )
-    consultation, _ = Consultation.objects.get_or_create(appointment=appointment)
+    consultation, created = Consultation.objects.get_or_create(appointment=appointment)
+    if created:
+        # First time this appointment's consultation screen has been opened --
+        # the closest proxy this system has for "the patient has arrived for
+        # their OPD consultation" (there's no separate reception check-in step).
+        try:
+            send_consultation_started(appointment)
+        except (WhatsAppSendError, ValueError):
+            logger.exception(
+                "Failed to send consultation-started WhatsApp message for appointment %s",
+                appointment.id,
+            )
     prescriptions = Prescription.objects.filter(consultation=consultation)
 
     if request.method == "POST":
