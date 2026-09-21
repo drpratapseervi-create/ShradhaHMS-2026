@@ -111,9 +111,7 @@ Left Kidney: measures __LEFT_KIDNEY__ cm
 
 Bladder: The urinary bladder is adequately filled. Its wall is not thickened. No evidence of diverticulum or calculus.
 
-{PELVIC_ORGANS}
-
-Colon wall thickness __ mm. Ileal wall thickness __ mm."""
+{PELVIC_ORGANS}"""
 
     _PELVIC_ORGANS_FEMALE = "Uterus and Ovaries: The uterus is __UTERUS__ cm size, anteverted shape, homogenous echotexture, myometrium and endometrial thickness __ET__ mm, and ovaries are of normal size."
     _PELVIC_ORGANS_MALE = "Prostate: The prostate gland is normal in size, measuring __PROSTATE__ cm, volume __PROSTATE_VOL__ cc, and shows homogenous echotexture. No focal lesion is seen. Post-void residual urine is minimal."
