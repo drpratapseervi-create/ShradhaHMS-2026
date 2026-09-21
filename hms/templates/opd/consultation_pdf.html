@@ -295,47 +295,18 @@ a  { color: #000; text-decoration: none; }
     z-index: 1000;
 }
 .print-btn-top:hover { background: #1f2937; }
-
-/* ── Repeating print header (table-header-group repeats on every printed page) ── */
-table.print-shell {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 0;
-}
-table.print-shell > thead {
-    display: table-header-group;
-}
-table.print-shell > tbody {
-    display: table-row-group;
-}
-table.print-shell > thead > tr > td,
-table.print-shell > tbody > tr > td {
-    border: none;
-    padding: 0;
-    vertical-align: top;
-}
-table.print-shell > thead > tr > td {
-    padding-bottom: 6px;
-}
 </style>
 </head>
 <body>
 
 <button class="print-btn-top no-print" onclick="window.print()">🖨️ Print</button>
 
-<table class="print-shell">
-<thead>
-<tr><td>
 <!-- ── Hospital Header ── -->
 <div class="hosp-header">
     <div class="hosp-name">Shradha Hospital &amp; Multispeciality Centre</div>
     <div class="hosp-sub">Pani Ki Do Tanki, Surajpole, Pali (Raj.) — 306401</div>
     <div class="hosp-contact">📞 9414122542 &nbsp;|&nbsp; Emergency: 9414122542</div>
 </div>
-</td></tr>
-</thead>
-<tbody>
-<tr><td>
 
 <!-- ── Patient Details ── -->
 <div class="sec-title">PATIENT DETAILS</div>
@@ -552,10 +523,6 @@ table.print-shell > thead > tr > td {
         Signature &amp; Stamp
     </div>
 </div>
-
-</td></tr>
-</tbody>
-</table>
 
 <!-- ── Print Button (hidden when printing) ── -->
 <div style="text-align:center; margin: 16px 0 8px 0;" class="no-print">
