@@ -3705,9 +3705,12 @@ function updateNextButtonUI() {
     btn.dataset.isLast = isLast ? '1' : '';
 }
 
-function saveConsultationAjax(onSuccess, onError) {
+function saveConsultationAjax(onSuccess, onError, markComplete) {
     var form = document.getElementById('consultation-form');
     var data = new FormData(form);
+    if (markComplete) {
+        data.set('mark_complete', '1');
+    }
     fetch(window.location.href, {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -3750,7 +3753,7 @@ function goToNextTab() {
     }, function () {
         btn.disabled = false;
         btn.textContent = prevLabel;
-    });
+    }, isLast);
 }
 
 /* ── Collapsible section: click the header to expand / collapse ── */

@@ -50,6 +50,11 @@ class Appointment(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
+    reminder_sent_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the WhatsApp appointment reminder was sent -- unset means not yet sent.",
+    )
+
     class Meta:
         ordering = ["-date", "-time"]
         unique_together = ("doctor", "date", "time")

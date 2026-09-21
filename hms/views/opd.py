@@ -20,6 +20,8 @@ from ..models import (
     IPDAdmission,
 )
 from ..forms import PatientForm, AppointmentForm, ConsultationForm
+from ..services.whatsapp import send_opd_visit_thankyou, WhatsAppSendError
+from ._shared import logger
 
 
 @login_required
@@ -233,6 +235,20 @@ def start_consultation(request, appointment_id):
                             duration=durs[i] if i < len(durs) else "",
                             instructions=instrs[i] if i < len(instrs) else "",
                             atc_code=atc_codes[i] if i < len(atc_codes) else "",
+                        )
+
+                # ── Mark visit complete (sent only by the "Finish" button, not
+                # the per-tab "Next" autosave) → trigger the OPD thank-you
+                # WhatsApp message, once, on the transition into "Completed" ──
+                if request.POST.get("mark_complete") == "1" and appointment.status != "Completed":
+                    appointment.status = "Completed"
+                    appointment.save(update_fields=["status"])
+                    try:
+                        send_opd_visit_thankyou(appointment)
+                    except (WhatsAppSendError, ValueError):
+                        logger.exception(
+                            "Failed to send OPD visit thank-you WhatsApp message for appointment %s",
+                            appointment.id,
                         )
 
                 if request.headers.get("X-Requested-With") == "XMLHttpRequest":

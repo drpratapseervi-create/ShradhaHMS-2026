@@ -340,3 +340,14 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
 # AI_FEATURES_ENABLED and a non-empty OPENAI_API_KEY, so a stray "True" left
 # in .env can't turn AI calls on with no key configured.
 AI_FEATURES_ENABLED = bool(OPENAI_API_KEY) and os.getenv('AI_FEATURES_ENABLED', 'False').lower() in ('1', 'true', 'yes')
+
+# ══════════════════════════════════════════════════════════════════════════
+#  WhatsApp (Meta Cloud API) — OPD visit patient notifications
+# ══════════════════════════════════════════════════════════════════════════
+WHATSAPP_ACCESS_TOKEN    = os.getenv('WHATSAPP_ACCESS_TOKEN', '')
+WHATSAPP_PHONE_NUMBER_ID = os.getenv('WHATSAPP_PHONE_NUMBER_ID', '')
+WHATSAPP_API_VERSION     = os.getenv('WHATSAPP_API_VERSION', 'v20.0')
+# Language the 'opd_visit_thankyou_uhid_datetime' template was approved in
+# (Meta Business Manager > Message Templates > shows as "English" = 'en').
+WHATSAPP_TEMPLATE_LANG   = os.getenv('WHATSAPP_TEMPLATE_LANG', 'en')
+WHATSAPP_ENABLED = bool(WHATSAPP_ACCESS_TOKEN) and bool(WHATSAPP_PHONE_NUMBER_ID)
