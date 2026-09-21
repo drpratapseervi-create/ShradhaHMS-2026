@@ -91,7 +91,7 @@
             <tr>
               <td class="text-muted small">{{ forloop.counter }}</td>
               <td>
-                <div class="fw-semibold" style="color:#fff;">
+                <div class="fw-semibold">
                   {% if c.patient %}{{ c.patient.full_name }}
                   {% elif c.patient_name_raw %}{{ c.patient_name_raw }}
                   {% else %}<span class="fst-italic" style="color:#8892a4;">No name on record</span>
