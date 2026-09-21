@@ -26,7 +26,7 @@ body {
 /* ── Hospital Header ── */
 .hosp-header {
     text-align: center;
-    border-bottom: 2px solid #000;
+    border-bottom: 3px solid #0f766e;
     padding-bottom: 8px;
     margin-bottom: 10px;
 }
@@ -35,7 +35,7 @@ body {
     font-weight: 900;
     letter-spacing: 1px;
     text-transform: uppercase;
-    color: #000;
+    color: #0f766e;
 }
 .hosp-sub {
     font-size: 11px;
@@ -50,14 +50,14 @@ body {
 .doc-title {
     font-size: 12px;
     font-weight: 700;
-    color: #333;
+    color: #0f766e;
     margin-top: 4px;
 }
 
 /* ── Document Title Bar ── */
 .doc-title-bar {
-    background: #fff;
-    color: #000;
+    background: #0f766e;
+    color: #fff;
     text-align: center;
     font-size: 13px;
     font-weight: 700;
@@ -72,27 +72,28 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #f7f7f7;
-    border: 1px solid #ccc;
+    background: #f0fdfa;
+    border: 1px solid #99f6e4;
     border-radius: 3px;
     padding: 4px 10px;
     margin-bottom: 8px;
     font-size: 11px;
 }
-.receipt-row span { font-weight: 700; }
+.receipt-row span { font-weight: 700; color: #0f766e; }
 
 /* ── Section heading ── */
 .sec-title {
-    background: #e8e8e8;
-    color: #000;
+    background: #ccfbf1;
+    color: #0f766e;
     font-size: 11px;
     font-weight: 700;
-    padding: 4px 7px 4px 0;
+    padding: 4px 7px 4px 7px;
     margin: 14px 0 4px 0;
     letter-spacing: 0.5px;
     text-align: left;
     display: block;
     width: 100%;
+    border-left: 4px solid #0f766e;
 }
 .sec-title-followup {
     margin-top: 180px;
@@ -105,26 +106,28 @@ table {
     margin-bottom: 6px;
 }
 td, th {
-    border: 1px solid #999;
+    border: 1px solid #99d8d0;
     padding: 4px 7px;
     vertical-align: top;
     font-size: 11px;
 }
 th {
-    background: #e8e8e8;
+    background: #0f766e;
+    color: #fff;
     font-weight: 700;
     text-align: left;
 }
 .lbl {
     font-weight: 700;
-    background: #f5f5f5;
+    background: #f0fdfa;
+    color: #0f766e;
     width: 20%;
     white-space: nowrap;
 }
 
 /* ── Vitals table ── */
 .vitals-table td { text-align: center; }
-.vitals-table .vlbl { font-weight: 700; background: #f5f5f5; text-align: left; }
+.vitals-table .vlbl { font-weight: 700; background: #f0fdfa; color: #0f766e; text-align: left; }
 
 /* ── Vital alert badges ── */
 .vital-badges { margin: 4px 0 6px 0; }
@@ -154,19 +157,19 @@ th {
     padding-left: 0;
 }
 .item-pill {
-    background: #f7f7f7;
-    border: 1px solid #ccc;
+    background: #f0fdfa;
+    border: 1px solid #99f6e4;
     border-radius: 10px;
     padding: 3px 10px;
     font-size: 11px;
     font-weight: 600;
-    color: #333;
+    color: #0f766e;
 }
 
 /* ── AI Notes ── */
 .ai-section {
-    border-left: 4px solid #999;
-    background: #f9f9f9;
+    border-left: 4px solid #6366f1;
+    background: #eef2ff;
     padding: 6px 10px;
     margin-bottom: 5px;
     border-radius: 0 4px 4px 0;
@@ -174,12 +177,12 @@ th {
 .ai-section-title {
     font-weight: 700;
     font-size: 11px;
-    color: #333;
+    color: #4338ca;
     margin-bottom: 3px;
 }
 
 /* ── Prescription table ── */
-.rx-table th { background: #f7f7f7; color: #000; }
+.rx-table th { background: #0f766e; color: #fff; }
 
 /* ── Emergency instruction (standing, prints on every sheet) ── */
 .emergency-notice {
@@ -194,14 +197,14 @@ th {
 
 /* ── LAMA / Refusal of Admission card ── */
 .lama-card {
-    border: 2px solid #555;
+    border: 2px solid #d97706;
     border-radius: 6px;
     margin: 10px 0;
     overflow: hidden;
     page-break-inside: avoid;
 }
 .lama-card-head {
-    background: #333;
+    background: #d97706;
     color: #fff;
     font-weight: 700;
     font-size: 11px;
@@ -209,7 +212,7 @@ th {
     letter-spacing: 0.5px;
 }
 .lama-card-body {
-    background: #f9f9f9;
+    background: #fffbeb;
     color: #000;
     padding: 8px 10px;
     font-size: 11px;
@@ -244,7 +247,7 @@ th {
 
 /* ── Footer ── */
 .footer {
-    border-top: 2px solid #e8e8e8;
+    border-top: 2px solid #0f766e;
     margin-top: 16px;
     padding-top: 8px;
     display: flex;
@@ -256,11 +259,12 @@ th {
 }
 .sign-box {
     text-align: center;
-    border-top: 1px solid #000;
+    border-top: 1px solid #0f766e;
     padding-top: 3px;
     width: 180px;
     font-size: 10px;
     font-weight: 700;
+    color: #0f766e;
     margin-left: auto;
 }
 
