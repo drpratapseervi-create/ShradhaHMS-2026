@@ -340,3 +340,33 @@ def send_lab_report_pdf(bill_item, pdf_bytes):
         filename=filename,
         body_params=[patient.full_name, bill_item.investigation.name],
     )
+
+
+USG_REPORT_READY_TEMPLATE = "usg_report_ready"
+
+
+def send_usg_report_pdf(report, pdf_bytes):
+    """
+    Upload the given USG report PDF bytes and send them via the approved
+    'usg_report_ready' document-header template. The caller (the view) is
+    responsible for rendering the report to PDF bytes -- this function only
+    handles the WhatsApp upload + send.
+
+    Raises WhatsAppSendError on failure; raises ValueError if the patient's
+    mobile number can't be normalized.
+    """
+    patient = report.patient
+    to = normalize_indian_mobile(patient.mobile_no)
+    if not to:
+        raise ValueError(f"Cannot normalize mobile number for WhatsApp: {patient.mobile_no!r}")
+
+    filename = f"USGReport_{patient.uhid}.pdf"
+    media_id = upload_whatsapp_media(pdf_bytes, filename=filename)
+
+    return send_document_template(
+        to=to,
+        template_name=USG_REPORT_READY_TEMPLATE,
+        media_id=media_id,
+        filename=filename,
+        body_params=[patient.full_name, report.get_scan_type_display()],
+    )

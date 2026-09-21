@@ -199,6 +199,7 @@ urlpatterns = [
     path("usg/<int:pk>/edit/",                  views.usg_report_edit,    name="usg_report_edit"),
     path("usg/<int:pk>/print/",                 views.usg_report_print,   name="usg_report_print"),
     path("usg/<int:pk>/pdf/",                   views.usg_report_pdf,     name="usg_report_pdf"),
+    path("usg/<int:pk>/send-whatsapp/",         views.usg_report_send_whatsapp, name="usg_report_send_whatsapp"),
     path("usg/<int:pk>/word/",                  views.usg_report_download_word, name="usg_report_download_word"),
     path("usg/<int:pk>/delete/",                views.usg_report_delete,  name="usg_report_delete"),
     path("patients/<int:pk>/gender/", views.patient_gender_api, name="patient_gender_api"),

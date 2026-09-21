@@ -1,17 +1,23 @@
 import os
 import json
 
+import logging
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Q
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 
 from ..decorators import role_required
 from ..models import Patient, Doctor, Consultation, MedicalImage, USGReport
 from ..forms import USGReportForm
 from ..utils import render_to_pdf
 from ..templatetags.hms_extras import comma_split, usg_findings_line_parts
+from ..services.whatsapp import send_usg_report_pdf, WhatsAppSendError
+
+logger = logging.getLogger("hms.views.imaging")
 
 
 @login_required
@@ -321,6 +327,28 @@ def usg_report_pdf(request, pk):
         pk=pk
     )
     return render_to_pdf("hms/usg/usg_report_print.html", {"report": report})
+
+
+@login_required
+@require_POST
+def usg_report_send_whatsapp(request, pk):
+    report = get_object_or_404(
+        USGReport.objects.select_related(
+            "patient", "reporting_doctor", "referred_by"
+        ),
+        pk=pk
+    )
+    pdf_bytes = render_to_pdf("hms/usg/usg_report_print.html", {"report": report}).content
+
+    try:
+        send_usg_report_pdf(report, pdf_bytes)
+    except ValueError as exc:
+        return JsonResponse({"success": False, "error": str(exc)}, status=400)
+    except WhatsAppSendError:
+        logger.exception("Failed to send USG report PDF via WhatsApp for report %s", report.id)
+        return JsonResponse({"success": False, "error": "Failed to send via WhatsApp. Please try again."}, status=502)
+
+    return JsonResponse({"success": True})
 
 
 def _shade_cell(cell, color_hex):

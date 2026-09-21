@@ -79,6 +79,7 @@ from .imaging import (
     usg_report_edit,
     usg_report_print,
     usg_report_pdf,
+    usg_report_send_whatsapp,
     usg_report_download_word,
     usg_report_delete,
 )
