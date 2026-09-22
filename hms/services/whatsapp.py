@@ -1,5 +1,6 @@
 """
-WhatsApp (Meta Cloud API) messaging — OPD visit patient notifications.
+WhatsApp (Meta Cloud API) messaging — OPD visit and IPD discharge patient
+notifications.
 """
 
 import logging
@@ -186,6 +187,81 @@ def send_appointment_reminder(appointment):
         to=to,
         template_name=APPOINTMENT_REMINDER_TEMPLATE,
         body_params=[patient.full_name, appointment.doctor.full_name, appt_dt_str],
+    )
+
+
+DISCHARGE_THANKYOU_TEMPLATE = "discharge_thankyou"
+
+
+def send_discharge_thankyou(admission):
+    """
+    Send the approved 'discharge_thankyou' template right after an IPD
+    patient's final bill is settled (see discharge_bill's 'mark_paid'
+    action). The template body is:
+
+        Hello {{1}}, you have been discharged from Shradha Hospital &
+        Multispeciality Centre, Pali. UHID: {{2}}. Please follow your
+        discharge advice carefully. {{3}}
+        For queries, call 9414122542.
+
+    {{3}} is the follow-up line ("Your follow-up visit is on <date>." or
+    "" when no follow_up_date is set on the admission).
+
+    Raises WhatsAppSendError on failure; raises ValueError if the patient's
+    mobile number can't be normalized. Does not touch
+    admission.discharge_message_sent_at -- the caller marks that on success.
+    """
+    patient = admission.patient
+    to = normalize_indian_mobile(patient.mobile_no)
+    if not to:
+        raise ValueError(f"Cannot normalize mobile number for WhatsApp: {patient.mobile_no!r}")
+
+    if admission.follow_up_date:
+        followup_line = f"Your follow-up visit is on {admission.follow_up_date.strftime('%d/%m/%Y')}."
+    else:
+        followup_line = "Please contact us to schedule a follow-up visit if advised."
+
+    return send_whatsapp_template(
+        to=to,
+        template_name=DISCHARGE_THANKYOU_TEMPLATE,
+        body_params=[patient.full_name, patient.uhid, followup_line],
+    )
+
+
+DISCHARGE_FOLLOWUP_REMINDER_TEMPLATE = "discharge_followup_reminder"
+
+
+def send_discharge_followup_reminder(admission):
+    """
+    Send the approved 'discharge_followup_reminder' template ahead of a
+    discharged patient's follow_up_date (see the
+    send_discharge_followup_reminders management command). The template
+    body is:
+
+        Hello {{1}}, this is a reminder for your follow-up visit at
+        Shradha Hospital & Multispeciality Centre, Pali, scheduled on
+        {{2}}. Please bring your discharge summary. For queries, call
+        9414122542.
+
+    Raises WhatsAppSendError on failure; raises ValueError if the patient's
+    mobile number can't be normalized, or if follow_up_date isn't set.
+    Does not touch admission.followup_reminder_sent_at -- the caller marks
+    that on success so a partial batch failure doesn't silently mark a
+    case as reminded.
+    """
+    patient = admission.patient
+    to = normalize_indian_mobile(patient.mobile_no)
+    if not to:
+        raise ValueError(f"Cannot normalize mobile number for WhatsApp: {patient.mobile_no!r}")
+    if not admission.follow_up_date:
+        raise ValueError(f"Admission {admission.id} has no follow_up_date set")
+
+    followup_date_str = admission.follow_up_date.strftime("%d/%m/%Y")
+
+    return send_whatsapp_template(
+        to=to,
+        template_name=DISCHARGE_FOLLOWUP_REMINDER_TEMPLATE,
+        body_params=[patient.full_name, followup_date_str],
     )
 
 

@@ -66,6 +66,15 @@ class IPDAdmission(models.Model):
     discharge_instructions  = models.TextField(blank=True)
     discharge_date          = models.DateTimeField(null=True, blank=True)
 
+    discharge_message_sent_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the WhatsApp discharge thank-you message was sent -- unset means not yet sent.",
+    )
+    followup_reminder_sent_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the WhatsApp follow-up-date reminder was sent -- unset means not yet sent.",
+    )
+
     # -------- ATTENDANT --------
     attendant_name     = models.CharField(max_length=100, blank=True)
     attendant_relation = models.CharField(max_length=50, blank=True)

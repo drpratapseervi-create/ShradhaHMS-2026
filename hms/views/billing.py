@@ -10,6 +10,8 @@ from ..models import (
     Patient, Doctor, Department, IPDAdmission, BillItem, DischargeBill,
     DischargeBillItem, IPDAdvance, ProcedureItem, ProcedureBill, ProcedureBillItem,
 )
+from ..services.whatsapp import send_discharge_thankyou, WhatsAppSendError
+from ._shared import logger
 
 
 @login_required
@@ -116,6 +118,23 @@ def discharge_bill(request, patient_id):
             bill.is_paid       = True
             bill.paid_at       = timezone.now()
             bill.save()
+
+            # ── Billing complete → send the discharge thank-you WhatsApp
+            # message once, the same fire-and-forget pattern as the OPD
+            # visit thank-you message (a WhatsApp failure must not block
+            # the receipt) ──
+            if not admission.discharge_message_sent_at:
+                try:
+                    send_discharge_thankyou(admission)
+                except (WhatsAppSendError, ValueError):
+                    logger.exception(
+                        "Failed to send discharge thank-you WhatsApp message for admission %s",
+                        admission.id,
+                    )
+                else:
+                    admission.discharge_message_sent_at = timezone.now()
+                    admission.save(update_fields=["discharge_message_sent_at"])
+
             return redirect("hms:final_payment_receipt", patient_id=patient.id)
 
         return redirect("hms:discharge_bill", patient_id=patient.id)
