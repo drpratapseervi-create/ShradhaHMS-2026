@@ -318,7 +318,7 @@ JAZZMIN_UI_TWEAKS = {
 # ══════════════════════════════════════════════════════════════════════════
 #  ABDM (Ayushman Bharat Digital Mission) Configuration
 # ══════════════════════════════════════════════════════════════════════════
-ABDM_BASE_URL      = os.getenv("ABDM_BASE_URL",      "https://sandbox.abdm.gov.in/api")
+ABDM_BASE_URL      = os.getenv("ABDM_BASE_URL",      "https://abhasbx.abdm.gov.in/abha/api")
 ABDM_CLIENT_ID     = os.getenv("ABDM_CLIENT_ID",     "")
 ABDM_CLIENT_SECRET = os.getenv("ABDM_CLIENT_SECRET", "")
 ABDM_TOKEN_URL     = os.getenv("ABDM_TOKEN_URL",     "https://dev.abdm.gov.in/gateway/v0.5/sessions")
