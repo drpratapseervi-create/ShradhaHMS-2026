@@ -323,6 +323,10 @@ ABDM_CLIENT_ID     = os.getenv("ABDM_CLIENT_ID",     "")
 ABDM_CLIENT_SECRET = os.getenv("ABDM_CLIENT_SECRET", "")
 ABDM_TOKEN_URL     = os.getenv("ABDM_TOKEN_URL",     "https://dev.abdm.gov.in/gateway/v0.5/sessions")
 ABDM_HIP_ID        = os.getenv("ABDM_HIP_ID",        "")
+# HIE-CM Gateway host (M2 linking/consent/notify APIs, e.g. /api/hiecm/...,
+# /v0.5/links/... — a different host than ABDM_BASE_URL, which is the ABHA
+# enrollment API. Same host that issues session tokens (ABDM_TOKEN_URL).
+ABDM_GATEWAY_URL   = os.getenv("ABDM_GATEWAY_URL",   "https://dev.abdm.gov.in")
 
 # ✅ ADD THIS:
 # ══════════════════════════════════════════════════════════════════════════

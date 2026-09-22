@@ -614,3 +614,104 @@ class HIPService:
         except Exception as e:
             print(f"[HIP] Link confirm failed: {e}")
             return {}
+
+    # ── Care Context Update Notification ─────────────────
+
+    @staticmethod
+    def notify_care_context_update(patient, patient_reference: str,
+                                   care_context_ref: str, hi_type: str) -> dict:
+        """
+        Notify the HIE-CM Gateway that a new/updated health record is
+        available for a care context already linked to the patient's
+        ABHA address. Call this after saving an OPD consultation,
+        discharge summary, or lab/USG report.
+
+        Gateway: POST /api/hiecm/hip/v3/link/context/notify
+        hi_type: one of "OPConsultation", "DischargeSummary", "DiagnosticReport"
+
+        Expects 202 Accepted — the gateway's actual acknowledgement of
+        this notification arrives asynchronously at the on-notify callback.
+
+        Skips silently (returns {}) if the patient has no verified ABHA
+        address linked — there is no care context to notify against.
+        """
+        if not (patient and patient.abha_address and patient.abha_verified):
+            return {}
+
+        payload = {
+            "notification": {
+                "patient": {
+                    "id": patient.abha_address,
+                },
+                "careContext": {
+                    "patientReference":     patient_reference,
+                    "careContextReference": care_context_ref,
+                },
+                "hiTypes": [hi_type],
+                "date":    datetime.now(timezone.utc).isoformat(),
+                "hip": {
+                    "id": settings.ABDM_HIP_ID or "",
+                },
+            }
+        }
+        headers      = abdm._headers({"X-HIP-ID": settings.ABDM_HIP_ID or ""})
+        gateway_base = settings.ABDM_GATEWAY_URL.rstrip("/")
+        try:
+            r = requests.post(
+                f"{gateway_base}/api/hiecm/hip/v3/link/context/notify",
+                json=payload,
+                headers=headers,
+                timeout=20,
+            )
+            if r.status_code != 202:
+                print(f"[HIP] Care context notify for {care_context_ref} "
+                      f"got HTTP {r.status_code}: {r.text[:300]}")
+            r.raise_for_status()
+            return r.json() if r.content else {}
+        except Exception as e:
+            print(f"[HIP] Care context notify failed for {care_context_ref}: {e}")
+            return {}
+
+    @staticmethod
+    def notify_opd_consultation(consultation) -> dict:
+        """Notify ABDM that a new OPD consultation record is available."""
+        patient = consultation.appointment.patient
+        return HIPService.notify_care_context_update(
+            patient           = patient,
+            patient_reference = str(patient.id),
+            care_context_ref  = f"CON-{consultation.id}",
+            hi_type           = "OPConsultation",
+        )
+
+    @staticmethod
+    def notify_discharge_summary(admission) -> dict:
+        """Notify ABDM that a discharge summary is available for this IPD admission."""
+        patient = admission.patient
+        return HIPService.notify_care_context_update(
+            patient           = patient,
+            patient_reference = str(patient.id),
+            care_context_ref  = f"IPD-{admission.id}",
+            hi_type           = "DischargeSummary",
+        )
+
+    @staticmethod
+    def notify_lab_report(bill_item) -> dict:
+        """Notify ABDM that a lab report is available."""
+        patient = bill_item.bill.patient
+        return HIPService.notify_care_context_update(
+            patient           = patient,
+            patient_reference = str(patient.id),
+            care_context_ref  = f"LAB-{bill_item.id}",
+            hi_type           = "DiagnosticReport",
+        )
+
+    @staticmethod
+    def notify_usg_report(report) -> dict:
+        """Notify ABDM that a USG report is available."""
+        patient = report.patient
+        return HIPService.notify_care_context_update(
+            patient           = patient,
+            patient_reference = str(patient.id),
+            care_context_ref  = f"USG-{report.id}",
+            hi_type           = "DiagnosticReport",
+        )

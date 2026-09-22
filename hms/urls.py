@@ -166,6 +166,9 @@ urlpatterns = [
     # Health Data Request
     path("abdm/data-request/",    abdm_views.abdm_data_request,    name="abdm_data_request"),
 
+    # Care Context Update Notify — ack for HIPService.notify_care_context_update
+    path("api/v3/links/context/on-notify/", abdm_views.abdm_on_notify, name="abdm_on_notify"),
+
     # ══════════════════════════════════════════════════
     # UHI
     # ══════════════════════════════════════════════════

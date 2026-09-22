@@ -11,6 +11,7 @@ from ..models import (
     DischargeBillItem, IPDAdvance, ProcedureItem, ProcedureBill, ProcedureBillItem,
 )
 from ..services.whatsapp import send_discharge_thankyou, WhatsAppSendError
+from ..abdm.services.hip import HIPService
 from ._shared import logger
 
 
@@ -134,6 +135,7 @@ def discharge_bill(request, patient_id):
                 else:
                     admission.discharge_message_sent_at = timezone.now()
                     admission.save(update_fields=["discharge_message_sent_at"])
+                HIPService.notify_discharge_summary(admission)
 
             return redirect("hms:final_payment_receipt", patient_id=patient.id)
 

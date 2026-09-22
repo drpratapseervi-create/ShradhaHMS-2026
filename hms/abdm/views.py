@@ -562,6 +562,29 @@ def abdm_on_confirm(request):
 
 
 @csrf_exempt
+def abdm_on_notify(request):
+    """
+    ABDM Gateway's acknowledgement of a care-context notify call
+    (HIPService.notify_care_context_update). The notify call itself
+    only gets a 202 Accepted; the actual acknowledgement/result of
+    processing that notification arrives here.
+    Body: {requestId, timestamp, acknowledgement: {status}, response: {requestId}}
+    """
+    if request.method != "POST":
+        return HttpResponse(status=405)
+    try:
+        data = json.loads(request.body)
+        logger.info(
+            f"[M2] on-notify ack: requestId={data.get('requestId')} "
+            f"status={data.get('acknowledgement', {}).get('status')} "
+            f"respRequestId={data.get('response', {}).get('requestId')}"
+        )
+    except Exception as e:
+        logger.error(f"on-notify error: {e}")
+    return HttpResponse(status=202)
+
+
+@csrf_exempt
 def abdm_consent_notify(request):
     """
     ABDM sends consent artifact when patient grants consent.

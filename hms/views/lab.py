@@ -18,6 +18,7 @@ from ..models import (
 )
 from ..utils import render_to_pdf
 from ..services.whatsapp import send_lab_report_pdf, WhatsAppSendError
+from ..abdm.services.hip import HIPService
 from ._shared import logger
 
 
@@ -371,6 +372,7 @@ def lab_result_entry(request, bill_item_id):
         if results_to_create:
             InvestigationResult.objects.bulk_create(results_to_create)
             messages.success(request, "Lab results saved successfully.")
+            HIPService.notify_lab_report(item)
         return redirect("hms:lab_report_print", bill_item_id=item.id)
 
     return render(request, "lab/result_entry.html", {

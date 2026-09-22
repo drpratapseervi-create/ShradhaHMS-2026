@@ -16,6 +16,7 @@ from ..forms import USGReportForm
 from ..utils import render_to_pdf
 from ..templatetags.hms_extras import comma_split, usg_findings_line_parts
 from ..services.whatsapp import send_usg_report_pdf, WhatsAppSendError
+from ..abdm.services.hip import HIPService
 
 logger = logging.getLogger("hms.views.imaging")
 
@@ -256,6 +257,7 @@ def usg_report_create(request, patient_id=None, bill_item_id=None):
         report = form.save(commit=False)
         report.created_by = request.user
         report.save()
+        HIPService.notify_usg_report(report)
         if is_ajax:
             return JsonResponse({"success": True, "report_id": report.pk})
         messages.success(request, f"USG Report {report.report_no} saved successfully.")

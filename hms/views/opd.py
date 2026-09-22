@@ -26,6 +26,7 @@ from ..services.whatsapp import (
     send_opd_visit_thankyou, send_consultation_started, send_prescription_pdf,
     WhatsAppSendError,
 )
+from ..abdm.services.hip import HIPService
 from ._shared import logger
 
 
@@ -266,6 +267,7 @@ def start_consultation(request, appointment_id):
                             "Failed to send OPD visit thank-you WhatsApp message for appointment %s",
                             appointment.id,
                         )
+                    HIPService.notify_opd_consultation(obj)
 
                 if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                     # AJAX auto-save (e.g. the "Next" button) shows its own JS toast —
