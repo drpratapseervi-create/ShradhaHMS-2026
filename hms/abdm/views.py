@@ -651,8 +651,22 @@ def abdm_data_request(request):
         date_range    = hi_request.get("dateRange", {})
         data_push_url = hi_request.get("dataPushUrl")
 
+        requester_key_material = hi_request.get("keyMaterial", {})
+        requester_public_key   = requester_key_material.get("dhPublicKey", {}).get("keyValue")
+        requester_nonce        = requester_key_material.get("nonce")
+
         transaction_id = str(uuid.uuid4())
         HIPService.ack_health_info_request(request_id, transaction_id)
+
+        if not (requester_public_key and requester_nonce):
+            logger.warning(f"[M2] data-request txn={transaction_id}: missing keyMaterial, cannot encrypt")
+            return HttpResponse(status=202)
+
+        # Generate OUR key material once, up front -- package_health_data
+        # (encryption) and transfer_health_data (advertised keyMaterial)
+        # must use this exact same pair, not two independently-generated
+        # ones, or the HIU won't be able to derive the same AES key.
+        sender_private_key, sender_public_key, sender_nonce = HIPService.generate_ecdh_keypair()
 
         from hms.models import ABDMConsent
         consent = ABDMConsent.objects.filter(consent_id=consent_id).first()
@@ -683,7 +697,11 @@ def abdm_data_request(request):
                 try:
                     bundle = build_op_consultation_bundle(consultation)
                     entries.append(HIPService.package_health_data(
-                        bundle, f"CON-{consultation.id}"
+                        bundle, f"CON-{consultation.id}",
+                        sender_private_key_b64   = sender_private_key,
+                        sender_nonce_b64         = sender_nonce,
+                        requester_public_key_b64 = requester_public_key,
+                        requester_nonce_b64      = requester_nonce,
                     ))
                 except Exception as e:
                     logger.warning(f"[FHIR] Could not build bundle for consultation "
@@ -699,7 +717,11 @@ def abdm_data_request(request):
                 try:
                     bundle = build_lab_report_bundle(item)
                     entries.append(HIPService.package_health_data(
-                        bundle, f"LAB-{item.id}"
+                        bundle, f"LAB-{item.id}",
+                        sender_private_key_b64   = sender_private_key,
+                        sender_nonce_b64         = sender_nonce,
+                        requester_public_key_b64 = requester_public_key,
+                        requester_nonce_b64      = requester_nonce,
                     ))
                 except Exception as e:
                     logger.warning(f"[FHIR] Could not build bundle for lab item "
@@ -709,7 +731,11 @@ def abdm_data_request(request):
                     f"patient={patient.id}, entries_built={len(entries)}")
 
         if entries and data_push_url:
-            result = HIPService.transfer_health_data(transaction_id, data_push_url, entries)
+            result = HIPService.transfer_health_data(
+                transaction_id, data_push_url, entries,
+                sender_public_key_x509_b64 = sender_public_key,
+                sender_nonce_b64           = sender_nonce,
+            )
             transferred = result.get("status") == "transferred"
             HIPService.notify_transfer_status(
                 consent_id, transaction_id,

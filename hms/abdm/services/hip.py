@@ -10,7 +10,6 @@ Implements:
 6. Health data packaging   (encrypt & transfer on request)
 """
 
-import os
 import uuid
 import json
 import base64
@@ -21,6 +20,7 @@ from datetime import datetime, timezone, timedelta
 from django.conf import settings
 
 from .auth import abdm
+from . import fidelius
 
 
 # ═══════════════════════════════════════════════════════
@@ -658,12 +658,17 @@ class HIPService:
         Our response to a patient-initiated link-init request (§5.3.7).
         Generates our own link reference + a fresh OTP that the patient
         must enter on ABDM's PHR app (relayed back to us via the confirm
-        callback). NOTE: no SMS gateway is wired into this project yet --
-        delivery of the OTP itself is a TODO; it's logged here so sandbox
-        testing can proceed with manual relay in the meantime.
+        callback), and delivers that OTP over WhatsApp (this project has
+        no SMS gateway, but does have a working WhatsApp Business
+        integration -- see hms/services/whatsapp.py's
+        send_authentication_otp and the approved 'abdm_linking_otp'
+        AUTHENTICATION-category template). If WhatsApp delivery fails
+        (unreachable number, API error), the OTP is still logged so
+        sandbox testing can proceed with manual relay.
         Gateway: POST /api/hiecm/user-initiated-linking/v3/link/care-context/on-init
         """
         from hms.models import ABDMLinkingSession
+        from hms.services.whatsapp import send_authentication_otp, normalize_indian_mobile, WhatsAppSendError
 
         link_reference = str(uuid.uuid4())
         otp = f"{random.randint(0, 999999):06d}"
@@ -673,8 +678,17 @@ class HIPService:
             patient        = patient,
             otp            = otp,
         )
-        print(f"[HIP] User-initiated-linking OTP for patient {patient.id} "
-              f"({patient.mobile_no}): {otp}  [TODO: no SMS gateway wired up]")
+
+        whatsapp_to = normalize_indian_mobile(patient.mobile_no)
+        if whatsapp_to:
+            try:
+                send_authentication_otp(whatsapp_to, otp)
+            except WhatsAppSendError as e:
+                print(f"[HIP] User-initiated-linking OTP WhatsApp delivery failed for "
+                      f"patient {patient.id}: {e}  [otp={otp}, deliver manually]")
+        else:
+            print(f"[HIP] User-initiated-linking OTP for patient {patient.id}: {otp} "
+                  f"[no usable mobile number, deliver manually]")
 
         payload = {
             "transactionId": transaction_id,
@@ -813,61 +827,63 @@ class HIPService:
     # ── Health Data Packaging ────────────────────────────
 
     @staticmethod
-    def package_health_data(fhir_bundle: dict, care_context_ref: str) -> dict:
-        """
-        Package one FHIR bundle as one "entries[]" item for the data push
-        (M2 doc §6.3.5).
-
-        NOTE — content is base64-encoded PLAINTEXT JSON, not encrypted.
-        ABDM's exact crypto construction (how the ECDH shared secret is
-        turned into an AES key via HKDF, the AES mode, IV handling) isn't
-        specified in the sandbox doc itself -- it lives in ABDM's separate
-        crypto reference / the "fidelius" library. transfer_health_data()
-        below does generate a real X25519 keypair + nonce and exchanges
-        them via keyMaterial exactly as the protocol requires, but this
-        placeholder content is not actually encrypted with the resulting
-        shared secret yet. Do not treat this as encrypted in its current form.
-        """
-        bundle_json = json.dumps(fhir_bundle).encode()
-        return {
-            "content":             base64.b64encode(bundle_json).decode(),
-            "media":               "application/fhir+json",
-            "checksum":            hashlib.sha256(bundle_json).hexdigest(),
-            "careContextReference": care_context_ref,
-        }
-
-    @staticmethod
     def generate_ecdh_keypair():
         """
-        Generate our ephemeral X25519 (Curve25519) key pair for one
-        data-push exchange, per ABDM's keyMaterial protocol (§6.3.3-6.3.5).
-        Returns (private_key_object, public_key_base64_str).
+        Generate our (HIP) ephemeral BC25519 key pair + nonce for one
+        data-push transaction, per ABDM's Fidelius keyMaterial protocol
+        (§6.3.3-6.3.5). Must be generated ONCE per transaction, before
+        packaging any entries -- the same key pair is used both to
+        encrypt every entry (package_health_data) and to populate the
+        outgoing keyMaterial the HIU needs to derive the matching key
+        (transfer_health_data), so encryption and the advertised key
+        can't drift apart.
+        Returns (private_key_b64, public_key_x509_b64, nonce_b64).
         """
-        from cryptography.hazmat.primitives.asymmetric import x25519
-        from cryptography.hazmat.primitives import serialization
+        return fidelius.generate_key_material()
 
-        private_key = x25519.X25519PrivateKey.generate()
-        public_bytes = private_key.public_key().public_bytes(
-            encoding=serialization.Encoding.Raw,
-            format=serialization.PublicFormat.Raw,
+    @staticmethod
+    def package_health_data(fhir_bundle: dict, care_context_ref: str,
+                            sender_private_key_b64: str, sender_nonce_b64: str,
+                            requester_public_key_b64: str, requester_nonce_b64: str) -> dict:
+        """
+        Package one FHIR bundle as one "entries[]" item for the data push
+        (M2 doc §6.3.5), AES-256-GCM encrypted per ABDM's Fidelius protocol
+        (see hms/abdm/services/fidelius.py for the full construction).
+
+        `sender_*` is this HIP's own key material for this transaction
+        (from generate_ecdh_keypair, called once before packaging any
+        entries); `requester_*` is the HIU's key material, as given in
+        the health-information request's hiRequest.keyMaterial.
+        """
+        bundle_json = json.dumps(fhir_bundle)
+        content_b64 = fidelius.encrypt_content(
+            bundle_json,
+            sender_private_key_b64    = sender_private_key_b64,
+            sender_nonce_b64          = sender_nonce_b64,
+            requester_public_key_b64  = requester_public_key_b64,
+            requester_nonce_b64       = requester_nonce_b64,
         )
-        return private_key, base64.b64encode(public_bytes).decode()
+        return {
+            "content":             content_b64,
+            "media":               "application/fhir+json",
+            # Checksum of the PLAINTEXT bundle -- lets the HIU verify
+            # integrity of what it gets back after decrypting, not of
+            # the ciphertext itself.
+            "checksum":            hashlib.sha256(bundle_json.encode()).hexdigest(),
+            "careContextReference": care_context_ref,
+        }
 
     # ── Health Data Transfer ─────────────────────────────
 
     @staticmethod
-    def transfer_health_data(transaction_id: str, data_push_url: str,
-                             entries: list) -> dict:
+    def transfer_health_data(transaction_id: str, data_push_url: str, entries: list,
+                             sender_public_key_x509_b64: str, sender_nonce_b64: str) -> dict:
         """
         Push packaged entries (see package_health_data) to the HIU's
-        dataPushUrl (§6.3.5). Generates our own ephemeral X25519 keypair +
-        nonce for the keyMaterial exchange -- real ECDH plumbing, though
-        the entries' content itself is still the placeholder described in
-        package_health_data()'s docstring.
+        dataPushUrl (§6.3.5), advertising the SAME key pair + nonce
+        (from generate_ecdh_keypair) that was used to encrypt those
+        entries, so the HIU can derive the matching AES key.
         """
-        _, our_public_b64 = HIPService.generate_ecdh_keypair()
-        nonce_b64 = base64.b64encode(os.urandom(32)).decode()
-
         payload = {
             "pageNumber":    1,
             "pageCount":     1,
@@ -879,9 +895,9 @@ class HIPService:
                 "dhPublicKey": {
                     "expiry":     (datetime.now(timezone.utc) + timedelta(days=1)).isoformat(),
                     "parameters": "Curve25519/32byte random key",
-                    "keyValue":   our_public_b64,
+                    "keyValue":   sender_public_key_x509_b64,
                 },
-                "nonce": nonce_b64,
+                "nonce": sender_nonce_b64,
             },
         }
         try:

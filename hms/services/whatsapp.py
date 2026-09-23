@@ -98,6 +98,70 @@ def send_whatsapp_template(to, template_name, language_code=None, body_params=No
     return data
 
 
+ABDM_LINKING_OTP_TEMPLATE = "abdm_linking_otp"
+
+
+def send_authentication_otp(to, otp, template_name=None, language_code=None):
+    """
+    Send an approved AUTHENTICATION-category template carrying a one-time
+    code (e.g. ABDM's user-initiated-linking OTP -- see
+    HIPService.respond_to_link_init). Meta requires AUTHENTICATION
+    templates to have exactly one OTP-type button; for a COPY_CODE button
+    the code must be repeated in both the body parameter and the button's
+    coupon_code parameter (confirmed against a real send -- Meta's plain
+    'body' component alone is rejected for this category).
+    """
+    if not settings.WHATSAPP_ENABLED:
+        raise WhatsAppSendError("WhatsApp is not configured (missing access token / phone number id).")
+
+    template_name = template_name or ABDM_LINKING_OTP_TEMPLATE
+    language_code = language_code or settings.WHATSAPP_TEMPLATE_LANG
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "template",
+        "template": {
+            "name": template_name,
+            "language": {"code": language_code},
+            "components": [
+                {"type": "body", "parameters": [{"type": "text", "text": str(otp)}]},
+                {
+                    "type": "button", "sub_type": "url", "index": 0,
+                    "parameters": [{"type": "coupon_code", "coupon_code": str(otp)}],
+                },
+            ],
+        },
+    }
+
+    url = f"{GRAPH_BASE_URL}/{settings.WHATSAPP_API_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
+    try:
+        resp = requests.post(
+            url,
+            json=payload,
+            headers={"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"},
+            timeout=15,
+        )
+    except requests.RequestException as exc:
+        logger.exception("WhatsApp OTP send failed (network error) to %s template=%s", to, template_name)
+        raise WhatsAppSendError(f"Network error sending WhatsApp OTP: {exc}") from exc
+
+    if resp.status_code >= 400:
+        logger.error(
+            "WhatsApp OTP send failed (%s) to %s template=%s: %s",
+            resp.status_code, to, template_name, resp.text,
+        )
+        raise WhatsAppSendError(
+            f"Meta API returned {resp.status_code}",
+            status_code=resp.status_code,
+            response_body=resp.text,
+        )
+
+    data = resp.json()
+    logger.info("WhatsApp OTP template '%s' sent to %s", template_name, to)
+    return data
+
+
 OPD_THANKYOU_TEMPLATE = "opd_visit_thankyou_uhid_datetime"
 
 
