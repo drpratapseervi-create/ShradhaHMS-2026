@@ -321,10 +321,10 @@ JAZZMIN_UI_TWEAKS = {
 ABDM_BASE_URL      = os.getenv("ABDM_BASE_URL",      "https://abhasbx.abdm.gov.in/abha/api")
 ABDM_CLIENT_ID     = os.getenv("ABDM_CLIENT_ID",     "")
 ABDM_CLIENT_SECRET = os.getenv("ABDM_CLIENT_SECRET", "")
-ABDM_TOKEN_URL     = os.getenv("ABDM_TOKEN_URL",     "https://dev.abdm.gov.in/gateway/v0.5/sessions")
+ABDM_TOKEN_URL     = os.getenv("ABDM_TOKEN_URL",     "https://dev.abdm.gov.in/api/hiecm/gateway/v3/sessions")
 ABDM_HIP_ID        = os.getenv("ABDM_HIP_ID",        "")
-# HIE-CM Gateway host (M2 linking/consent/notify APIs, e.g. /api/hiecm/...,
-# /v0.5/links/... — a different host than ABDM_BASE_URL, which is the ABHA
+# HIE-CM Gateway host (M2 linking/consent/data-flow APIs, all under
+# /api/hiecm/...) — a different host than ABDM_BASE_URL, which is the ABHA
 # enrollment API. Same host that issues session tokens (ABDM_TOKEN_URL).
 ABDM_GATEWAY_URL   = os.getenv("ABDM_GATEWAY_URL",   "https://dev.abdm.gov.in")
 
@@ -350,6 +350,10 @@ AI_FEATURES_ENABLED = bool(OPENAI_API_KEY) and os.getenv('AI_FEATURES_ENABLED', 
 # ══════════════════════════════════════════════════════════════════════════
 WHATSAPP_ACCESS_TOKEN    = os.getenv('WHATSAPP_ACCESS_TOKEN', '')
 WHATSAPP_PHONE_NUMBER_ID = os.getenv('WHATSAPP_PHONE_NUMBER_ID', '')
+# WhatsApp Business Account ID -- distinct from the phone number id above;
+# only needed for template management (create/list/submit templates), not
+# for sending messages. Find it in WhatsApp Manager > API Setup.
+WHATSAPP_BUSINESS_ACCOUNT_ID = os.getenv('WHATSAPP_BUSINESS_ACCOUNT_ID', '')
 WHATSAPP_API_VERSION     = os.getenv('WHATSAPP_API_VERSION', 'v20.0')
 # Language the 'opd_visit_thankyou_uhid_datetime' template was approved in
 # (Meta Business Manager > Message Templates > shows as "English" = 'en').

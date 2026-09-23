@@ -10,14 +10,15 @@ Implements:
 6. Health data packaging   (encrypt & transfer on request)
 """
 
+import os
 import uuid
 import json
 import base64
 import hashlib
 import requests
-from datetime import datetime, timezone
+import random
+from datetime import datetime, timezone, timedelta
 from django.conf import settings
-from django.db import models
 
 from .auth import abdm
 
@@ -350,148 +351,392 @@ class HIPService:
     - Health data packaging and transfer
     """
 
-    # ── HIP Initiated Linking ────────────────────────────
+    # ── HIP Initiated Linking (M2 doc §4) ────────────────
 
     @staticmethod
-    def add_care_context(patient_abha: str, care_context_ref: str,
-                         care_context_display: str) -> dict:
+    def ensure_care_context_linked(patient, reference_number: str,
+                                   display: str, hi_type: str) -> dict:
         """
-        HIP-initiated linking of care context to HIE-CM.
-        Called after creating OPD/Lab/Discharge record.
-        Gateway: POST /v0.5/links/link/add-contexts
+        Entry point for "a health record was created/updated for this
+        patient" — call sites (opd/billing/lab/imaging views) should call
+        this rather than the lower-level methods below.
+
+        First time seeing this reference_number: kicks off the async
+        generate-link-token -> link-care-context flow (M2 §4.3.1-4.3.4).
+        Already linked: sends a care-context-update notify instead
+        (M2 §4.3.6 — for genuine edits to an already-linked record).
+
+        Skips silently if the patient has no verified ABHA address.
         """
-        payload = {
-            "requestId": str(uuid.uuid4()),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "link": {
-                "accessToken":  HIPService._get_link_token(patient_abha),
-                "patient": {
-                    "referenceNumber": patient_abha,
-                    "careContexts": [
-                        {
-                            "referenceNumber": care_context_ref,
-                            "display":         care_context_display,
-                        }
-                    ]
-                }
-            }
-        }
-        try:
-            return abdm.post("/v0.5/links/link/add-contexts", payload)
-        except Exception as e:
-            print(f"[HIP] Care context link failed: {e}")
+        if not (patient and patient.abha_address and patient.abha_verified):
             return {}
 
+        from hms.models import ABDMCareContext
+        context, _ = ABDMCareContext.objects.get_or_create(
+            patient=patient,
+            reference_number=reference_number,
+            defaults={"display": display, "hi_type": hi_type},
+        )
+
+        if context.linked:
+            return HIPService.notify_care_context_update(
+                patient           = patient,
+                patient_reference = str(patient.id),
+                care_context_ref  = reference_number,
+                hi_type           = hi_type,
+            )
+
+        # Not linked yet (brand new, or a previous link attempt never got
+        # confirmed) — (re)kick off the async link flow.
+        return HIPService.generate_link_token(patient)
+
     @staticmethod
-    def _get_link_token(patient_abha: str) -> str:
+    def generate_link_token(patient) -> dict:
         """
-        Get a link token from ABDM for HIP-initiated linking.
-        In production this comes from the patient's ABHA session.
-        For now returns a placeholder — will work once M1 is live.
+        Step 1 of HIP-initiated linking. The link token is NOT returned in
+        this response — it arrives later via the on-generate-token callback
+        (matched by the REQUEST-ID we set here), which then triggers
+        link_care_context() for this patient's unlinked care contexts.
+        Gateway: POST /api/hiecm/v3/token/generate-token
         """
-        return "LINK_TOKEN_FROM_PATIENT_SESSION"
+        if not (patient.abha_address or patient.abha_number):
+            return {}
+
+        from hms.models import ABDMLinkToken
+
+        request_id = str(uuid.uuid4())
+        gender_map = {"Male": "M", "Female": "F", "Other": "O"}
+
+        payload = {"name": patient.full_name or ""}
+        if patient.abha_address:
+            payload["abhaAddress"] = patient.abha_address
+        if patient.abha_number:
+            payload["abhaNumber"] = patient.abha_number
+        if patient.gender:
+            payload["gender"] = gender_map.get(patient.gender, "O")
+        if patient.date_of_birth:
+            payload["yearOfBirth"] = patient.date_of_birth.year
+
+        ABDMLinkToken.objects.create(
+            patient      = patient,
+            abha_address = patient.abha_address or "",
+            request_id   = request_id,
+        )
+        headers = {
+            "X-HIP-ID":   settings.ABDM_HIP_ID or "",
+            "REQUEST-ID": request_id,
+        }
+        try:
+            abdm.gateway_post("/api/hiecm/v3/token/generate-token", payload,
+                              extra_headers=headers)
+        except Exception as e:
+            print(f"[HIP] generate_link_token failed: {e}")
+        return {"requestId": request_id}
+
+    @staticmethod
+    def link_care_context(patient, x_link_token: str, contexts) -> dict:
+        """
+        Step 2 of HIP-initiated linking — link one or more not-yet-linked
+        care contexts to the patient's ABHA address using a freshly issued
+        link token. `contexts` is an iterable of ABDMCareContext rows for
+        this patient, grouped here by hi_type per the spec's payload shape
+        (one "patient[]" entry per hiType group).
+        Gateway: POST /api/hiecm/hip/v3/link/carecontext
+
+        Stamps pending_request_id on each context so the on_carecontext
+        callback can confirm (-> linked=True) or leave it for retry.
+        """
+        from hms.models import ABDMCareContext
+
+        contexts = list(contexts)
+        if not contexts:
+            return {}
+
+        by_hi_type = {}
+        for ctx in contexts:
+            by_hi_type.setdefault(ctx.hi_type, []).append(ctx)
+
+        patient_entries = [
+            {
+                "referenceNumber": f"{patient.id}-{hi_type}",
+                "display":         patient.full_name,
+                "careContexts": [
+                    {"referenceNumber": c.reference_number, "display": c.display}
+                    for c in ctx_list
+                ],
+                "hiType": hi_type,
+                "count":  len(ctx_list),
+            }
+            for hi_type, ctx_list in by_hi_type.items()
+        ]
+
+        payload = {"patient": patient_entries}
+        if patient.abha_address:
+            payload["abhaAddress"] = patient.abha_address
+        if patient.abha_number:
+            payload["abhaNumber"] = patient.abha_number
+
+        request_id = str(uuid.uuid4())
+        headers = {
+            "X-HIP-ID":     settings.ABDM_HIP_ID or "",
+            "X-LINK-TOKEN": x_link_token,
+            "REQUEST-ID":   request_id,
+        }
+        ABDMCareContext.objects.filter(
+            id__in=[c.id for c in contexts]
+        ).update(pending_request_id=request_id)
+
+        try:
+            return abdm.gateway_post("/api/hiecm/hip/v3/link/carecontext",
+                                     payload, extra_headers=headers)
+        except Exception as e:
+            print(f"[HIP] link_care_context failed: {e}")
+            return {}
 
     # ── Mobile Notification (no ABHA address) ───────────
 
     @staticmethod
-    def notify_via_sms(patient_mobile: str, hip_id: str,
-                       care_context_ref: str) -> dict:
+    def notify_via_sms(patient_mobile: str, hip_id: str = None) -> dict:
         """
-        Notify patient via SMS when no ABHA address available.
-        Gateway: POST /v0.5/patients/sms/notify2
-        """
-        payload = {
-            "requestId":  str(uuid.uuid4()),
-            "timestamp":  datetime.now(timezone.utc).isoformat(),
-            "notification": {
-                "phoneNo":   f"+91{patient_mobile}",
-                "hip": {
-                    "name": "Shradha Hospital",
-                    "id":   hip_id or settings.ABDM_HIP_ID,
-                },
-                "careContextInfo": [
-                    {"careContextReference": care_context_ref}
-                ],
-                "hiTypes": ["OPDischargeNote"],
-                "date":    datetime.now(timezone.utc).date().isoformat(),
-            }
-        }
-        try:
-            return abdm.post("/v0.5/patients/sms/notify2", payload)
-        except Exception as e:
-            print(f"[HIP] SMS notify failed: {e}")
-            return {}
-
-    # ── Notify Health Record Ready ───────────────────────
-
-    @staticmethod
-    def notify_health_record_ready(patient_abha: str, care_context_ref: str,
-                                   hi_type: str = "OPDischargeNote") -> dict:
-        """
-        Notify HIE-CM that new health record is available.
-        Gateway: POST /v0.5/health-information/notify
+        Notify patient via SMS that a health record is available to fetch
+        (used when the patient has no ABHA address on file).
+        Gateway: POST /api/hiecm/hip/v3/link/patient/links/sms/notify2
         """
         payload = {
             "requestId": str(uuid.uuid4()),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "notification": {
-                "consentId":  "",
-                "doneAt":     datetime.now(timezone.utc).isoformat(),
+                "phoneNo": patient_mobile,
+                "hip": {
+                    "id":   hip_id or settings.ABDM_HIP_ID or "",
+                    "name": "Shradha Hospital",
+                },
+            }
+        }
+        try:
+            return abdm.gateway_post(
+                "/api/hiecm/hip/v3/link/patient/links/sms/notify2", payload
+            )
+        except Exception as e:
+            print(f"[HIP] SMS notify failed: {e}")
+            return {}
+
+    # ── Data-Transfer Status Notify (M2 doc §6.3.6) ──────
+
+    @staticmethod
+    def notify_transfer_status(consent_id: str, transaction_id: str,
+                               session_status: str, status_responses: list) -> dict:
+        """
+        Report the status of a health-data transfer to the HIE-CM Gateway,
+        after actually pushing (or failing to push) data to the HIU's
+        dataPushUrl. Call this from the data-flow request handler, not
+        from record-save hooks (those use notify_care_context_update).
+        Gateway: POST /api/hiecm/data-flow/v3/health-information/notify
+        session_status: "TRANSFERRED" | "FAILED"
+        status_responses: [{"careContextReference": ..., "hiStatus": "DELIVERED"|"ERRORED", "description": ...}]
+        """
+        payload = {
+            "notification": {
+                "consentId":     consent_id,
+                "transactionId": transaction_id,
+                "doneAt":        datetime.now(timezone.utc).isoformat(),
                 "notifier": {
                     "type": "HIP",
                     "id":   settings.ABDM_HIP_ID or "",
                 },
                 "statusNotification": {
-                    "sessionStatus": "TRANSFERRED",
-                    "hipId":         settings.ABDM_HIP_ID or "",
-                    "statusResponses": [
-                        {
-                            "careContextReference": care_context_ref,
-                            "hiStatus":            "OK",
-                            "description":         f"{hi_type} available",
-                        }
-                    ]
+                    "sessionStatus":   session_status,
+                    "hipId":           settings.ABDM_HIP_ID or "",
+                    "statusResponses": status_responses,
                 }
             }
         }
         try:
-            return abdm.post("/v0.5/health-information/notify", payload)
+            return abdm.gateway_post(
+                "/api/hiecm/data-flow/v3/health-information/notify", payload
+            )
         except Exception as e:
-            print(f"[HIP] Notify failed: {e}")
+            print(f"[HIP] Transfer status notify failed: {e}")
             return {}
 
-    # ── Discovery Response ───────────────────────────────
+    # ── User-Initiated Linking (M2 doc §5) ────────────────
+    # A separate flow from HIP-initiated linking above: here the PATIENT
+    # starts from a PHR app, and HIE-CM calls us (via views.py callbacks)
+    # to discover/init/confirm the link.
+
+    @staticmethod
+    def find_patient_by_abha(abha_number: str = None, abha_address: str = None):
+        """
+        Patient.abha_number/abha_address are EncryptedCharField (Fernet --
+        non-deterministic: the same plaintext encrypts to different
+        ciphertext every save), so `.filter(abha_number=...)` / `.get(...)`
+        compares plaintext against stored ciphertext and can NEVER match --
+        not a corner case, it always returns nothing. Until a deterministic
+        lookup column (e.g. an HMAC-hash index) is added, fall back to a
+        full scan + in-Python decrypt-compare (acceptable at hospital-scale
+        patient counts; would need indexing at real scale).
+        """
+        from hms.models import Patient
+        if abha_number:
+            for p in Patient.objects.all().only("id", "abha_number"):
+                if p.abha_number == abha_number:
+                    return p
+        if abha_address:
+            for p in Patient.objects.all().only("id", "abha_address"):
+                if p.abha_address == abha_address:
+                    return p
+        return None
 
     @staticmethod
     def respond_to_discovery(request_id: str, transaction_id: str,
-                              patient, care_contexts: list) -> dict:
+                              patient, matched_by: list) -> dict:
         """
-        Respond to patient-initiated discovery request.
-        Called from abdm_on_discover callback view.
-        Gateway: POST /v0.5/care-contexts/on-discover
+        Our response to a patient-initiated discovery request (§5.3.3),
+        listing this patient's known care contexts grouped by hiType.
+        Gateway: POST /api/hiecm/user-initiated-linking/v3/patient/care-context/on-discover
         """
-        payload = {
-            "requestId":     str(uuid.uuid4()),
-            "timestamp":     datetime.now(timezone.utc).isoformat(),
-            "transactionId": transaction_id,
-            "patient": {
-                "referenceNumber": patient.uhid,
-                "display":         patient.full_name,
-                "careContexts": [
+        from hms.models import ABDMCareContext
+        contexts = ABDMCareContext.objects.filter(patient=patient)
+
+        if not contexts.exists():
+            payload = {
+                "transactionId": transaction_id,
+                "error": {"code": "ABDM-1010", "message": "Patient not found"},
+                "response": {"requestId": request_id},
+            }
+        else:
+            by_hi_type = {}
+            for ctx in contexts:
+                by_hi_type.setdefault(ctx.hi_type, []).append(ctx)
+            payload = {
+                "transactionId": transaction_id,
+                "patient": [
                     {
-                        "referenceNumber": cc["ref"],
-                        "display":         cc["display"],
+                        "referenceNumber": f"{patient.id}-{hi_type}",
+                        "display":         patient.full_name,
+                        "careContexts": [
+                            {"referenceNumber": c.reference_number, "display": c.display}
+                            for c in ctx_list
+                        ],
+                        "hiType": hi_type,
+                        "count":  len(ctx_list),
                     }
-                    for cc in care_contexts
+                    for hi_type, ctx_list in by_hi_type.items()
                 ],
-                "matchedBy": ["MOBILE", "MR"],
-            },
-            "resp": {"requestId": request_id}
-        }
+                "matchedBy": matched_by,
+                "response": {"requestId": request_id},
+            }
         try:
-            return abdm.post("/v0.5/care-contexts/on-discover", payload)
+            return abdm.gateway_post(
+                "/api/hiecm/user-initiated-linking/v3/patient/care-context/on-discover",
+                payload,
+            )
         except Exception as e:
             print(f"[HIP] Discovery response failed: {e}")
+            return {}
+
+    @staticmethod
+    def gateway_post_on_discover_not_found(request_id: str, transaction_id: str) -> dict:
+        """Same on-discover endpoint as above, for the no-match case."""
+        payload = {
+            "transactionId": transaction_id,
+            "error": {"code": "ABDM-1010", "message": "Patient not found"},
+            "response": {"requestId": request_id},
+        }
+        try:
+            return abdm.gateway_post(
+                "/api/hiecm/user-initiated-linking/v3/patient/care-context/on-discover",
+                payload,
+            )
+        except Exception as e:
+            print(f"[HIP] Discovery not-found response failed: {e}")
+            return {}
+
+    @staticmethod
+    def respond_to_link_init(request_id: str, transaction_id: str, patient) -> dict:
+        """
+        Our response to a patient-initiated link-init request (§5.3.7).
+        Generates our own link reference + a fresh OTP that the patient
+        must enter on ABDM's PHR app (relayed back to us via the confirm
+        callback). NOTE: no SMS gateway is wired into this project yet --
+        delivery of the OTP itself is a TODO; it's logged here so sandbox
+        testing can proceed with manual relay in the meantime.
+        Gateway: POST /api/hiecm/user-initiated-linking/v3/link/care-context/on-init
+        """
+        from hms.models import ABDMLinkingSession
+
+        link_reference = str(uuid.uuid4())
+        otp = f"{random.randint(0, 999999):06d}"
+        ABDMLinkingSession.objects.create(
+            transaction_id = transaction_id,
+            link_reference = link_reference,
+            patient        = patient,
+            otp            = otp,
+        )
+        print(f"[HIP] User-initiated-linking OTP for patient {patient.id} "
+              f"({patient.mobile_no}): {otp}  [TODO: no SMS gateway wired up]")
+
+        payload = {
+            "transactionId": transaction_id,
+            "link": {
+                "referenceNumber":    link_reference,
+                "authenticationType": "DIRECT",
+                "meta": {
+                    "communicationMedium": "MOBILE",
+                    "communicationHint":   "OTP",
+                    "communicationExpiry": (datetime.now(timezone.utc)
+                                            + timedelta(minutes=10)).isoformat(),
+                }
+            },
+            "response": {"requestId": request_id},
+        }
+        try:
+            return abdm.gateway_post(
+                "/api/hiecm/user-initiated-linking/v3/link/care-context/on-init",
+                payload,
+            )
+        except Exception as e:
+            print(f"[HIP] Link-init response failed: {e}")
+            return {}
+
+    @staticmethod
+    def respond_to_link_confirm(request_id: str, session) -> dict:
+        """
+        Our response confirming a patient-entered OTP for user-initiated
+        linking (§5.3.11). `session` is the ABDMLinkingSession matched by
+        linkRefNumber; the caller has already verified session.otp and
+        marks session.confirmed_at before calling this.
+        Gateway: POST /api/hiecm/user-initiated-linking/v3/link/care-context/on-confirm
+        """
+        from hms.models import ABDMCareContext
+        contexts = ABDMCareContext.objects.filter(patient=session.patient)
+        by_hi_type = {}
+        for ctx in contexts:
+            by_hi_type.setdefault(ctx.hi_type, []).append(ctx)
+
+        payload = {
+            "patient": [
+                {
+                    "referenceNumber": session.link_reference,
+                    "display":         session.patient.full_name,
+                    "careContexts": [
+                        {"referenceNumber": c.reference_number, "display": c.display}
+                        for c in ctx_list
+                    ],
+                    "hiType": hi_type,
+                    "count":  len(ctx_list),
+                }
+                for hi_type, ctx_list in by_hi_type.items()
+            ],
+            "response": {"requestId": request_id},
+        }
+        try:
+            return abdm.gateway_post(
+                "/api/hiecm/user-initiated-linking/v3/link/care-context/on-confirm",
+                payload,
+            )
+        except Exception as e:
+            print(f"[HIP] Link-confirm response failed: {e}")
             return {}
 
     # ── Consent Storage ──────────────────────────────────
@@ -499,83 +744,145 @@ class HIPService:
     @staticmethod
     def store_consent(consent_id: str, consent_artifact: dict) -> None:
         """
-        Store consent artifact in database.
+        Store consent artifact (M2 doc §6.3.1's flat payload -- "patient"
+        is the ABHA address string directly, not a nested {id: ...} dict).
         Consent must be verified before sharing health data.
         """
         from hms.models import ABDMConsent
+        permission = consent_artifact.get("permission", {})
         ABDMConsent.objects.update_or_create(
             consent_id=consent_id,
             defaults={
                 "artifact":     json.dumps(consent_artifact),
                 "status":       consent_artifact.get("status", "GRANTED"),
-                "patient_abha": consent_artifact.get("patient", {}).get("id", ""),
+                "patient_abha": consent_artifact.get("patient", ""),
                 "hi_types":     json.dumps(consent_artifact.get("hiTypes", [])),
-                "date_from":    consent_artifact.get("permission", {}).get("dateRange", {}).get("from", ""),
-                "date_to":      consent_artifact.get("permission", {}).get("dateRange", {}).get("to", ""),
-                "expire_at":    consent_artifact.get("permission", {}).get("dataEraseAt", ""),
+                "date_from":    permission.get("dateRange", {}).get("from", ""),
+                "date_to":      permission.get("dateRange", {}).get("to", ""),
+                "expire_at":    permission.get("dataEraseAt", ""),
             }
         )
 
     @staticmethod
-    def verify_consent(consent_id: str, hi_type: str) -> bool:
+    def ack_consent_notify(request_id: str, consent_id: str,
+                           status: str = "OK", error: dict = None) -> dict:
         """
-        Verify a consent is valid before sharing health data.
-        Returns True if consent is GRANTED and hi_type is allowed.
+        Ack the consent-approved/revoked callback (§6.3.2) -- required
+        separately from the HTTP 202 already returned to that callback.
+        Gateway: POST /api/hiecm/consent/v3/request/hip/on-notify
         """
+        payload = {
+            "acknowledgement": {"status": status, "consentId": consent_id},
+            "response": {"requestId": request_id},
+        }
+        if error:
+            payload["error"] = error
         try:
-            from hms.models import ABDMConsent
-            consent = ABDMConsent.objects.get(consent_id=consent_id)
-            if consent.status != "GRANTED":
-                return False
-            hi_types = json.loads(consent.hi_types or "[]")
-            return hi_type in hi_types or not hi_types
-        except Exception:
-            return False
+            return abdm.gateway_post(
+                "/api/hiecm/consent/v3/request/hip/on-notify", payload
+            )
+        except Exception as e:
+            print(f"[HIP] Consent-notify ack failed for {consent_id}: {e}")
+            return {}
+
+    @staticmethod
+    def ack_health_info_request(request_id: str, transaction_id: str,
+                                session_status: str = "ACKNOWLEDGED",
+                                error: dict = None) -> dict:
+        """
+        Ack the health-information-request callback (§6.3.4) -- required
+        separately from the HTTP 202 already returned to that callback.
+        Gateway: POST /api/hiecm/data-flow/v3/health-information/hip/on-request
+        """
+        payload = {"response": {"requestId": request_id}}
+        if error:
+            payload["error"] = error
+        else:
+            payload["hiRequest"] = {
+                "transactionId": transaction_id,
+                "sessionStatus": session_status,
+            }
+        try:
+            return abdm.gateway_post(
+                "/api/hiecm/data-flow/v3/health-information/hip/on-request", payload
+            )
+        except Exception as e:
+            print(f"[HIP] Health-info-request ack failed: {e}")
+            return {}
 
     # ── Health Data Packaging ────────────────────────────
 
     @staticmethod
-    def package_health_data(fhir_bundle: dict,
-                            key_material: dict) -> dict:
+    def package_health_data(fhir_bundle: dict, care_context_ref: str) -> dict:
         """
-        Encrypt FHIR bundle for transfer to HIU.
-        Uses ECDH key exchange as required by ABDM.
-        key_material: from consent request (HIU's public key)
+        Package one FHIR bundle as one "entries[]" item for the data push
+        (M2 doc §6.3.5).
 
-        Note: Full ECDH encryption requires the fidelius library.
-        In production, install: pip install fidelius (Linux only)
-        For now returns base64-encoded JSON as placeholder.
+        NOTE — content is base64-encoded PLAINTEXT JSON, not encrypted.
+        ABDM's exact crypto construction (how the ECDH shared secret is
+        turned into an AES key via HKDF, the AES mode, IV handling) isn't
+        specified in the sandbox doc itself -- it lives in ABDM's separate
+        crypto reference / the "fidelius" library. transfer_health_data()
+        below does generate a real X25519 keypair + nonce and exchanges
+        them via keyMaterial exactly as the protocol requires, but this
+        placeholder content is not actually encrypted with the resulting
+        shared secret yet. Do not treat this as encrypted in its current form.
         """
-        bundle_json    = json.dumps(fhir_bundle).encode()
-        bundle_b64     = base64.b64encode(bundle_json).decode()
-
-        # TODO: Replace with actual ECDH encryption using fidelius
-        # from fidelius import Fidelius
-        # encrypted = Fidelius.encrypt(bundle_json, key_material)
-
+        bundle_json = json.dumps(fhir_bundle).encode()
         return {
-            "content":          bundle_b64,
-            "media":            "application/fhir+json",
-            "checksum":         hashlib.md5(bundle_json).hexdigest(),
-            "careContextReference": "",
+            "content":             base64.b64encode(bundle_json).decode(),
+            "media":               "application/fhir+json",
+            "checksum":            hashlib.sha256(bundle_json).hexdigest(),
+            "careContextReference": care_context_ref,
         }
+
+    @staticmethod
+    def generate_ecdh_keypair():
+        """
+        Generate our ephemeral X25519 (Curve25519) key pair for one
+        data-push exchange, per ABDM's keyMaterial protocol (§6.3.3-6.3.5).
+        Returns (private_key_object, public_key_base64_str).
+        """
+        from cryptography.hazmat.primitives.asymmetric import x25519
+        from cryptography.hazmat.primitives import serialization
+
+        private_key = x25519.X25519PrivateKey.generate()
+        public_bytes = private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
+        return private_key, base64.b64encode(public_bytes).decode()
 
     # ── Health Data Transfer ─────────────────────────────
 
     @staticmethod
-    def transfer_health_data(transaction_id: str, consent_id: str,
-                             data_push_url: str, entries: list,
-                             key_material: dict) -> dict:
+    def transfer_health_data(transaction_id: str, data_push_url: str,
+                             entries: list) -> dict:
         """
-        Transfer packaged health data to HIU data push URL.
-        Called after consent verification.
+        Push packaged entries (see package_health_data) to the HIU's
+        dataPushUrl (§6.3.5). Generates our own ephemeral X25519 keypair +
+        nonce for the keyMaterial exchange -- real ECDH plumbing, though
+        the entries' content itself is still the placeholder described in
+        package_health_data()'s docstring.
         """
+        _, our_public_b64 = HIPService.generate_ecdh_keypair()
+        nonce_b64 = base64.b64encode(os.urandom(32)).decode()
+
         payload = {
-            "pageNumber":   1,
-            "pageCount":    1,
+            "pageNumber":    1,
+            "pageCount":     1,
             "transactionId": transaction_id,
-            "entries":      entries,
-            "keyMaterial":  key_material,
+            "entries":       entries,
+            "keyMaterial": {
+                "cryptoAlg": "ECDH",
+                "curve":     "Curve25519",
+                "dhPublicKey": {
+                    "expiry":     (datetime.now(timezone.utc) + timedelta(days=1)).isoformat(),
+                    "parameters": "Curve25519/32byte random key",
+                    "keyValue":   our_public_b64,
+                },
+                "nonce": nonce_b64,
+            },
         }
         try:
             r = requests.post(
@@ -590,30 +897,6 @@ class HIPService:
             print(f"[HIP] Data transfer failed: {e}")
             return {"status": "failed", "error": str(e)}
 
-    # ── Link Confirm Response ────────────────────────────
-
-    @staticmethod
-    def on_link_confirm(request_id: str, patient_ref: str,
-                        care_contexts: list) -> dict:
-        """
-        Confirm care context linking after OTP verification.
-        Gateway: POST /v0.5/links/link/on-confirm
-        """
-        payload = {
-            "requestId": str(uuid.uuid4()),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "patient": {
-                "referenceNumber": patient_ref,
-                "display":         patient_ref,
-                "careContexts":    care_contexts,
-            },
-            "resp": {"requestId": request_id}
-        }
-        try:
-            return abdm.post("/v0.5/links/link/on-confirm", payload)
-        except Exception as e:
-            print(f"[HIP] Link confirm failed: {e}")
-            return {}
 
     # ── Care Context Update Notification ─────────────────
 
@@ -674,44 +957,44 @@ class HIPService:
 
     @staticmethod
     def notify_opd_consultation(consultation) -> dict:
-        """Notify ABDM that a new OPD consultation record is available."""
+        """Link (first time) or notify-update (already linked) an OPD consultation record."""
         patient = consultation.appointment.patient
-        return HIPService.notify_care_context_update(
-            patient           = patient,
-            patient_reference = str(patient.id),
-            care_context_ref  = f"CON-{consultation.id}",
-            hi_type           = "OPConsultation",
+        return HIPService.ensure_care_context_linked(
+            patient          = patient,
+            reference_number = f"CON-{consultation.id}",
+            display          = f"OPD – {consultation.appointment.date}",
+            hi_type          = "OPConsultation",
         )
 
     @staticmethod
     def notify_discharge_summary(admission) -> dict:
-        """Notify ABDM that a discharge summary is available for this IPD admission."""
+        """Link (first time) or notify-update (already linked) a discharge summary."""
         patient = admission.patient
-        return HIPService.notify_care_context_update(
-            patient           = patient,
-            patient_reference = str(patient.id),
-            care_context_ref  = f"IPD-{admission.id}",
-            hi_type           = "DischargeSummary",
+        return HIPService.ensure_care_context_linked(
+            patient          = patient,
+            reference_number = f"IPD-{admission.id}",
+            display          = f"Discharge Summary – {admission.ipd_no or admission.id}",
+            hi_type          = "DischargeSummary",
         )
 
     @staticmethod
     def notify_lab_report(bill_item) -> dict:
-        """Notify ABDM that a lab report is available."""
+        """Link (first time) or notify-update (already linked) a lab report."""
         patient = bill_item.bill.patient
-        return HIPService.notify_care_context_update(
-            patient           = patient,
-            patient_reference = str(patient.id),
-            care_context_ref  = f"LAB-{bill_item.id}",
-            hi_type           = "DiagnosticReport",
+        return HIPService.ensure_care_context_linked(
+            patient          = patient,
+            reference_number = f"LAB-{bill_item.id}",
+            display          = f"Lab: {bill_item.investigation.name}",
+            hi_type          = "DiagnosticReport",
         )
 
     @staticmethod
     def notify_usg_report(report) -> dict:
-        """Notify ABDM that a USG report is available."""
+        """Link (first time) or notify-update (already linked) a USG report."""
         patient = report.patient
-        return HIPService.notify_care_context_update(
-            patient           = patient,
-            patient_reference = str(patient.id),
-            care_context_ref  = f"USG-{report.id}",
-            hi_type           = "DiagnosticReport",
+        return HIPService.ensure_care_context_linked(
+            patient          = patient,
+            reference_number = f"USG-{report.id}",
+            display          = f"USG: {report.get_scan_type_display()}",
+            hi_type          = "DiagnosticReport",
         )

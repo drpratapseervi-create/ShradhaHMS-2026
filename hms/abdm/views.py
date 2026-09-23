@@ -17,14 +17,14 @@ from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 
 from hms.abdm.services.abha import ABHAService
-from hms.abdm.services.hip import FHIRBuilder, HIPService
-from hms.abdm.services.auth import abdm
-from hms.models import Patient, Consultation, InvestigationBillItem, InvestigationResult
+from hms.abdm.services.hip import HIPService
+from hms.models import (
+    Patient, Consultation, InvestigationBillItem,
+    ABDMLinkToken, ABDMCareContext,
+)
 
-# ✅ NEW — Our FHIR R4 builder
 from hms.fhir_builder import (
     build_op_consultation_bundle,
-    build_discharge_summary_bundle,
     build_lab_report_bundle,
 )
 
@@ -337,50 +337,22 @@ def abha_driving_license(request, patient_id):
 
 @login_required
 def push_care_context(request, consultation_id):
+    """Manual retry button for the automatic ABDM push already attempted
+    on consultation completion (see hms/views/opd.py start_consultation)."""
     consultation = get_object_or_404(Consultation, id=consultation_id)
     patient      = consultation.appointment.patient
 
-    if not patient.abha_number:
-        messages.warning(request, "No ABHA found for this patient.")
+    if not (patient.abha_address and patient.abha_verified):
+        if patient.mobile_no:
+            HIPService.notify_via_sms(patient.mobile_no)
+        messages.warning(request, "No verified ABHA address for this patient — sent SMS notification instead." if patient.mobile_no else "No verified ABHA address for this patient.")
         return redirect("hms:start_consultation", appointment_id=consultation.appointment.id)
 
     try:
-        ref = f"CON-{consultation.id}"
-
-        # ✅ Build FHIR R4 bundle for this consultation
-        fhir_bundle = build_op_consultation_bundle(consultation)
-        fhir_json   = json.dumps(fhir_bundle)
-        logger.info(f"[FHIR] OPD bundle built for consultation {consultation_id} "
-                    f"— {len(fhir_bundle['entry'])} entries")
-
-        # HIP-initiated linking with FHIR bundle
-        HIPService.add_care_context(
-            patient_abha        = patient.abha_address or patient.abha_number,
-            care_context_ref    = ref,
-            care_context_display= f"OPD – {consultation.appointment.date}",
-            fhir_bundle         = fhir_bundle,      # ✅ Pass FHIR bundle
-        )
-
-        # Notify ABDM record ready
-        HIPService.notify_health_record_ready(
-            patient_abha     = patient.abha_number,
-            care_context_ref = ref,
-            hi_type          = "OPDischargeNote",
-            fhir_bundle      = fhir_bundle,          # ✅ Pass FHIR bundle
-        )
-
-        # If no ABHA address, send SMS notification
-        if not patient.abha_address and patient.mobile_no:
-            HIPService.notify_via_sms(
-                patient_mobile   = patient.mobile_no,
-                hip_id           = None,
-                care_context_ref = ref,
-            )
-
+        HIPService.notify_opd_consultation(consultation)
         messages.success(request, "✅ Health record pushed to ABDM.")
-
     except Exception as e:
-        logger.error(f"[FHIR] push_care_context error: {e}")
+        logger.error(f"[M2] push_care_context error: {e}")
         messages.error(request, f"Push failed: {e}")
 
     return redirect("hms:start_consultation", appointment_id=consultation.appointment.id)
@@ -392,44 +364,22 @@ def push_care_context(request, consultation_id):
 
 @login_required
 def push_lab_report(request, bill_item_id):
+    """Manual retry button for the automatic ABDM push already attempted
+    on result entry (see hms/views/lab.py lab_result_entry)."""
     item    = get_object_or_404(InvestigationBillItem, id=bill_item_id)
     patient = item.bill.patient
-    results = InvestigationResult.objects.filter(bill_item=item)
 
-    if not patient.abha_number:
-        messages.warning(request, "No ABHA found.")
+    if not (patient.abha_address and patient.abha_verified):
+        if patient.mobile_no:
+            HIPService.notify_via_sms(patient.mobile_no)
+        messages.warning(request, "No verified ABHA address for this patient — sent SMS notification instead." if patient.mobile_no else "No verified ABHA address for this patient.")
         return redirect("hms:lab_report_print", bill_item_id=bill_item_id)
 
     try:
-        ref = f"LAB-{item.id}"
-
-        # ✅ Build FHIR R4 lab bundle (uses LOINC codes we added in Step 1!)
-        fhir_bundle = build_lab_report_bundle(item)
-        fhir_json   = json.dumps(fhir_bundle)
-        logger.info(f"[FHIR] Lab bundle built for bill_item {bill_item_id} "
-                    f"— {len(fhir_bundle['entry'])} entries")
-
-        HIPService.add_care_context(
-            patient_abha        = patient.abha_address or patient.abha_number,
-            care_context_ref    = ref,
-            care_context_display= f"Lab: {item.investigation.name}",
-            fhir_bundle         = fhir_bundle,       # ✅ Pass FHIR bundle
-        )
-
-        HIPService.notify_health_record_ready(
-            patient_abha     = patient.abha_number,
-            care_context_ref = ref,
-            hi_type          = "DiagnosticReport",
-            fhir_bundle      = fhir_bundle,           # ✅ Pass FHIR bundle
-        )
-
-        if not patient.abha_address and patient.mobile_no:
-            HIPService.notify_via_sms(patient.mobile_no, None, ref)
-
+        HIPService.notify_lab_report(item)
         messages.success(request, "✅ Lab report pushed to ABDM.")
-
     except Exception as e:
-        logger.error(f"[FHIR] push_lab_report error: {e}")
+        logger.error(f"[M2] push_lab_report error: {e}")
         messages.error(request, f"Push failed: {e}")
 
     return redirect("hms:lab_report_print", bill_item_id=bill_item_id)
@@ -442,105 +392,80 @@ def push_lab_report(request, bill_item_id):
 @csrf_exempt
 def abdm_on_discover(request):
     """
-    ABDM calls this when patient tries to discover their records.
-    Your HMS must find the patient and respond with care contexts.
+    ABDM calls this when a patient tries to discover their records from a
+    PHR app (M2 doc §5.3.2). Real incoming shape:
+    {transactionId, patient: {id, verifiedIdentifiers: [{type, value}],
+                               unverifiedIdentifiers: [...], name, gender,
+                               yearOfBirth}}
+    verifiedIdentifiers type is "ABHA_NUMBER" / "MOBILE"; unverifiedIdentifiers
+    commonly carries "MR" (our own hospital ID).
     """
     if request.method != "POST":
         return HttpResponse(status=405)
 
     try:
         data         = json.loads(request.body)
-        request_id   = data.get("requestId")
+        request_id   = request.headers.get("REQUEST-ID", "")
         txn_id       = data.get("transactionId")
         patient_data = data.get("patient", {})
 
-        patient       = None
-        care_contexts = []
+        verified   = patient_data.get("verifiedIdentifiers", [])
+        unverified = patient_data.get("unverifiedIdentifiers", [])
 
-        mobile = patient_data.get("unverifiedIdentifiers", [{}])[0].get("value", "")
-        abha   = next(
-            (i.get("value") for i in patient_data.get("verifiedIdentifiers", [])
-             if i.get("type") == "HEALTH_ID"), None
-        )
+        abha_number = next((i.get("value") for i in verified if i.get("type") == "ABHA_NUMBER"), None)
+        mobile      = next((i.get("value") for i in verified if i.get("type") == "MOBILE"), None)
+        mr_number   = next((i.get("value") for i in unverified if i.get("type") == "MR"), None)
 
-        if abha:
-            try:
-                patient = Patient.objects.get(abha_number=abha)
-            except Patient.DoesNotExist:
-                pass
+        patient    = None
+        matched_by = []
 
+        if abha_number:
+            patient = HIPService.find_patient_by_abha(abha_number=abha_number)
+            if patient:
+                matched_by = ["ABHA_NUMBER"]
         if not patient and mobile:
-            try:
-                patient = Patient.objects.get(mobile_no=mobile)
-            except Patient.DoesNotExist:
-                pass
+            patient = Patient.objects.filter(mobile_no=mobile).first()
+            if patient:
+                matched_by = ["MOBILE"]
+        if not patient and mr_number:
+            patient = Patient.objects.filter(uhid=mr_number).first()
+            if patient:
+                matched_by = ["MR"]
 
         if patient:
-            # Build care contexts from consultations
-            for appt in patient.appointments.filter(
-                consultation__isnull=False
-            ).select_related("consultation")[:10]:
-                care_contexts.append({
-                    "ref":     f"CON-{appt.consultation.id}",
-                    "display": f"OPD – {appt.date}",
-                })
-
-            # Add lab results
-            from hms.models import InvestigationBill
-            for bill in InvestigationBill.objects.filter(patient=patient, paid=True)[:5]:
-                for bill_item in bill.items.all():
-                    care_contexts.append({
-                        "ref":     f"LAB-{bill_item.id}",
-                        "display": f"Lab: {bill_item.investigation.name}",
-                    })
-
-            HIPService.respond_to_discovery(request_id, txn_id, patient, care_contexts)
-
+            HIPService.respond_to_discovery(request_id, txn_id, patient, matched_by)
         else:
-            abdm.post("/v0.5/care-contexts/on-discover", {
-                "requestId":     str(uuid.uuid4()),
-                "timestamp":     datetime.now(timezone.utc).isoformat(),
-                "transactionId": txn_id,
-                "patient":       None,
-                "error": {
-                    "code":    "CONTEXT_NOT_FOUND",
-                    "message": "Patient not found in HIP system."
-                },
-                "resp": {"requestId": request_id}
-            })
+            HIPService.gateway_post_on_discover_not_found(request_id, txn_id)
 
         return HttpResponse(status=202)
 
     except Exception as e:
         logger.error(f"on-discover error: {e}")
-        return JsonResponse({"error": str(e)}, status=500)
+        return HttpResponse(status=202)
 
 
 @csrf_exempt
 def abdm_on_init(request):
-    """Patient initiated linking — OTP sent, confirm link."""
+    """
+    ABDM calls this to initiate user-initiated linking after a successful
+    discovery (M2 doc §5.3.6). Real incoming shape:
+    {transactionId, abhaAddress, patient: [{referenceNumber, careContexts, hiType, count}]}
+    We match the patient by abhaAddress (already stored on Patient once M1
+    ABHA verification has run) and respond with our own link reference + OTP.
+    """
     if request.method != "POST":
         return HttpResponse(status=405)
     try:
-        data       = json.loads(request.body)
-        request_id = data.get("requestId")
-        txn_id     = data.get("transactionId")
+        data         = json.loads(request.body)
+        request_id   = request.headers.get("REQUEST-ID", "")
+        txn_id       = data.get("transactionId")
+        abha_address = data.get("abhaAddress")
 
-        abdm.post("/v0.5/links/link/on-init", {
-            "requestId":     str(uuid.uuid4()),
-            "timestamp":     datetime.now(timezone.utc).isoformat(),
-            "transactionId": txn_id,
-            "link": {
-                "referenceNumber":    txn_id,
-                "authenticationType": "DIRECT",
-                "meta": {
-                    "communicationMedium": "MOBILE",
-                    "communicationHint":   "OTP sent to registered mobile",
-                    "communicationExpiry": datetime.now(timezone.utc).isoformat(),
-                }
-            },
-            "resp": {"requestId": request_id}
-        })
+        patient = HIPService.find_patient_by_abha(abha_address=abha_address) if abha_address else None
+        if patient:
+            HIPService.respond_to_link_init(request_id, txn_id, patient)
+        else:
+            logger.warning(f"[M2] on-init: no patient found for abhaAddress={abha_address}")
         return HttpResponse(status=202)
     except Exception as e:
         logger.error(f"on-init error: {e}")
@@ -549,16 +474,106 @@ def abdm_on_init(request):
 
 @csrf_exempt
 def abdm_on_confirm(request):
-    """Patient confirmed linking with OTP — finalize care context link."""
+    """
+    ABDM relays the patient-entered OTP here to finalize user-initiated
+    linking (M2 doc §5.3.10). Real incoming shape:
+    {confirmation: {token, linkRefNumber}}
+    """
     if request.method != "POST":
         return HttpResponse(status=405)
     try:
-        data = json.loads(request.body)
-        logger.info(f"[M2] on-confirm: {data}")
+        data          = json.loads(request.body)
+        request_id    = request.headers.get("REQUEST-ID", "")
+        confirmation  = data.get("confirmation", {})
+        token         = confirmation.get("token")
+        link_ref      = confirmation.get("linkRefNumber")
+
+        from hms.models import ABDMLinkingSession, ABDMCareContext
+        session = ABDMLinkingSession.objects.filter(link_reference=link_ref).first()
+
+        if session and not session.confirmed_at and session.otp == token:
+            session.confirmed_at = datetime.now(timezone.utc)
+            session.save(update_fields=["confirmed_at"])
+            ABDMCareContext.objects.filter(patient=session.patient).update(
+                linked=True, linked_at=datetime.now(timezone.utc)
+            )
+            HIPService.respond_to_link_confirm(request_id, session)
+        else:
+            logger.warning(f"[M2] on-confirm: OTP mismatch or unknown "
+                            f"linkRefNumber={link_ref}")
         return HttpResponse(status=202)
     except Exception as e:
         logger.error(f"on-confirm error: {e}")
         return HttpResponse(status=202)
+
+
+@csrf_exempt
+def abdm_hip_on_generate_token(request):
+    """
+    ABDM Gateway delivers the actual link token here (M2 §4.3.2) —
+    generate_link_token()'s own HTTP response never carries it. Once
+    received, immediately proceed to step 2 (link_care_context) for
+    whatever ABDMCareContext rows are still unlinked for this patient.
+    Body: {abhaAddress, linkToken, response: {requestId}}
+    """
+    if request.method != "POST":
+        return HttpResponse(status=405)
+    try:
+        data       = json.loads(request.body)
+        request_id = data.get("response", {}).get("requestId")
+        link_token = data.get("linkToken")
+        abha_addr  = data.get("abhaAddress")
+
+        pending = ABDMLinkToken.objects.filter(request_id=request_id).first()
+        if pending and link_token:
+            pending.token        = link_token
+            pending.abha_address = abha_addr or pending.abha_address
+            pending.received_at  = datetime.now(timezone.utc)
+            pending.save(update_fields=["token", "abha_address", "received_at"])
+
+            unlinked = ABDMCareContext.objects.filter(
+                patient=pending.patient, linked=False
+            )
+            HIPService.link_care_context(pending.patient, link_token, unlinked)
+        else:
+            logger.warning(f"[M2] on-generate-token: no pending ABDMLinkToken "
+                            f"for requestId={request_id}")
+    except Exception as e:
+        logger.error(f"on-generate-token error: {e}")
+    return HttpResponse(status=202)
+
+
+@csrf_exempt
+def abdm_on_link_carecontext(request):
+    """
+    ABDM Gateway's ack for link_care_context() (M2 §4.3.4) — confirms or
+    rejects the care contexts submitted in that call, matched by
+    response.requestId (stamped as pending_request_id when submitted).
+    Body: {abhaAddress, status, response: {requestId}}
+    Body (error): {error: {code, message}, response: {requestId}}
+    """
+    if request.method != "POST":
+        return HttpResponse(status=405)
+    try:
+        data       = json.loads(request.body)
+        request_id = data.get("response", {}).get("requestId")
+        error      = data.get("error")
+        status_msg = data.get("status", "")
+
+        matched = ABDMCareContext.objects.filter(pending_request_id=request_id)
+        if error:
+            logger.warning(f"[M2] on_carecontext error for requestId={request_id}: {error}")
+            matched.update(pending_request_id="")
+        elif "success" in status_msg.lower():
+            matched.update(linked=True, linked_at=datetime.now(timezone.utc),
+                           pending_request_id="")
+        else:
+            logger.warning(f"[M2] on_carecontext unexpected status for "
+                            f"requestId={request_id}: {status_msg}")
+            matched.update(pending_request_id="")
+    except Exception as e:
+        logger.error(f"on_carecontext error: {e}")
+    return HttpResponse(status=202)
 
 
 @csrf_exempt
@@ -587,18 +602,22 @@ def abdm_on_notify(request):
 @csrf_exempt
 def abdm_consent_notify(request):
     """
-    ABDM sends consent artifact when patient grants consent.
-    Store it so we can verify before sharing health data.
+    ABDM sends the consent artifact here when a patient grants/revokes
+    consent (M2 doc §6.3.1). Real incoming shape is flat (no "notification"
+    wrapper): {status, consentId, patient, hip, purpose, hiTypes,
+    permission: {...}, signature, ...}. Store it, then ack separately
+    (§6.3.2) -- the HTTP 202 below is not the same as that ack.
     """
     if request.method != "POST":
         return HttpResponse(status=405)
     try:
-        data    = json.loads(request.body)
-        consent = data.get("notification", {})
-        c_id    = consent.get("consentId") or consent.get("id")
+        data       = json.loads(request.body)
+        request_id = request.headers.get("REQUEST-ID", "")
+        c_id       = data.get("consentId")
         if c_id:
-            HIPService.store_consent(c_id, consent)
-            logger.info(f"[M2] Consent stored: {c_id}")
+            HIPService.store_consent(c_id, data)
+            HIPService.ack_consent_notify(request_id, c_id, status="OK")
+            logger.info(f"[M2] Consent stored + acked: {c_id}")
         return HttpResponse(status=202)
     except Exception as e:
         logger.error(f"consent-notify error: {e}")
@@ -608,66 +627,101 @@ def abdm_consent_notify(request):
 @csrf_exempt
 def abdm_data_request(request):
     """
-    HIU requests health data after patient gives consent.
-    Verify consent → build FHIR R4 bundle → transfer to HIU.
+    HIU requests health data after patient gave consent (M2 doc §6.3.3).
+    Real incoming shape: {hiRequest: {consent: {id}, dateRange: {from, to},
+    dataPushUrl, keyMaterial}} -- no hiTypes/transactionId here; hiTypes
+    were fixed when the consent was granted (stored on ABDMConsent), and
+    we mint our own transactionId to track this request end to end.
+
+    Flow: ack immediately (§6.3.4, separate from the HTTP 202 below) ->
+    look up the SPECIFIC consented patient (by the consent's ABHA address --
+    the previous version of this view built bundles from EVERY patient's
+    records in the date range, regardless of whose consent this was) ->
+    build FHIR bundles only for that patient, only for consented hiTypes ->
+    push (§6.3.5) -> report transfer status (§6.3.6).
     """
     if request.method != "POST":
         return HttpResponse(status=405)
 
     try:
         data          = json.loads(request.body)
-        txn_id        = data.get("transactionId")
-        consent_id    = data.get("hiRequest", {}).get("consent", {}).get("id")
-        date_range    = data.get("hiRequest", {}).get("dateRange", {})
-        data_push_url = data.get("hiRequest", {}).get("dataPushUrl")
-        key_material  = data.get("hiRequest", {}).get("keyMaterial", {})
-        hi_types      = data.get("hiRequest", {}).get("hiType", [])
+        request_id    = request.headers.get("REQUEST-ID", "")
+        hi_request    = data.get("hiRequest", {})
+        consent_id    = hi_request.get("consent", {}).get("id")
+        date_range    = hi_request.get("dateRange", {})
+        data_push_url = hi_request.get("dataPushUrl")
 
-        # Verify consent
-        for hi_type in (hi_types if isinstance(hi_types, list) else [hi_types]):
-            if not HIPService.verify_consent(consent_id, hi_type):
-                logger.warning(f"[M2] Consent {consent_id} not valid for {hi_type}")
-                return HttpResponse(status=403)
+        transaction_id = str(uuid.uuid4())
+        HIPService.ack_health_info_request(request_id, transaction_id)
 
-        # ✅ Build FHIR bundles for records in date range
-        fhir_bundles = []
+        from hms.models import ABDMConsent
+        consent = ABDMConsent.objects.filter(consent_id=consent_id).first()
+        if not consent or consent.status != "GRANTED":
+            logger.warning(f"[M2] data-request: consent {consent_id} not GRANTED")
+            return HttpResponse(status=202)
 
-        date_from = date_range.get("from", "")
-        date_to   = date_range.get("to", "")
+        patient = HIPService.find_patient_by_abha(abha_address=consent.patient_abha)
+        if not patient:
+            logger.warning(f"[M2] data-request: no patient for consent {consent_id} "
+                            f"(abha={consent.patient_abha})")
+            return HttpResponse(status=202)
 
-        # Get consultations in date range
-        consultations = Consultation.objects.filter(
-            appointment__date__gte = date_from[:10] if date_from else "2000-01-01",
-            appointment__date__lte = date_to[:10]   if date_to   else "2099-12-31",
-        ).select_related("appointment__patient")
+        consented_types = {t.upper() for t in json.loads(consent.hi_types or "[]")}
 
-        for consultation in consultations:
-            try:
-                bundle = build_op_consultation_bundle(consultation)
-                fhir_bundles.append(bundle)
-            except Exception as e:
-                logger.warning(f"[FHIR] Could not build bundle for consultation "
-                               f"{consultation.id}: {e}")
+        date_from = date_range.get("from", "")[:10] or "2000-01-01"
+        date_to   = date_range.get("to", "")[:10] or "2099-12-31"
 
-        # Get lab reports in date range
-        lab_items = InvestigationBillItem.objects.filter(
-            bill__created_at__date__gte = date_from[:10] if date_from else "2000-01-01",
-            bill__created_at__date__lte = date_to[:10]   if date_to   else "2099-12-31",
-        ).select_related("bill__patient", "investigation")
+        entries = []
 
-        for item in lab_items:
-            try:
-                bundle = build_lab_report_bundle(item)
-                fhir_bundles.append(bundle)
-            except Exception as e:
-                logger.warning(f"[FHIR] Could not build bundle for lab item "
-                               f"{item.id}: {e}")
+        if not consented_types or "OPCONSULTATION" in consented_types:
+            consultations = Consultation.objects.filter(
+                appointment__patient  = patient,
+                appointment__date__gte = date_from,
+                appointment__date__lte = date_to,
+            ).select_related("appointment__patient")
+            for consultation in consultations:
+                try:
+                    bundle = build_op_consultation_bundle(consultation)
+                    entries.append(HIPService.package_health_data(
+                        bundle, f"CON-{consultation.id}"
+                    ))
+                except Exception as e:
+                    logger.warning(f"[FHIR] Could not build bundle for consultation "
+                                   f"{consultation.id}: {e}")
 
-        logger.info(f"[M2] Data request txn={txn_id}, consent={consent_id}, "
-                    f"bundles_built={len(fhir_bundles)}")
+        if not consented_types or "DIAGNOSTICREPORT" in consented_types:
+            lab_items = InvestigationBillItem.objects.filter(
+                bill__patient = patient,
+                bill__created_at__date__gte = date_from,
+                bill__created_at__date__lte = date_to,
+            ).select_related("bill__patient", "investigation")
+            for item in lab_items:
+                try:
+                    bundle = build_lab_report_bundle(item)
+                    entries.append(HIPService.package_health_data(
+                        bundle, f"LAB-{item.id}"
+                    ))
+                except Exception as e:
+                    logger.warning(f"[FHIR] Could not build bundle for lab item "
+                                   f"{item.id}: {e}")
 
-        # TODO: Encrypt bundles with key_material and POST to data_push_url
-        # HIPService.transfer_health_data(data_push_url, key_material, fhir_bundles)
+        logger.info(f"[M2] Data request txn={transaction_id}, consent={consent_id}, "
+                    f"patient={patient.id}, entries_built={len(entries)}")
+
+        if entries and data_push_url:
+            result = HIPService.transfer_health_data(transaction_id, data_push_url, entries)
+            transferred = result.get("status") == "transferred"
+            HIPService.notify_transfer_status(
+                consent_id, transaction_id,
+                session_status = "TRANSFERRED" if transferred else "FAILED",
+                status_responses = [
+                    {
+                        "careContextReference": e["careContextReference"],
+                        "hiStatus":            "DELIVERED" if transferred else "ERRORED",
+                    }
+                    for e in entries
+                ],
+            )
 
         return HttpResponse(status=202)
 

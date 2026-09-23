@@ -7,8 +7,9 @@ from django.conf import settings
 class ABDMClient:
     """
     Core ABDM API client — V3 APIs only.
-    Token URL  : settings.ABDM_TOKEN_URL  (dev.abdm.gov.in/gateway/v0.5/sessions)
-    ABHA URL   : settings.ABDM_BASE_URL   (sandbox.abdm.gov.in/api)
+    Token URL  : settings.ABDM_TOKEN_URL  (dev.abdm.gov.in/api/hiecm/gateway/v3/sessions)
+    ABHA URL   : settings.ABDM_BASE_URL   (abhasbx.abdm.gov.in/abha/api)
+    Gateway URL: settings.ABDM_GATEWAY_URL (dev.abdm.gov.in — M2 HIP linking/consent/data-flow APIs)
     """
 
     _access_token = None
@@ -17,6 +18,10 @@ class ABDMClient:
     @property
     def BASE(self):
         return settings.ABDM_BASE_URL.rstrip("/")
+
+    @property
+    def GATEWAY_BASE(self):
+        return settings.ABDM_GATEWAY_URL.rstrip("/")
 
     def get_token(self):
         now = datetime.now(timezone.utc)
@@ -28,8 +33,14 @@ class ABDMClient:
             json={
                 "clientId":     settings.ABDM_CLIENT_ID,
                 "clientSecret": settings.ABDM_CLIENT_SECRET,
+                "grantType":    "client_credentials",
             },
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "REQUEST-ID":   str(uuid.uuid4()),
+                "TIMESTAMP":    now.isoformat(),
+                "X-CM-ID":      "sbx",
+            },
             timeout=15,
         )
         resp.raise_for_status()
@@ -69,6 +80,29 @@ class ABDMClient:
     def get(self, path, params=None, extra_headers=None):
         r = requests.get(
             f"{self.BASE}{path}",
+            params=params,
+            headers=self._headers(extra_headers),
+            timeout=20,
+        )
+        r.raise_for_status()
+        return r.json() if r.content else {}
+
+    # ── HIE-CM Gateway (M2 linking/consent/data-flow — different host
+    #    than the ABHA enrollment BASE above) ────────────────────────
+
+    def gateway_post(self, path, payload, extra_headers=None):
+        r = requests.post(
+            f"{self.GATEWAY_BASE}{path}",
+            json=payload,
+            headers=self._headers(extra_headers),
+            timeout=20,
+        )
+        r.raise_for_status()
+        return r.json() if r.content else {}
+
+    def gateway_get(self, path, params=None, extra_headers=None):
+        r = requests.get(
+            f"{self.GATEWAY_BASE}{path}",
             params=params,
             headers=self._headers(extra_headers),
             timeout=20,

@@ -155,19 +155,23 @@ urlpatterns = [
     # ABDM M2 — CALLBACKS (ABDM gateway calls these)
     # ══════════════════════════════════════════════════
 
-    # Discovery & Linking
-    path("abdm/on-discover/",     abdm_views.abdm_on_discover,     name="abdm_on_discover"),
-    path("abdm/on-init/",         abdm_views.abdm_on_init,         name="abdm_on_init"),
-    path("abdm/on-confirm/",      abdm_views.abdm_on_confirm,      name="abdm_on_confirm"),
+    # User-initiated linking (M2 §5.3.2/5.3.6/5.3.10) — real ABDM-dictated paths
+    path("api/v3/hip/patient/care-context/discover/", abdm_views.abdm_on_discover, name="abdm_on_discover"),
+    path("api/v3/hip/link/care-context/init/",        abdm_views.abdm_on_init,     name="abdm_on_init"),
+    path("api/v3/hip/link/care-context/confirm/",     abdm_views.abdm_on_confirm,  name="abdm_on_confirm"),
 
-    # Consent
-    path("abdm/consent/notify/",  abdm_views.abdm_consent_notify,  name="abdm_consent_notify"),
+    # Consent (M2 §6.3.1) — real ABDM-dictated path
+    path("api/v3/consent/request/hip/notify/", abdm_views.abdm_consent_notify, name="abdm_consent_notify"),
 
-    # Health Data Request
-    path("abdm/data-request/",    abdm_views.abdm_data_request,    name="abdm_data_request"),
+    # Health Data Request (M2 §6.3.3) — real ABDM-dictated path
+    path("api/v3/hip/health-information/request/", abdm_views.abdm_data_request, name="abdm_data_request"),
 
     # Care Context Update Notify — ack for HIPService.notify_care_context_update
     path("api/v3/links/context/on-notify/", abdm_views.abdm_on_notify, name="abdm_on_notify"),
+
+    # HIP-initiated linking (M2 §4.3.2 / §4.3.4) — ack for generate_link_token / link_care_context
+    path("api/v3/hip/token/on-generate-token/", abdm_views.abdm_hip_on_generate_token, name="abdm_hip_on_generate_token"),
+    path("api/v3/link/on_carecontext/",         abdm_views.abdm_on_link_carecontext,   name="abdm_on_link_carecontext"),
 
     # ══════════════════════════════════════════════════
     # UHI
