@@ -168,3 +168,27 @@ def encrypt_content(plaintext: str, sender_private_key_b64: str, sender_nonce_b6
 
     ciphertext_and_tag = AESGCM(aes_key).encrypt(iv, plaintext.encode("utf-8"), None)
     return base64.b64encode(ciphertext_and_tag).decode()
+
+
+def decrypt_content(ciphertext_b64: str, own_private_key_b64: str, own_nonce_b64: str,
+                     other_public_key_b64: str, other_nonce_b64: str) -> str:
+    """
+    Inverse of encrypt_content -- used by the HIU side (M3) to decrypt an
+    entry pushed by a HIP. `own_*` is this HIU's own key material for the
+    transaction (from generate_key_material, kept since the request was
+    made); `other_*` is the HIP's key material as given in its data-push
+    keyMaterial. The XOR-of-nonces and ECDH shared secret are symmetric
+    regardless of which side computes them, so this mirrors
+    encrypt_content exactly with the two parties' roles swapped.
+    """
+    own_nonce = base64.b64decode(own_nonce_b64)
+    other_nonce = base64.b64decode(other_nonce_b64)
+    xor_of_nonces = bytes(a ^ b for a, b in zip(own_nonce, other_nonce))
+    iv = xor_of_nonces[-12:]
+    salt = xor_of_nonces[:20]
+
+    shared_secret = _shared_secret_bytes(own_private_key_b64, other_public_key_b64)
+    aes_key = HKDF(algorithm=hashes.SHA256(), length=32, salt=salt, info=b"").derive(shared_secret)
+
+    plaintext_bytes = AESGCM(aes_key).decrypt(iv, base64.b64decode(ciphertext_b64), None)
+    return plaintext_bytes.decode("utf-8")

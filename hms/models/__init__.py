@@ -20,7 +20,10 @@ from .billing import (
     IPDAdvance, ProcedureItem, ProcedureBill, ProcedureBillItem,
 )
 from .accounts import UserProfile, Expense
-from .abdm import ABDMConsent, ABDMCareContext, ABDMLinkToken, ABDMLinkingSession
+from .abdm import (
+    ABDMConsent, ABDMCareContext, ABDMLinkToken, ABDMLinkingSession,
+    ABDMConsentRequest, ABDMConsentArtefact, ABDMHealthInformationRequest, ABDMReceivedRecord,
+)
 from .ot import OTBooking, OTNotes
 from .inventory import Supplier, InventoryItem, StockIn, StockOut
 from .documents import (

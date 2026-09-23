@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from .views import ipd_dashboard
 from hms.abdm import views as abdm_views
+from hms.abdm import hiu_views as abdm_hiu_views
 
 app_name = "hms"
 
@@ -172,6 +173,26 @@ urlpatterns = [
     # HIP-initiated linking (M2 §4.3.2 / §4.3.4) — ack for generate_link_token / link_care_context
     path("api/v3/hip/token/on-generate-token/", abdm_views.abdm_hip_on_generate_token, name="abdm_hip_on_generate_token"),
     path("api/v3/link/on_carecontext/",         abdm_views.abdm_on_link_carecontext,   name="abdm_on_link_carecontext"),
+
+    # ══════════════════════════════════════════════════
+    # ABDM M3 — HIU CALLBACKS (ABDM gateway + other HIPs call these)
+    # ══════════════════════════════════════════════════
+
+    # Consent request (M3 §4.3.2/§4.3.3) — real ABDM-dictated paths
+    path("api/v3/hiu/consent/request/on-init/", abdm_hiu_views.abdm_hiu_consent_on_init, name="abdm_hiu_consent_on_init"),
+    path("api/v3/hiu/consent/request/notify/",  abdm_hiu_views.abdm_hiu_consent_notify,  name="abdm_hiu_consent_notify"),
+
+    # Fetch consent artefact (M3 §4.3.8) — real ABDM-dictated path
+    path("api/v3/hiu/consent/on-fetch/", abdm_hiu_views.abdm_hiu_consent_on_fetch, name="abdm_hiu_consent_on_fetch"),
+
+    # Data flow (M3 §5.3.2) — real ABDM-dictated path
+    path("api/v3/hiu/health-information/on-request/",
+         abdm_hiu_views.abdm_hiu_health_information_on_request, name="abdm_hiu_health_information_on_request"),
+
+    # Our own dataPushUrl (chosen by us, sent in HIUService.request_health_information) —
+    # must match hms/abdm/services/hiu.py's DATA_PUSH_PATH exactly.
+    path("api/v3/hiu/health-information/transfer/",
+         abdm_hiu_views.abdm_hiu_health_information_transfer, name="abdm_hiu_health_information_transfer"),
 
     # ══════════════════════════════════════════════════
     # UHI

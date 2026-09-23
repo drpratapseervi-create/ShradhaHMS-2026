@@ -122,3 +122,135 @@ class ABDMLinkingSession(models.Model):
         return f"LinkingSession({self.patient}) — {self.link_reference}"
 
 
+# ═══════════════════════════════════════════════════════
+# ABDM M3 — HIU (HEALTH INFORMATION USER) MODELS
+#
+# Mirrors the M2 models above but for the opposite role: here WE are
+# requesting a patient's records held by another facility, not sharing
+# our own. See hms/abdm/services/hiu.py.
+# ═══════════════════════════════════════════════════════
+
+class ABDMConsentRequest(models.Model):
+    """
+    A consent request WE (as HIU) initiate to view a patient's records
+    held by another facility (M3 doc §4.3.1). One request can result in
+    multiple ABDMConsentArtefact rows -- one per HIP the patient grants,
+    delivered via the notify callback (§4.3.3) after the patient acts on
+    the request in their PHR app.
+    """
+    STATUS_CHOICES = [
+        ("REQUESTED", "Requested"),
+        ("GRANTED",   "Granted"),
+        ("DENIED",    "Denied"),
+        ("EXPIRED",   "Expired"),
+        ("REVOKED",   "Revoked"),
+    ]
+    patient              = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="abdm_consent_requests")
+    hip_id               = models.CharField(max_length=100, blank=True)  # blank = any HIP holding this patient's data
+    purpose_code         = models.CharField(max_length=50, default="CAREMGT")
+    purpose_text         = models.CharField(max_length=255, default="Care Management")
+    hi_types             = models.JSONField(default=list)
+    date_from            = models.DateTimeField()
+    date_to              = models.DateTimeField()
+    requester_name       = models.CharField(max_length=255)
+    requester_id_type    = models.CharField(max_length=50, blank=True)
+    requester_id_value   = models.CharField(max_length=100, blank=True)
+    requester_id_system  = models.CharField(max_length=255, blank=True)
+    # Our own REQUEST-ID sent on the /consent/request/init call -- the
+    # on-init callback's response.requestId is matched against this to
+    # fill in consent_request_id below.
+    request_id           = models.CharField(max_length=100, unique=True)
+    consent_request_id   = models.CharField(max_length=100, blank=True)
+    status                = models.CharField(max_length=20, choices=STATUS_CHOICES, default="REQUESTED")
+    created_at            = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = "ABDM Consent Request (HIU)"
+        verbose_name_plural = "ABDM Consent Requests (HIU)"
+        ordering            = ["-created_at"]
+
+    def __str__(self):
+        return f"ConsentRequest({self.patient}) — {self.status}"
+
+
+class ABDMConsentArtefact(models.Model):
+    """
+    One consent artefact granted for a ABDMConsentRequest -- one per HIP
+    the patient approved (M3 doc §4.3.3/§4.3.8). Created as a
+    status="FETCHING" stub the moment HIUService.fetch_artefact() is
+    called (before the artefact's own consent_id is known to have full
+    details), then filled in by the on-fetch callback, matched by
+    consent_id.
+    """
+    consent_request = models.ForeignKey(ABDMConsentRequest, on_delete=models.CASCADE, related_name="artefacts")
+    consent_id      = models.CharField(max_length=100, unique=True)
+    hip_id          = models.CharField(max_length=100, blank=True)
+    hi_types        = models.JSONField(default=list)
+    date_from       = models.DateTimeField(null=True, blank=True)
+    date_to         = models.DateTimeField(null=True, blank=True)
+    status          = models.CharField(max_length=20, default="FETCHING")
+    raw_artefact    = models.TextField(blank=True)  # full on-fetch JSON, for audit/signature verification later
+    created_at      = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = "ABDM Consent Artefact (HIU)"
+        verbose_name_plural = "ABDM Consent Artefacts (HIU)"
+        ordering            = ["-created_at"]
+
+    def __str__(self):
+        return f"ConsentArtefact({self.consent_id}) — {self.hip_id}"
+
+
+class ABDMHealthInformationRequest(models.Model):
+    """
+    Tracks one data-request transaction WE (as HIU) initiate against a
+    granted consent artefact (M3 doc §5.3.1). Stores our own ephemeral
+    Fidelius key material so the later, asynchronous data push to our
+    dataPushUrl can be decrypted -- see HIUService.request_health_information
+    and the handler for that dataPushUrl.
+    """
+    STATUS_CHOICES = [
+        ("REQUESTED", "Requested"),
+        ("RECEIVED",  "Received"),
+        ("FAILED",    "Failed"),
+    ]
+    consent_artefact = models.ForeignKey(ABDMConsentArtefact, on_delete=models.CASCADE, related_name="hi_requests")
+    # Filled in once the CM's on-request callback (§5.3.2) assigns one;
+    # blank between the initial request and that callback.
+    transaction_id   = models.CharField(max_length=100, unique=True, blank=True, null=True)
+    # Our own REQUEST-ID for the /health-information/request call itself.
+    request_id       = models.CharField(max_length=100, unique=True)
+    our_private_key  = models.CharField(max_length=100)   # base64 -- kept only long enough to decrypt the incoming push
+    our_public_key   = models.CharField(max_length=600)
+    our_nonce        = models.CharField(max_length=100)
+    status           = models.CharField(max_length=20, choices=STATUS_CHOICES, default="REQUESTED")
+    created_at       = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = "ABDM Health Information Request (HIU)"
+        verbose_name_plural = "ABDM Health Information Requests (HIU)"
+        ordering            = ["-created_at"]
+
+    def __str__(self):
+        return f"HIRequest({self.transaction_id or self.request_id}) — {self.status}"
+
+
+class ABDMReceivedRecord(models.Model):
+    """
+    One decrypted FHIR bundle received from a HIP, for a
+    ABDMHealthInformationRequest (M3 doc §5.3.2's data push payload).
+    """
+    hi_request              = models.ForeignKey(ABDMHealthInformationRequest, on_delete=models.CASCADE, related_name="records")
+    care_context_reference  = models.CharField(max_length=100)
+    hi_status               = models.CharField(max_length=20, default="OK")  # OK | ERRORED
+    fhir_bundle              = models.TextField(blank=True)  # decrypted JSON, blank if hi_status=ERRORED
+    error_detail             = models.CharField(max_length=255, blank=True)
+    received_at              = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = "ABDM Received Record (HIU)"
+        verbose_name_plural = "ABDM Received Records (HIU)"
+        ordering            = ["-received_at"]
+
+    def __str__(self):
+        return f"ReceivedRecord({self.care_context_reference})"

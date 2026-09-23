@@ -328,6 +328,17 @@ ABDM_HIP_ID        = os.getenv("ABDM_HIP_ID",        "")
 # enrollment API. Same host that issues session tokens (ABDM_TOKEN_URL).
 ABDM_GATEWAY_URL   = os.getenv("ABDM_GATEWAY_URL",   "https://dev.abdm.gov.in")
 
+# M3 (HIU role — requesting/receiving other facilities' records for our
+# patients). This sandbox bridge is registered for both HIP and HIU roles
+# under the same client id, so ABDM_HIU_ID defaults to ABDM_HIP_ID unless
+# a separate one is set.
+ABDM_HIU_ID = os.getenv("ABDM_HIU_ID", "") or ABDM_HIP_ID
+# Our own public base URL, used to build the dataPushUrl we hand ABDM in
+# HIUService.request_health_information (§5.3.1) — the callback URL a HIP
+# pushes a patient's encrypted records to. Must be reachable from the
+# ABDM sandbox, not localhost.
+ABDM_HIU_CALLBACK_BASE_URL = os.getenv("ABDM_HIU_CALLBACK_BASE_URL", "")
+
 # ✅ ADD THIS:
 # ══════════════════════════════════════════════════════════════════════════
 #  ENCRYPTION — Sensitive patient fields (ABHA, Aadhaar, mobile)
