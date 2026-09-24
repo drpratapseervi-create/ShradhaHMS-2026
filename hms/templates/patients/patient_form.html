@@ -326,6 +326,7 @@
             {% if form.instance.pk %}
                 <a href="{% url 'hms:abha_aadhaar_otp' form.instance.id %}" class="btn btn-teal">Create ABHA</a>
                 <a href="{% url 'hms:abha_link_existing' form.instance.id %}" class="btn btn-gray">Link ABHA</a>
+                <a href="{% url 'hms:hiu_consent_list' patient_id=form.instance.id %}" class="btn btn-gray">Request Records (Other Facility)</a>
             {% else %}
                 <button type="button" class="btn btn-disabled">Save patient first</button>
             {% endif %}

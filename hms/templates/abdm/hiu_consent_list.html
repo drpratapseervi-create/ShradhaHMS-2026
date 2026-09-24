@@ -1,0 +1,124 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Consent Requests | Shradha HMS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f0f2f5; }
+header { background: #007676; color: white; padding: 16px 30px; }
+.header-flex { display: flex; align-items: center; gap: 15px; }
+.header-flex img { height: 46px; background: white; padding: 4px; border-radius: 6px; }
+.container { max-width: 860px; margin: 40px auto; background: white; padding: 35px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+h2 { color: #007676; margin-bottom: 5px; }
+.subtitle { color: #666; margin-bottom: 25px; font-size: 14px; }
+.patient-info { background: #f8f9fa; border-left: 4px solid #007676; padding: 12px 16px; border-radius: 6px; margin-bottom: 25px; }
+.messages { margin-bottom: 20px; }
+.msg-error { background: #fff3f3; border: 1px solid #dc3545; color: #dc3545; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px; }
+.msg-success { background: #f0fff4; border: 1px solid #28a745; color: #155724; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px; }
+.request-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px; margin-bottom: 16px; }
+.request-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; }
+.badge-REQUESTED { background: #fff8e1; color: #a56b00; }
+.badge-GRANTED   { background: #e6f7ee; color: #0f7a4a; }
+.badge-DENIED    { background: #fdecea; color: #b3261e; }
+.badge-EXPIRED, .badge-REVOKED { background: #eceff1; color: #546e7a; }
+.badge-FETCHING  { background: #eef2ff; color: #4338ca; }
+.badge-RECEIVED  { background: #e6f7ee; color: #0f7a4a; }
+.badge-FAILED    { background: #fdecea; color: #b3261e; }
+.meta { color: #666; font-size: 13px; margin-top: 6px; }
+.artefact-row { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; border-radius: 8px; padding: 10px 14px; margin-top: 10px; flex-wrap: wrap; gap: 8px; }
+.hi-request-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 14px 6px 28px; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+.btn { padding: 7px 14px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; text-decoration: none; display: inline-block; font-size: 13px; }
+.btn-save { background: #007676; color: white; }
+.btn-back { background: #6c757d; color: white; }
+.btn-link { background: #eef2ff; color: #4338ca; }
+.top-actions { margin-bottom: 20px; }
+.empty { color: #888; text-align: center; padding: 30px; }
+footer { text-align: center; margin-top: 40px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+<div class="header-flex">
+    <img src="{% static 'hms/img/hospital_logo.jpg' %}">
+    <h2>Shradha Hospital Management System</h2>
+</div>
+</header>
+
+<div class="container">
+    <h2>Consent Requests (Other Facilities)</h2>
+    <p class="subtitle">Records requested from other ABDM-connected facilities for this patient.</p>
+
+    <div class="patient-info">
+        <strong>Patient:</strong> {{ patient.full_name }}<br>
+        <strong>UHID:</strong> {{ patient.uhid }}
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <div class="{% if message.tags == 'error' %}msg-error{% else %}msg-success{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="top-actions">
+        <a href="{% url 'hms:hiu_consent_request_form' patient_id=patient.id %}" class="btn btn-save">+ New Consent Request</a>
+    </div>
+
+    {% if not consent_requests %}
+        <div class="empty">No consent requests yet for this patient.</div>
+    {% endif %}
+
+    {% for cr in consent_requests %}
+    <div class="request-card">
+        <div class="request-head">
+            <div>
+                <strong>{{ cr.purpose_text }}</strong> — {{ cr.hi_types|join:", " }}
+            </div>
+            <span class="badge badge-{{ cr.status }}">{{ cr.get_status_display }}</span>
+        </div>
+        <div class="meta">
+            {{ cr.date_from|date:"d M Y" }} – {{ cr.date_to|date:"d M Y" }}
+            &nbsp;|&nbsp; Requested by {{ cr.requester_name }}
+            &nbsp;|&nbsp; {{ cr.created_at|date:"d M Y, H:i" }}
+            {% if cr.hip_id %}&nbsp;|&nbsp; Facility: {{ cr.hip_id }}{% endif %}
+        </div>
+
+        {% for artefact in cr.artefacts.all %}
+        <div class="artefact-row">
+            <div>
+                Consent artefact from <strong>{{ artefact.hip_id|default:"—" }}</strong>
+                <span class="badge badge-{{ artefact.status }}">{{ artefact.status }}</span>
+            </div>
+            {% if artefact.status == "GRANTED" %}
+                <form method="post" action="{% url 'hms:hiu_request_health_information' artefact_id=artefact.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-save">Request Data</button>
+                </form>
+            {% endif %}
+        </div>
+        {% for hi_request in artefact.hi_requests.all %}
+        <div class="hi-request-row">
+            <div>
+                Data request — <span class="badge badge-{{ hi_request.status }}">{{ hi_request.status }}</span>
+                {% if hi_request.transaction_id %}(txn: {{ hi_request.transaction_id }}){% endif %}
+            </div>
+            <a href="{% url 'hms:hiu_received_records' hi_request_id=hi_request.id %}" class="btn btn-link">View Records</a>
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+    {% endfor %}
+
+    <a href="{% url 'hms:patient_update' pk=patient.id %}" class="btn btn-back">Back to Patient</a>
+</div>
+
+<footer>© 2026 Shradha Hospital HMS</footer>
+</body>
+</html>

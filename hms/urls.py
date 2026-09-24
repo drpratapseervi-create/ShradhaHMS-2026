@@ -3,6 +3,7 @@ from . import views
 from .views import ipd_dashboard
 from hms.abdm import views as abdm_views
 from hms.abdm import hiu_views as abdm_hiu_views
+from hms.abdm import hiu_ui_views as abdm_hiu_ui_views
 
 app_name = "hms"
 
@@ -193,6 +194,18 @@ urlpatterns = [
     # must match hms/abdm/services/hiu.py's DATA_PUSH_PATH exactly.
     path("api/v3/hiu/health-information/transfer/",
          abdm_hiu_views.abdm_hiu_health_information_transfer, name="abdm_hiu_health_information_transfer"),
+
+    # ══════════════════════════════════════════════════
+    # ABDM M3 — HIU: DOCTOR-FACING UI
+    # ══════════════════════════════════════════════════
+    path("abdm/hiu/request-consent/<int:patient_id>/",
+         abdm_hiu_ui_views.hiu_consent_request_form, name="hiu_consent_request_form"),
+    path("abdm/hiu/consent-requests/<int:patient_id>/",
+         abdm_hiu_ui_views.hiu_consent_list, name="hiu_consent_list"),
+    path("abdm/hiu/request-data/<int:artefact_id>/",
+         abdm_hiu_ui_views.hiu_request_health_information, name="hiu_request_health_information"),
+    path("abdm/hiu/records/<int:hi_request_id>/",
+         abdm_hiu_ui_views.hiu_received_records, name="hiu_received_records"),
 
     # ══════════════════════════════════════════════════
     # UHI

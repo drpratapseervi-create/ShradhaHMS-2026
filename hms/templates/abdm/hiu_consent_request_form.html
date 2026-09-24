@@ -1,0 +1,125 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Request Records from Other Facility | Shradha HMS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f0f2f5; }
+header { background: #007676; color: white; padding: 16px 30px; }
+.header-flex { display: flex; align-items: center; gap: 15px; }
+.header-flex img { height: 46px; background: white; padding: 4px; border-radius: 6px; }
+.container { max-width: 640px; margin: 40px auto; background: white; padding: 35px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+h2 { color: #007676; margin-bottom: 5px; }
+.subtitle { color: #666; margin-bottom: 25px; font-size: 14px; }
+.patient-info { background: #f8f9fa; border-left: 4px solid #007676; padding: 12px 16px; border-radius: 6px; margin-bottom: 25px; }
+label { font-weight: 600; display: block; margin-bottom: 6px; margin-top: 16px; }
+input, select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 15px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.hi-types { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.hi-type-pill { padding: 6px 12px; border: 1px solid #ccc; border-radius: 20px; font-size: 13px; cursor: pointer; user-select: none; }
+.hi-type-pill input { display: none; }
+.hi-type-pill:has(input:checked) { background: #007676; color: white; border-color: #007676; }
+.btn { padding: 11px 22px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn-save { background: #007676; color: white; }
+.btn-back { background: #6c757d; color: white; margin-left: 10px; }
+.form-actions { margin-top: 25px; }
+.messages { margin-bottom: 20px; }
+.msg-error { background: #fff3f3; border: 1px solid #dc3545; color: #dc3545; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px; }
+.msg-success { background: #f0fff4; border: 1px solid #28a745; color: #155724; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px; }
+.hint { color: #888; font-size: 12px; margin-top: 4px; }
+footer { text-align: center; margin-top: 40px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+<div class="header-flex">
+    <img src="{% static 'hms/img/hospital_logo.jpg' %}">
+    <h2>Shradha Hospital Management System</h2>
+</div>
+</header>
+
+<div class="container">
+    <h2>Request Records from Other Facility</h2>
+    <p class="subtitle">Ask another ABDM-connected facility to share this patient's records — the patient approves or denies in their ABHA app.</p>
+
+    <div class="patient-info">
+        <strong>Patient:</strong> {{ patient.full_name }}<br>
+        <strong>UHID:</strong> {{ patient.uhid }}<br>
+        <strong>ABHA Address:</strong> {{ patient.abha_address|default:"— not set —" }}
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <div class="{% if message.tags == 'error' %}msg-error{% else %}msg-success{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not patient.abha_address %}
+        <div class="msg-error">This patient has no ABHA address on file. Link their ABHA before requesting records.</div>
+    {% else %}
+    <form method="post" autocomplete="off">
+        {% csrf_token %}
+
+        <label>Record types to request *</label>
+        <div class="hi-types">
+            {% for hi_type in hi_type_choices %}
+                <label class="hi-type-pill">
+                    <input type="checkbox" name="hi_types" value="{{ hi_type }}">
+                    {{ hi_type }}
+                </label>
+            {% endfor %}
+        </div>
+
+        <label>Purpose of use *</label>
+        <select name="purpose_code" required>
+            {% for code, label in purpose_choices %}
+                <option value="{{ code }}">{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <div class="form-grid">
+            <div>
+                <label>From date *</label>
+                <input type="date" name="date_from" required>
+            </div>
+            <div>
+                <label>To date *</label>
+                <input type="date" name="date_to" required>
+            </div>
+        </div>
+
+        <label>Specific facility (HIP ID) — optional</label>
+        <input type="text" name="hip_id" placeholder="Leave blank to ask any facility holding this patient's data">
+
+        <div class="form-grid">
+            <div>
+                <label>Requesting doctor's name *</label>
+                <input type="text" name="requester_name" value="{{ default_requester_name }}" required>
+            </div>
+            <div>
+                <label>Registration number</label>
+                <input type="text" name="requester_id_value" value="{{ default_requester_id_value }}">
+            </div>
+        </div>
+        <input type="hidden" name="requester_id_type" value="REGNO">
+        <input type="hidden" name="requester_id_system" value="https://www.mciindia.org">
+        <div class="hint">Identifier system defaults to mciindia.org (matches ABDM's own sandbox examples) — edit in code if your council needs a different one.</div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-save">Send Consent Request</button>
+            <a href="{% url 'hms:hiu_consent_list' patient_id=patient.id %}" class="btn btn-back">View Past Requests</a>
+        </div>
+    </form>
+    {% endif %}
+</div>
+
+<footer>© 2026 Shradha Hospital HMS</footer>
+</body>
+</html>
