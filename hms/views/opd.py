@@ -322,6 +322,12 @@ def start_consultation(request, appointment_id):
         for c in previous_consultations
     ]
 
+    followup_phrases = list(
+        FollowUpNotePhrase.objects.filter(is_active=True)
+        .order_by("sort_order", "text")
+        .values_list("text", flat=True)
+    )
+
     return render(request, "opd/consultation.html", {
         "appointment":  appointment,
         "consultation": consultation,
@@ -340,9 +346,8 @@ def start_consultation(request, appointment_id):
         "surgical_histories": SurgicalHistory.objects.filter(is_active=True),
         "advice_options": AdviceOption.objects.filter(is_active=True),
         "diet_options": DietAdviceOption.objects.filter(is_active=True),
-        "followup_phrases_json": json.dumps(
-            list(FollowUpNotePhrase.objects.filter(is_active=True).values_list("text", flat=True))
-        ).replace("<", "\\u003c"),
+        "followup_phrases": followup_phrases,
+        "followup_phrases_json": json.dumps(followup_phrases).replace("<", "\\u003c"),
         "medical_images": MedicalImage.objects.filter(
             consultation=consultation
         ).order_by("-created_at"),

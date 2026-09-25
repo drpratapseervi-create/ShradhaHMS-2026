@@ -1503,6 +1503,9 @@ html { scroll-behavior: smooth; }
 #id_follow_up_date::-webkit-calendar-picker-indicator:hover {
     background-color: #ddd6fe;
 }
+/* .sec clips overflow, which hid the follow-up notes suggestion dropdown */
+#sec-followup { overflow: visible; }
+#sec-followup > .sec-head { border-radius: 12px 12px 0 0; }
 </style>
 <div class="sec" id="sec-followup" data-tab="followup">
     <div class="sec-head" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;">📅 Follow-up</div>
@@ -1526,9 +1529,19 @@ html { scroll-behavior: smooth; }
         <div style="margin-top:10px;position:relative;">
             <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Follow-up Notes</label>
             <textarea name="follow_up_notes" id="id_follow_up_notes" rows="2" autocomplete="off" style="width:100%;border-radius:7px;border:1px solid #ccc;padding:9px 12px;font-size:13px;resize:vertical;" placeholder="e.g. Review after surgery, Check BP, Repeat blood test…">{{ consultation.follow_up_notes|default:'' }}</textarea>
-            <div id="followup-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:2px;background:#fff;border:1px solid #ccc;border-radius:7px;box-shadow:0 4px 10px rgba(0,0,0,0.12);z-index:20;max-height:160px;overflow-y:auto;"></div>
+            <div id="followup-suggestions" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:2px;background:#fff;color:#1e1b2e;border:1px solid #ccc;border-radius:7px;box-shadow:0 4px 10px rgba(0,0,0,0.12);z-index:20;max-height:160px;overflow-y:auto;"></div>
             <script type="application/json" id="followup-phrases-data">{{ followup_phrases_json|safe }}</script>
         </div>
+        {% if followup_phrases %}
+        <div style="margin-top:8px;">
+            <label style="font-size:12px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Quick Notes</label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                {% for phrase in followup_phrases %}
+                <button type="button" class="followup-note-chip" data-phrase="{{ phrase }}" onclick="addFollowUpNote(this.dataset.phrase)" style="padding:6px 12px;border:1px solid #7c3aed;background:#f5f3ff;color:#7c3aed;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">{{ phrase }}</button>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -3259,6 +3272,20 @@ function setFollowUp(n, unit) {
     document.getElementById('id_follow_up_date').value=yyyy+'-'+mm+'-'+dd;
 }
 
+/* ── Follow-up Notes: quick-note chips ── */
+function addFollowUpNote(phrase) {
+    var ta = document.getElementById('id_follow_up_notes');
+    if (!ta || !phrase) return;
+    var current = ta.value.trim();
+    var already = current.split(',').some(function(p) {
+        return p.trim().toLowerCase() === phrase.toLowerCase();
+    });
+    if (!already) ta.value = current ? current + ', ' + phrase : phrase;
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 /* ── Follow-up Notes: predictive suggestions ── */
 (function() {
     var dataEl = document.getElementById('followup-phrases-data');
@@ -3272,7 +3299,10 @@ function setFollowUp(n, unit) {
     function showSuggestions() {
         var typed = textarea.value.trim().toLowerCase();
         if (!typed) { hideSuggestions(); return; }
-        var matches = PHRASES.filter(function(p) { return p.toLowerCase().indexOf(typed) !== -1; });
+        var matches = PHRASES.filter(function(p) {
+            var lp = p.toLowerCase();
+            return lp !== typed && lp.indexOf(typed) !== -1;
+        });
         if (!matches.length) { hideSuggestions(); return; }
         box.innerHTML = matches.map(function(p) {
             return '<div class="followup-suggestion" style="padding:7px 12px;font-size:13px;cursor:pointer;" ' +
