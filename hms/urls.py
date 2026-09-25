@@ -168,41 +168,41 @@ urlpatterns = [
     # ══════════════════════════════════════════════════
 
     # User-initiated linking (M2 §5.3.2/5.3.6/5.3.10) — real ABDM-dictated paths
-    path("api/v3/hip/patient/care-context/discover/", abdm_views.abdm_on_discover, name="abdm_on_discover"),
-    path("api/v3/hip/link/care-context/init/",        abdm_views.abdm_on_init,     name="abdm_on_init"),
-    path("api/v3/hip/link/care-context/confirm/",     abdm_views.abdm_on_confirm,  name="abdm_on_confirm"),
+    re_path(r"^api/v3/hip/patient/care-context/discover/?$", abdm_views.abdm_on_discover, name="abdm_on_discover"),
+    re_path(r"^api/v3/hip/link/care-context/init/?$",        abdm_views.abdm_on_init,     name="abdm_on_init"),
+    re_path(r"^api/v3/hip/link/care-context/confirm/?$",     abdm_views.abdm_on_confirm,  name="abdm_on_confirm"),
 
     # Consent (M2 §6.3.1) — real ABDM-dictated path
-    path("api/v3/consent/request/hip/notify/", abdm_views.abdm_consent_notify, name="abdm_consent_notify"),
+    re_path(r"^api/v3/consent/request/hip/notify/?$", abdm_views.abdm_consent_notify, name="abdm_consent_notify"),
 
     # Health Data Request (M2 §6.3.3) — real ABDM-dictated path
-    path("api/v3/hip/health-information/request/", abdm_views.abdm_data_request, name="abdm_data_request"),
+    re_path(r"^api/v3/hip/health-information/request/?$", abdm_views.abdm_data_request, name="abdm_data_request"),
 
     # Care Context Update Notify — ack for HIPService.notify_care_context_update
-    path("api/v3/links/context/on-notify/", abdm_views.abdm_on_notify, name="abdm_on_notify"),
+    re_path(r"^api/v3/links/context/on-notify/?$", abdm_views.abdm_on_notify, name="abdm_on_notify"),
 
     # HIP-initiated linking (M2 §4.3.2 / §4.3.4) — ack for generate_link_token / link_care_context
-    path("api/v3/hip/token/on-generate-token/", abdm_views.abdm_hip_on_generate_token, name="abdm_hip_on_generate_token"),
-    path("api/v3/link/on_carecontext/",         abdm_views.abdm_on_link_carecontext,   name="abdm_on_link_carecontext"),
+    re_path(r"^api/v3/hip/token/on-generate-token/?$", abdm_views.abdm_hip_on_generate_token, name="abdm_hip_on_generate_token"),
+    re_path(r"^api/v3/link/on_carecontext/?$",         abdm_views.abdm_on_link_carecontext,   name="abdm_on_link_carecontext"),
 
     # ══════════════════════════════════════════════════
     # ABDM M3 — HIU CALLBACKS (ABDM gateway + other HIPs call these)
     # ══════════════════════════════════════════════════
 
     # Consent request (M3 §4.3.2/§4.3.3) — real ABDM-dictated paths
-    path("api/v3/hiu/consent/request/on-init/", abdm_hiu_views.abdm_hiu_consent_on_init, name="abdm_hiu_consent_on_init"),
-    path("api/v3/hiu/consent/request/notify/",  abdm_hiu_views.abdm_hiu_consent_notify,  name="abdm_hiu_consent_notify"),
+    re_path(r"^api/v3/hiu/consent/request/on-init/?$", abdm_hiu_views.abdm_hiu_consent_on_init, name="abdm_hiu_consent_on_init"),
+    re_path(r"^api/v3/hiu/consent/request/notify/?$",  abdm_hiu_views.abdm_hiu_consent_notify,  name="abdm_hiu_consent_notify"),
 
     # Fetch consent artefact (M3 §4.3.8) — real ABDM-dictated path
-    path("api/v3/hiu/consent/on-fetch/", abdm_hiu_views.abdm_hiu_consent_on_fetch, name="abdm_hiu_consent_on_fetch"),
+    re_path(r"^api/v3/hiu/consent/on-fetch/?$", abdm_hiu_views.abdm_hiu_consent_on_fetch, name="abdm_hiu_consent_on_fetch"),
 
     # Data flow (M3 §5.3.2) — real ABDM-dictated path
-    path("api/v3/hiu/health-information/on-request/",
+    re_path(r"^api/v3/hiu/health-information/on-request/?$",
          abdm_hiu_views.abdm_hiu_health_information_on_request, name="abdm_hiu_health_information_on_request"),
 
     # Our own dataPushUrl (chosen by us, sent in HIUService.request_health_information) —
     # must match hms/abdm/services/hiu.py's DATA_PUSH_PATH exactly.
-    path("api/v3/hiu/health-information/transfer/",
+    re_path(r"^api/v3/hiu/health-information/transfer/?$",
          abdm_hiu_views.abdm_hiu_health_information_transfer, name="abdm_hiu_health_information_transfer"),
 
     # ══════════════════════════════════════════════════
