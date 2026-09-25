@@ -1,165 +1,203 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from datetime import datetime, time, timedelta
 
 from ..decorators import role_required
 from ..models import (
-    Ward, Bed, Patient, Doctor, IPDAdmission, IPDVital, IPDMedication,
+    Ward, Bed, BedStay, DischargeBill, Patient, Doctor, IPDAdmission, IPDVital, IPDMedication,
     IPDDischargeMedication, DischargeTemplate, IPDProgressNote,
     IPDSymptomHistory, IPDTreatmentHistory, IPDProcedure,
     InvestigationBill, InvestigationBillItem, Investigation, DrugMaster,
     Consultation,
 )
 from ..forms import IPDAdmissionForm
+from ..ipd.beds import (
+    AlreadyAdmitted, BedUnavailable, DischargeBlocked, admit, billable_days, cancel_admission, discharge,
+    open_admission, transfer,
+)
 
 
 @login_required
 def ipd_dashboard(request):
-    wards = Ward.objects.prefetch_related("bed_set").all()
-    admissions = IPDAdmission.objects.filter(
+    admissions = list(IPDAdmission.objects.filter(
         status="ADMITTED"
-    ).select_related("patient", "bed", "doctor")
+    ).select_related("patient", "bed", "ward", "doctor__department").order_by("admission_date"))
+    by_bed = {a.bed_id: a for a in admissions if a.bed_id}
+    for a in admissions:
+        a.days_in = billable_days(a)
+    wards = []
+    for ward in Ward.objects.select_related("bed_charge_item").prefetch_related("bed_set").order_by("id"):
+        beds = sorted(ward.bed_set.all(), key=lambda b: (len(b.bed_number), b.bed_number))
+        for b in beds:
+            b.admission = by_bed.get(b.id)
+        wards.append({
+            "ward": ward,
+            "beds": beds,
+            "occupied": sum(1 for b in beds if b.is_occupied),
+            "free": sum(1 for b in beds if b.is_available),
+        })
+    total_beds = sum(len(w["beds"]) for w in wards)
+    occupied = sum(w["occupied"] for w in wards)
     return render(request, "ipd/dashboard.html", {
         "wards": wards,
         "admissions": admissions,
+        "total_beds": total_beds,
+        "occupied_beds": occupied,
+        "occupancy_pct": round(100 * occupied / total_beds) if total_beds else 0,
+        "no_bed": [a for a in admissions if not a.bed_id],
+        "is_admin": request.user.is_superuser or getattr(getattr(request.user, "profile", None), "role", "") == "admin",
     })
+
+
+@login_required
+@role_required("doctor", "admin", "nursing")
+def ipd_transfer(request, admission_id):
+    admission = get_object_or_404(IPDAdmission.objects.select_related("patient", "bed__ward"), id=admission_id)
+    if request.method == "POST":
+        new_bed = Bed.objects.filter(id=request.POST.get("bed") or 0).first()
+        try:
+            if new_bed is None:
+                raise BedUnavailable("Choose a bed.")
+            transfer(admission, new_bed)
+        except BedUnavailable as e:
+            messages.error(request, str(e))
+        else:
+            messages.success(request, f"{admission.patient.full_name} moved to {new_bed}. Previous bed marked for cleaning.")
+            return redirect("hms:ipd_dashboard")
+    free_beds = [b for b in Bed.objects.select_related("ward__bed_charge_item").order_by("ward__name", "bed_number") if b.is_available]
+    return render(request, "ipd/transfer.html", {"admission": admission, "free_beds": free_beds})
+
+
+@login_required
+@role_required("doctor", "admin", "nursing")
+def bed_housekeeping(request, bed_id):
+    """POST: set a free bed to Ready / Cleaning / Blocked."""
+    bed = get_object_or_404(Bed, id=bed_id)
+    if request.method == "POST":
+        status = request.POST.get("housekeeping", "")
+        if bed.is_occupied:
+            messages.error(request, f"{bed} is occupied.")
+        elif status in dict(Bed.HOUSEKEEPING_CHOICES):
+            bed.housekeeping = status
+            bed.save(update_fields=["housekeeping"])
+    return redirect("hms:ipd_dashboard")
+
+
+def _admit_form_context(bed=None, selected_patient_id=None, selected_bed_id="", error=None):
+    return {
+        "bed": bed,
+        "free_beds": [b for b in Bed.objects.select_related("ward__bed_charge_item").order_by("ward__name", "bed_number") if b.is_available],
+        "patients": Patient.objects.all().order_by("full_name"),
+        "doctors": Doctor.objects.select_related("department").order_by("full_name"),
+        "selected_patient_id": selected_patient_id,
+        "selected_bed_id": selected_bed_id,
+        "error": error,
+    }
+
+
+def _admit_from_post(request, bed):
+    """Shared by both admit screens. Returns (admission, error)."""
+    patient_id = request.POST.get("patient")
+    if not patient_id:
+        return None, "Please select a patient before admitting."
+    patient = get_object_or_404(Patient, id=int(patient_id))
+    if bed is None:
+        bed = Bed.objects.filter(id=request.POST.get("bed") or 0).first()
+
+    doctor = None
+    if request.POST.get("doctor"):
+        doctor = Doctor.objects.select_related("department").filter(id=int(request.POST["doctor"])).first()
+
+    admission_date = timezone.now()
+    raw = request.POST.get("admission_date", "").strip()
+    if raw:
+        parsed = parse_datetime(raw)
+        if parsed:
+            admission_date = timezone.make_aware(parsed, timezone.get_current_timezone()) if timezone.is_naive(parsed) else parsed
+
+    diagnosis = request.POST.get("diagnosis", "")
+    if not diagnosis:
+        last_consultation = Consultation.objects.filter(appointment__patient=patient).order_by("-created_at").first()
+        if last_consultation:
+            diagnosis = last_consultation.diagnosis_text
+
+    try:
+        admission = admit(
+            patient=patient, bed=bed, doctor=doctor, admission_date=admission_date,
+            chief_complaint=request.POST.get("chief_complaint", ""),
+            symptoms=request.POST.get("symptoms", ""),
+            diagnosis=diagnosis,
+            icd_code=request.POST.get("icd_code", ""),
+            attendant_name=request.POST.get("attendant_name", ""),
+            attendant_relation=request.POST.get("attendant_relation", ""),
+            attendant_mobile=request.POST.get("attendant_mobile", ""),
+        )
+    except AlreadyAdmitted as e:
+        return None, f"{e} Discharge or cancel that admission first, or open it from the IPD board."
+    except BedUnavailable as e:
+        return None, str(e)
+    return admission, None
 
 
 @login_required
 def admit_bed(request, bed_id):
     bed = get_object_or_404(Bed, id=bed_id)
-
-    if bed.is_occupied:
+    if not bed.is_available and request.method != "POST":
+        messages.error(request, f"{bed} is not available.")
         return redirect("hms:ipd_dashboard")
 
     if request.method == "POST":
-        patient_id = request.POST.get("patient")
-        doctor_id  = request.POST.get("doctor")
+        admission, error = _admit_from_post(request, bed)
+        if admission:
+            messages.success(request, f"{admission.patient.full_name} admitted to {bed} ({admission.ipd_no}).")
+            return redirect("hms:ipd_dashboard")
+        return render(request, "ipd/admit_form.html", _admit_form_context(
+            bed=bed, selected_patient_id=int(request.POST.get("patient") or 0) or None, error=error))
 
-        chief_complaint    = request.POST.get("chief_complaint", "")
-        symptoms           = request.POST.get("symptoms", "")
-        diagnosis          = request.POST.get("diagnosis", "")
-        icd_code           = request.POST.get("icd_code", "")
-        attendant_name     = request.POST.get("attendant_name", "")
-        attendant_relation = request.POST.get("attendant_relation", "")
-        attendant_mobile   = request.POST.get("attendant_mobile", "")
-
-        admission_date = timezone.now()
-        admission_date_raw = request.POST.get("admission_date", "").strip()
-        if admission_date_raw:
-            parsed_date = parse_datetime(admission_date_raw)
-            if parsed_date:
-                if timezone.is_naive(parsed_date):
-                    parsed_date = timezone.make_aware(parsed_date, timezone.get_current_timezone())
-                admission_date = parsed_date
-
-        if not patient_id:
-            patients = Patient.objects.all().order_by("full_name")
-            doctors  = Doctor.objects.select_related("department").order_by("full_name")
-            return render(request, "ipd/admit_form.html", {
-                "bed": bed,
-                "patients": patients,
-                "doctors": doctors,
-                "error": "Please select a patient before admitting."
-            })
-
-        patient = get_object_or_404(Patient, id=int(patient_id))
-
-        doctor = None
-        department = None
-        if doctor_id:
-            doctor = Doctor.objects.select_related("department").filter(id=int(doctor_id)).first()
-            if doctor and doctor.department:
-                department = doctor.department
-
-        auto_diagnosis = diagnosis
-        if not auto_diagnosis:
-            last_consultation = Consultation.objects.filter(
-                appointment__patient=patient
-            ).order_by("-created_at").first()
-            if last_consultation:
-                auto_diagnosis = last_consultation.diagnosis_text
-
-        last_ipd = IPDAdmission.objects.order_by("-id").first()
-        if last_ipd and last_ipd.ipd_no:
-            last_num = int(last_ipd.ipd_no.split("-")[-1])
-            new_ipd = f"IPD-{last_num+1:05d}"
-        else:
-            new_ipd = "IPD-00001"
-
-        admission = IPDAdmission.objects.create(
-            ipd_no             = new_ipd,
-            patient            = patient,
-            doctor             = doctor,
-            department         = department,
-            ward               = bed.ward,
-            bed                = bed,
-            chief_complaint    = chief_complaint,
-            symptoms           = symptoms,
-            diagnosis          = auto_diagnosis,
-            icd_code           = icd_code,
-            attendant_name     = attendant_name,
-            attendant_relation = attendant_relation,
-            attendant_mobile   = attendant_mobile,
-            admission_date     = admission_date,
-            status             = "ADMITTED",
-        )
-
-        bed.is_occupied = True
-        bed.save()
-
-        return redirect("hms:ipd_dashboard")
-
-    patients = Patient.objects.all().order_by("full_name")
-    doctors  = Doctor.objects.select_related("department").order_by("full_name")
-    return render(request, "ipd/admit_form.html", {
-        "bed": bed,
-        "patients": patients,
-        "doctors": doctors,
-    })
+    return render(request, "ipd/admit_form.html", _admit_form_context(bed=bed))
 
 
 @login_required
+@role_required("doctor", "admin", "nursing")
 def ipd_discharge(request, admission_id):
+    """Discharge from the bill page (POST): the bill must be paid, or an admin gives a reason."""
     admission = get_object_or_404(IPDAdmission, id=admission_id)
-    admission.discharge_date = timezone.now()
-    admission.status = "DISCHARGED"
-    admission.save()
-    bed = admission.bed
-    bed.is_occupied = False
-    bed.save()
-    return redirect("hms:ipd_dashboard")
+    if request.method != "POST":
+        return redirect("hms:admission_bill", admission_id=admission.id)
+    try:
+        discharge(admission, user=request.user, override_reason=request.POST.get("override_reason", ""))
+    except DischargeBlocked as e:
+        messages.error(request, str(e))
+        return redirect("hms:admission_bill", admission_id=admission.id)
+    messages.success(request, f"{admission.patient.full_name} discharged; bed marked for cleaning.")
+    return redirect("hms:admission_bill", admission_id=admission.id)
 
 
 @login_required
 @role_required("doctor", "admin", "nursing")
 def admit_patient(request):
-
     if request.method == "POST":
-        form = IPDAdmissionForm(request.POST)
-        if form.is_valid():
-            form.save()
+        admission, error = _admit_from_post(request, None)
+        if admission:
+            messages.success(request, f"{admission.patient.full_name} admitted to {admission.bed} ({admission.ipd_no}).")
             return redirect("hms:ipd_dashboard")
-        selected_patient_id = request.POST.get("patient")
-    else:
-        form = IPDAdmissionForm()
-        selected_patient_id = request.GET.get("patient")
+        return render(request, "ipd/admit_form.html", _admit_form_context(
+            selected_patient_id=int(request.POST.get("patient") or 0) or None,
+            selected_bed_id=request.POST.get("bed", ""), error=error))
 
     try:
-        selected_patient_id = int(selected_patient_id)
+        selected_patient_id = int(request.GET.get("patient"))
     except (TypeError, ValueError):
         selected_patient_id = None
-
-    patients = Patient.objects.all().order_by("full_name")
-    doctors = Doctor.objects.all().order_by("full_name")
-    return render(request, "ipd/admit_form.html", {
-        "form": form,
-        "patients": patients,
-        "doctors": doctors,
-        "selected_patient_id": selected_patient_id,
-    })
+    existing = open_admission(selected_patient_id) if selected_patient_id else None
+    return render(request, "ipd/admit_form.html", _admit_form_context(
+        selected_patient_id=selected_patient_id,
+        error=(f"{existing.patient.full_name} is already admitted ({existing.ipd_no}, {existing.bed or 'no bed'})."
+               if existing else None)))
 
 
 def procedure_performed_text(admission):
@@ -719,3 +757,84 @@ def progress_notes_pdf(request, admission_id):
         "notes":     notes,
     })
 
+
+
+@login_required
+@role_required("doctor", "admin", "nursing", "reception")
+def ipd_census(request):
+    """Daily bed occupancy and average length of stay (NABH indicators) over a date range."""
+    today = timezone.localdate()
+    try:
+        date_to = datetime.strptime(request.GET.get("to", ""), "%Y-%m-%d").date()
+    except ValueError:
+        date_to = today
+    try:
+        date_from = datetime.strptime(request.GET.get("from", ""), "%Y-%m-%d").date()
+    except ValueError:
+        date_from = date_to - timedelta(days=29)
+    total_beds = Bed.objects.count()
+    tz = timezone.get_current_timezone()
+    stays = list(BedStay.objects.exclude(admission__status="CANCELLED")
+                 .filter(start__date__lte=date_to).exclude(end__date__lt=date_from))
+    days = []
+    d = date_from
+    while d <= date_to:
+        # Midnight census: beds occupied at the end of the day.
+        midnight = timezone.make_aware(datetime.combine(d + timedelta(days=1), time.min), tz)
+        occupied = sum(1 for s in stays if s.start < midnight and (s.end is None or s.end >= midnight))
+        days.append({
+            "date": d, "occupied": occupied,
+            "pct": round(100 * occupied / total_beds) if total_beds else 0,
+            "admissions": IPDAdmission.objects.exclude(status="CANCELLED").filter(admission_date__date=d).count(),
+            "discharges": IPDAdmission.objects.filter(status="DISCHARGED", discharge_date__date=d).count(),
+        })
+        d += timedelta(days=1)
+    discharged = list(IPDAdmission.objects.filter(status="DISCHARGED", discharge_date__date__gte=date_from,
+                                                  discharge_date__date__lte=date_to))
+    bed_days = sum(x["occupied"] for x in days)
+    open_admissions = list(IPDAdmission.objects.filter(status="ADMITTED"))
+    return render(request, "ipd/census.html", {
+        "days": days, "date_from": date_from, "date_to": date_to, "total_beds": total_beds,
+        "avg_occupancy": round(100 * bed_days / (total_beds * len(days))) if total_beds and days else 0,
+        "bed_days": bed_days,
+        "discharged_count": len(discharged),
+        "alos": round(sum(billable_days(a) for a in discharged) / len(discharged), 1) if discharged else None,
+        "stale_count": sum(1 for a in open_admissions if billable_days(a) > 10),
+    })
+
+
+@login_required
+@role_required("admin")
+def ipd_review(request):
+    """Cleanup: close admissions that were never discharged in the system, or cancel duplicates."""
+    if request.method == "POST":
+        admission = get_object_or_404(IPDAdmission, id=request.POST.get("admission_id"))
+        action = request.POST.get("action")
+        try:
+            if action == "discharge":
+                raw = parse_datetime(request.POST.get("discharge_at", ""))
+                if raw is None:
+                    raise DischargeBlocked("Enter the date and time the patient actually left.")
+                when = timezone.make_aware(raw, timezone.get_current_timezone()) if timezone.is_naive(raw) else raw
+                discharge(admission, user=request.user, when=when,
+                          override_reason=request.POST.get("reason", "").strip())
+                messages.success(request, f"{admission.ipd_no} discharged as of {timezone.localtime(when):%d %b %Y %H:%M}.")
+            elif action == "cancel":
+                cancel_admission(admission, user=request.user,
+                                 reason=request.POST.get("reason", "").strip() or "duplicate entry")
+                messages.success(request, f"{admission.ipd_no} cancelled.")
+        except DischargeBlocked as e:
+            messages.error(request, f"{admission.ipd_no}: {e}")
+        return redirect("hms:ipd_review")
+
+    rows = []
+    for a in (IPDAdmission.objects.filter(status="ADMITTED")
+              .select_related("patient", "bed__ward").order_by("admission_date")):
+        bill = DischargeBill.objects.filter(admission=a).first()
+        rows.append({
+            "a": a, "days": billable_days(a), "bill": bill,
+            "advances": sum(x.amount for x in a.advances.all()),
+            "has_charges": a.pharmacy_bills.filter(status="PAID").exists() or a.advances.exists() or bool(bill and bill.is_paid),
+            "others_open": IPDAdmission.objects.filter(patient=a.patient, status="ADMITTED").exclude(pk=a.pk).count(),
+        })
+    return render(request, "ipd/review.html", {"rows": rows})

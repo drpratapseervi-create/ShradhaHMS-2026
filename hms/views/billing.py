@@ -1,5 +1,5 @@
 from decimal import Decimal
-from datetime import date
+from datetime import date, datetime, time
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -10,124 +10,103 @@ from ..models import (
     Patient, Doctor, Department, IPDAdmission, BillItem, DischargeBill,
     DischargeBillItem, IPDAdvance, ProcedureItem, ProcedureBill, ProcedureBillItem,
 )
-from ..pharmacy.dispensing import IPD_PHARMACY_BILL_ITEM, sync_ipd_pharmacy_charge
+from ..ipd.billing import get_bill, sync_bill, totals, ward_charge_item_ids
+from ..pharmacy.dispensing import IPD_PHARMACY_BILL_ITEM
 from ..services.whatsapp import send_discharge_thankyou, WhatsAppSendError
 from ..abdm.services.hip import HIPService
 from ._shared import logger
 
 
+def _current_admission(patient):
+    """The admission a patient-based link means: the open one, else the latest real one."""
+    admissions = IPDAdmission.objects.filter(patient=patient).exclude(status="CANCELLED")
+    return admissions.filter(status="ADMITTED").order_by("-admission_date").first() \
+        or admissions.order_by("-admission_date").first()
+
+
 @login_required
 def discharge_bill(request, patient_id):
+    """Old patient-based entry point: open the bill of the patient's current admission."""
     patient = get_object_or_404(Patient, id=patient_id)
-
-    admission = IPDAdmission.objects.filter(
-        patient=patient,
-        status="ADMITTED"
-    ).order_by("-id").first()
-
+    admission = _current_admission(patient)
     if not admission:
         return render(request, "ipd/discharge_bill.html", {
-            "error": "No active admission found for this patient.",
+            "error": "No admission found for this patient.",
+            "patient": patient,
+        })
+    return redirect("hms:admission_bill", admission_id=admission.id)
+
+
+@login_required
+def admission_bill(request, admission_id):
+    admission = get_object_or_404(IPDAdmission.objects.select_related("patient", "bed__ward"), id=admission_id)
+    patient = admission.patient
+    if admission.status == "CANCELLED":
+        return render(request, "ipd/discharge_bill.html", {
+            "error": f"{admission.ipd_no} was cancelled (entered in error); it has no bill.",
             "patient": patient,
         })
 
-    bill, created = DischargeBill.objects.get_or_create(
-        patient=patient,
-        defaults={
-            "total_amount": 0,
-            "discount": 0,
-            "advance_paid": 0,
-            "final_amount": 0
-        }
-    )
-
-    days = (date.today() - admission.admission_date.date()).days
-    if days <= 0:
-        days = 1
-
-    ward_name = admission.bed.ward.name.split("(")[0].strip()
-
-    def sync_daily_charge(search_name, ward_filter=None):
-        query = BillItem.objects.filter(name__icontains=search_name)
-        if ward_filter:
-            query = query.filter(name__icontains=ward_filter)
-        item = query.first()
-        if not item:
-            return
-        line = DischargeBillItem.objects.filter(bill=bill, item=item).first()
-        if line:
-            line.quantity = days
-            line.price    = item.price
-            line.total    = item.price * days
-            line.save()
-        else:
-            DischargeBillItem.objects.create(
-                bill=bill, item=item,
-                quantity=days, price=item.price,
-                total=item.price * days
-            )
-
-    sync_daily_charge("Bed Charge", ward_name)
-    sync_daily_charge("Nursing")
-    sync_daily_charge("Consultation")
-    # Medicines issued by the pharmacy to this admission (less returns).
-    sync_ipd_pharmacy_charge(bill, admission)
+    bill = get_bill(admission)
+    sync_bill(bill, admission)
 
     if request.method == "POST":
         action = request.POST.get("action")
+        if bill.is_paid and action in ("add_item", "update_payment", "mark_paid"):
+            messages.error(request, "This bill is already paid and can't be changed.")
+            return redirect("hms:admission_bill", admission_id=admission.id)
 
         if action == "add_item":
-            item_id = request.POST.get("item")
-            qty     = int(request.POST.get("quantity", 1))
-            item    = get_object_or_404(BillItem, id=item_id)
-            line    = DischargeBillItem.objects.filter(bill=bill, item=item).first()
+            item = get_object_or_404(BillItem, id=request.POST.get("item"))
+            qty  = int(request.POST.get("quantity", 1))
+            line = DischargeBillItem.objects.filter(bill=bill, item=item).first()
             if line:
                 line.quantity += qty
             else:
-                line = DischargeBillItem.objects.create(
-                    bill=bill, item=item,
-                    quantity=qty, price=item.price, total=0
-                )
+                line = DischargeBillItem.objects.create(bill=bill, item=item, quantity=qty, price=item.price, total=0)
             line.total = line.quantity * line.price
             line.save()
 
         elif action == "update_payment":
-            discount      = Decimal(request.POST.get("discount", "0") or "0")
-            bill.discount = discount
+            bill.discount = Decimal(request.POST.get("discount", "0") or "0")
             bill.save()
 
         elif action == "add_advance":
-            amount       = Decimal(request.POST.get("advance_amount", "0") or "0")
-            payment_mode = request.POST.get("advance_payment_mode", "CASH")
-            note         = request.POST.get("advance_note", "")
+            amount = Decimal(request.POST.get("advance_amount", "0") or "0")
             if amount > 0:
                 advance = IPDAdvance.objects.create(
-                    patient=patient,
-                    amount=amount,
-                    payment_mode=payment_mode,
-                    note=note
+                    patient=patient, admission=admission, amount=amount,
+                    payment_mode=request.POST.get("advance_payment_mode", "CASH"),
+                    note=request.POST.get("advance_note", ""),
                 )
                 return redirect("hms:advance_payment_receipt_single", advance_id=advance.id)
 
         elif action == "mark_paid":
-            payment_mode   = request.POST.get("final_payment_mode", "CASH")
-            advances       = IPDAdvance.objects.filter(patient=patient)
-            total_advance  = sum(a.amount for a in advances)
-            bill_items_now = DischargeBillItem.objects.filter(bill=bill)
-            gross          = sum(i.total for i in bill_items_now)
-            net            = gross - bill.discount - total_advance
+            # The day the money was actually received: the daily report counts it on that day.
+            today = timezone.localdate()
+            try:
+                paid_on = datetime.strptime(request.POST.get("paid_on", ""), "%Y-%m-%d").date()
+            except ValueError:
+                paid_on = today
+            if not (timezone.localtime(admission.admission_date).date() <= paid_on <= today):
+                messages.error(request, "The payment date must be between the admission date and today.")
+                return redirect("hms:admission_bill", admission_id=admission.id)
+
+            gross, _, total_advance, net = totals(bill, admission)
+            bill.total_amount  = gross
             bill.advance_paid  = total_advance
-            bill.payment_mode  = payment_mode
+            bill.payment_mode  = request.POST.get("final_payment_mode", "CASH")
             bill.final_amount  = max(net, Decimal("0"))
             bill.is_paid       = True
-            bill.paid_at       = timezone.now()
+            bill.paid_at       = timezone.now() if paid_on == today else timezone.make_aware(
+                datetime.combine(paid_on, time(12, 0)), timezone.get_current_timezone())
             bill.save()
 
             # ── Billing complete → send the discharge thank-you WhatsApp
             # message once, the same fire-and-forget pattern as the OPD
             # visit thank-you message (a WhatsApp failure must not block
-            # the receipt) ──
-            if not admission.discharge_message_sent_at:
+            # the receipt). Skipped for a payment entered after the fact. ──
+            if paid_on == today and not admission.discharge_message_sent_at:
                 try:
                     send_discharge_thankyou(admission)
                 except (WhatsAppSendError, ValueError):
@@ -140,26 +119,22 @@ def discharge_bill(request, patient_id):
                     admission.save(update_fields=["discharge_message_sent_at"])
                 HIPService.notify_discharge_summary(admission)
 
-            return redirect("hms:final_payment_receipt", patient_id=patient.id)
+            return redirect("hms:admission_final_receipt", admission_id=admission.id)
 
-        return redirect("hms:discharge_bill", patient_id=patient.id)
+        return redirect("hms:admission_bill", admission_id=admission.id)
 
-    bill_items    = DischargeBillItem.objects.filter(bill=bill)
-    total_amount  = sum(i.total for i in bill_items)
-    advances      = IPDAdvance.objects.filter(patient=patient).order_by("date")
-    total_advance = sum(a.amount for a in advances)
-    net           = total_amount - bill.discount - total_advance
+    bill_items = DischargeBillItem.objects.filter(bill=bill).select_related("item")
+    total_amount, advances, total_advance, net = totals(bill, admission)
+    if not bill.is_paid:
+        bill.total_amount, bill.advance_paid, bill.final_amount = total_amount, total_advance, net
+        bill.save(update_fields=["total_amount", "advance_paid", "final_amount"])
 
-    bill.total_amount  = total_amount
-    bill.advance_paid  = total_advance
-    bill.final_amount  = net
-    bill.save()
-
+    auto_item_ids = ward_charge_item_ids()
     return render(request, "ipd/discharge_bill.html", {
         "patient":       patient,
         "admission":     admission,
-        "items":         BillItem.objects.exclude(name=IPD_PHARMACY_BILL_ITEM),
-        "ipd_pharmacy_item_name": IPD_PHARMACY_BILL_ITEM,
+        # Bed charges and the pharmacy line are added automatically; keep them out of the manual list.
+        "items":         BillItem.objects.exclude(name=IPD_PHARMACY_BILL_ITEM).exclude(id__in=auto_item_ids),
         "bill_items":    bill_items,
         "total_amount":  total_amount,
         "bill":          bill,
@@ -167,31 +142,30 @@ def discharge_bill(request, patient_id):
         "refund_amount": abs(net) if net < 0 else 0,
         "advances":      advances,
         "total_advance": total_advance,
+        "ipd_pharmacy_item_name": IPD_PHARMACY_BILL_ITEM,
+        "can_discharge_with_dues": request.user.is_superuser or getattr(getattr(request.user, "profile", None), "role", "") == "admin",
     })
 
 
 @login_required
 def delete_bill_item(request, item_id):
-    item       = get_object_or_404(DischargeBillItem, id=item_id)
-    patient_id = item.bill.patient.id
-    item.delete()
-    return redirect("hms:discharge_bill", patient_id=patient_id)
+    item = get_object_or_404(DischargeBillItem.objects.select_related("bill"), id=item_id)
+    admission_id = item.bill.admission_id
+    if item.bill.is_paid:
+        messages.error(request, "This bill is already paid and can't be changed.")
+    else:
+        item.delete()
+    return redirect("hms:admission_bill", admission_id=admission_id)
 
 
 @login_required
 def discharge_bill_pdf(request, admission_id):
-    admission    = get_object_or_404(IPDAdmission, id=admission_id)
-    patient      = admission.patient
-    bill         = DischargeBill.objects.get(patient=patient)
-    bill_items   = DischargeBillItem.objects.filter(bill=bill)
-    total_amount = sum(i.total for i in bill_items)
-    bill.refresh_from_db()
-    advances      = IPDAdvance.objects.filter(patient=patient).order_by("date")
-    total_advance = sum(a.amount for a in advances)
-    discount      = bill.discount
-    net           = total_amount - discount - total_advance
-    net_amount    = max(net, 0)
-    refund_amount = abs(net) if net < 0 else 0
+    admission = get_object_or_404(IPDAdmission, id=admission_id)
+    patient   = admission.patient
+    bill      = get_bill(admission)
+    sync_bill(bill, admission)
+    bill_items = DischargeBillItem.objects.filter(bill=bill)
+    total_amount, advances, total_advance, net = totals(bill, admission)
     return render(request, "ipd/discharge_bill_pdf.html", {
         "patient":       patient,
         "admission":     admission,
@@ -200,35 +174,35 @@ def discharge_bill_pdf(request, admission_id):
         "bill":          bill,
         "advances":      advances,
         "total_advance": total_advance,
-        "discount":      discount,
-        "net_amount":    net_amount,
-        "refund_amount": refund_amount,
+        "discount":      bill.discount,
+        "net_amount":    max(net, 0),
+        "refund_amount": abs(net) if net < 0 else 0,
     })
 
 
 @login_required
 def advance_payment_receipt(request, patient_id):
-    patient   = get_object_or_404(Patient, id=patient_id)
-    admission = IPDAdmission.objects.filter(
-        patient=patient, status="ADMITTED"
-    ).order_by("-id").first()
-    bill          = get_object_or_404(DischargeBill, patient=patient)
-    bill_items    = DischargeBillItem.objects.filter(bill=bill)
-    gross         = sum(i.total for i in bill_items)
-    advances      = IPDAdvance.objects.filter(patient=patient).order_by("date")
-    total_advance = sum(a.amount for a in advances)
-    net           = gross - bill.discount - total_advance
-    net_amount    = max(net, 0)
-    refund_amount = abs(net) if net < 0 else 0
-    receipt_no    = f"ADV-{bill.id:05d}"
+    patient = get_object_or_404(Patient, id=patient_id)
+    admission = _current_admission(patient)
+    if not admission:
+        messages.error(request, "No admission found for this patient.")
+        return redirect("hms:dashboard")
+    return redirect("hms:admission_advance_receipt", admission_id=admission.id)
+
+
+@login_required
+def admission_advance_receipt(request, admission_id):
+    admission = get_object_or_404(IPDAdmission.objects.select_related("patient"), id=admission_id)
+    bill = get_bill(admission)
+    gross, advances, total_advance, net = totals(bill, admission)
     return render(request, "ipd/advance_payment_receipt.html", {
-        "patient":       patient,
+        "patient":       admission.patient,
         "admission":     admission,
         "bill":          bill,
         "now":           timezone.now(),
-        "net_amount":    net_amount,
-        "refund_amount": refund_amount,
-        "receipt_no":    receipt_no,
+        "net_amount":    max(net, 0),
+        "refund_amount": abs(net) if net < 0 else 0,
+        "receipt_no":    f"ADV-{bill.id:05d}",
         "gross_total":   gross,
         "advances":      advances,
         "total_advance": total_advance,
@@ -239,28 +213,23 @@ def advance_payment_receipt(request, patient_id):
 def advance_payment_receipt_single(request, advance_id):
     advance   = get_object_or_404(IPDAdvance, id=advance_id)
     patient   = advance.patient
-    admission = IPDAdmission.objects.filter(
-        patient=patient, status="ADMITTED"
-    ).order_by("-id").first()
-    bill          = DischargeBill.objects.filter(patient=patient).first()
-    bill_items    = DischargeBillItem.objects.filter(bill=bill) if bill else []
-    gross         = sum(i.total for i in bill_items)
-    advances      = IPDAdvance.objects.filter(patient=patient).order_by("date")
-    total_advance = sum(a.amount for a in advances)
-    discount      = bill.discount if bill else 0
-    net           = gross - discount - total_advance
-    net_amount    = max(net, 0)
-    refund_amount = abs(net) if net < 0 else 0
-    receipt_no    = f"ADV-{advance.pk:05d}"
+    admission = advance.admission or _current_admission(patient)
+    bill      = DischargeBill.objects.filter(admission=admission).first() if admission else None
+    if bill and admission:
+        gross, _, total_advance, net = totals(bill, admission)
+        discount = bill.discount
+    else:
+        gross, total_advance, discount = Decimal("0"), advance.amount, Decimal("0")
+        net = -total_advance
     return render(request, "ipd/advance_payment_receipt_single.html", {
         "patient":       patient,
         "admission":     admission,
         "bill":          bill,
         "advance":       advance,
-        "receipt_no":    receipt_no,
+        "receipt_no":    f"ADV-{advance.pk:05d}",
         "now":           advance.date,
-        "net_amount":    net_amount,
-        "refund_amount": refund_amount,
+        "net_amount":    max(net, 0),
+        "refund_amount": abs(net) if net < 0 else 0,
         "gross_total":   gross,
         "total_advance": total_advance,
     })
@@ -268,28 +237,29 @@ def advance_payment_receipt_single(request, advance_id):
 
 @login_required
 def final_payment_receipt(request, patient_id):
-    patient   = get_object_or_404(Patient, id=patient_id)
-    admission = IPDAdmission.objects.filter(patient=patient).order_by("-id").first()
-    bill      = get_object_or_404(DischargeBill, patient=patient)
-    bill_items    = DischargeBillItem.objects.filter(bill=bill)
-    gross         = sum(i.total for i in bill_items)
-    advances      = IPDAdvance.objects.filter(patient=patient).order_by("date")
-    total_advance = sum(a.amount for a in advances)
-    bill.advance_paid = total_advance
-    bill.save()
-    net           = gross - bill.discount - total_advance
-    net_amount    = max(net, Decimal("0"))
-    refund_amount = abs(net) if net < 0 else Decimal("0")
-    receipt_no    = f"FPR-{bill.id:05d}"
+    patient = get_object_or_404(Patient, id=patient_id)
+    admission = _current_admission(patient)
+    if not admission:
+        messages.error(request, "No admission found for this patient.")
+        return redirect("hms:dashboard")
+    return redirect("hms:admission_final_receipt", admission_id=admission.id)
+
+
+@login_required
+def admission_final_receipt(request, admission_id):
+    admission = get_object_or_404(IPDAdmission.objects.select_related("patient"), id=admission_id)
+    bill = get_object_or_404(DischargeBill, admission=admission)
+    bill_items = DischargeBillItem.objects.filter(bill=bill)
+    gross, advances, total_advance, net = totals(bill, admission)
     return render(request, "ipd/final_payment_receipt.html", {
-        "patient":        patient,
+        "patient":        admission.patient,
         "admission":      admission,
         "bill":           bill,
         "bill_items":     bill_items,
         "gross":          gross,
-        "net_amount":     net_amount,
-        "refund_amount":  refund_amount,
-        "receipt_no":     receipt_no,
+        "net_amount":     max(net, Decimal("0")),
+        "refund_amount":  abs(net) if net < 0 else Decimal("0"),
+        "receipt_no":     f"FPR-{bill.id:05d}",
         "advances_count": advances.count(),
         "now":            bill.paid_at or timezone.now(),
     })

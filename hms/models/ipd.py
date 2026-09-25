@@ -6,18 +6,33 @@ from .core import Doctor
 class Ward(models.Model):
     name       = models.CharField(max_length=100)
     total_beds = models.IntegerField()
+    bed_charge_item = models.ForeignKey(
+        "BillItem", on_delete=models.SET_NULL, null=True, blank=True, related_name="wards",
+        help_text="Per-day bed charge billed for a stay in this ward",
+    )
 
     def __str__(self):
         return self.name
 
 
 class Bed(models.Model):
+    HOUSEKEEPING_CHOICES = [
+        ("",         "Ready"),
+        ("CLEANING", "Cleaning"),
+        ("BLOCKED",  "Blocked (maintenance)"),
+    ]
+
     ward       = models.ForeignKey(Ward, on_delete=models.CASCADE)
     bed_number = models.CharField(max_length=10)
     is_occupied = models.BooleanField(default=False)
+    housekeeping = models.CharField(max_length=10, choices=HOUSEKEEPING_CHOICES, blank=True, default="")
 
     def __str__(self):
         return f"{self.ward.name} - Bed {self.bed_number}"
+
+    @property
+    def is_available(self):
+        return not self.is_occupied and not self.housekeeping
 
 
 # ===================== IPD ADMISSION =====================
@@ -83,9 +98,16 @@ class IPDAdmission(models.Model):
     # -------- STATUS --------
     status = models.CharField(
         max_length=20,
-        choices=[("ADMITTED", "Admitted"), ("DISCHARGED", "Discharged")],
+        choices=[
+            ("ADMITTED",   "Admitted"),
+            ("DISCHARGED", "Discharged"),
+            ("CANCELLED",  "Cancelled (entered in error)"),
+        ],
         default="ADMITTED"
     )
+    # Set when an admin discharges with the bill still unpaid.
+    discharge_override_reason = models.CharField(max_length=200, blank=True)
+    discharged_by = models.ForeignKey("auth.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
@@ -97,6 +119,22 @@ class IPDAdmission(models.Model):
 
     def __str__(self):
         return f"{self.ipd_no} - {self.patient.full_name}"
+
+
+# ===================== BED STAY =====================
+class BedStay(models.Model):
+    """One continuous stay in one bed. A transfer ends one stay and starts the next."""
+    admission = models.ForeignKey(IPDAdmission, on_delete=models.CASCADE, related_name="bed_stays")
+    bed       = models.ForeignKey(Bed, on_delete=models.PROTECT, related_name="stays")
+    ward      = models.ForeignKey(Ward, on_delete=models.PROTECT, related_name="stays")
+    start     = models.DateTimeField()
+    end       = models.DateTimeField(null=True, blank=True)  # null while current
+
+    class Meta:
+        ordering = ["start", "id"]
+
+    def __str__(self):
+        return f"{self.admission.ipd_no} in {self.bed} from {self.start:%d %b %H:%M}"
 
 
 # ===================== IPD VITALS =====================

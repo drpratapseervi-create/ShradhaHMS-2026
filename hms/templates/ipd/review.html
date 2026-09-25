@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Review Open Admissions | Shradha HMS{% endblock %}
+{% block content %}
+<div class="container-fluid mt-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+    <h2 class="mb-0">🧹 Review open admissions</h2>
+    <a href="{% url 'hms:ipd_dashboard' %}" class="btn btn-secondary">← IPD board</a>
+  </div>
+  <p class="text-muted">
+    Admissions still marked "Admitted". For each patient who has actually gone home, enter when they left:
+    billing days stop at that time and the bed is freed. Discharging with the bill unpaid needs a reason.
+    Cancel only admissions entered by mistake (duplicates) — that's allowed only while nothing was charged against them.
+  </p>
+  <div class="alert alert-warning">
+    <strong>Patients who went home earlier and were billed outside the system:</strong>
+    enter the date they actually left and a reason such as <em>"historical — billed outside HMS"</em>, then Discharge.
+    <strong>Don't open the bill and Mark Paid</strong> for them: that records a payment in the HMS that was never collected through it,
+    and freezes the bill with every day up to the payment date.
+  </div>
+  {% for m in messages %}<div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} py-2">{{ m }}</div>{% endfor %}
+
+  <div class="card">
+    <div class="card-body p-0">
+      <table class="table align-middle mb-0">
+        <thead><tr><th>Admission</th><th>Bed</th><th class="text-end">Days so far</th><th>Bill</th><th>Discharge (when the patient left)</th><th>Or cancel (duplicate)</th></tr></thead>
+        <tbody>
+        {% for r in rows %}
+          <tr>
+            <td>
+              <strong>{{ r.a.ipd_no }}</strong> · {{ r.a.patient.full_name }}<br>
+              <small class="text-muted">admitted {{ r.a.admission_date|date:"d M Y H:i" }}</small>
+              {% if r.others_open %}<br><span class="badge bg-warning text-dark">same patient has {{ r.others_open }} other open admission{{ r.others_open|pluralize }}</span>{% endif %}
+            </td>
+            <td>{% if r.a.bed %}{{ r.a.bed.ward.name }} / {{ r.a.bed.bed_number }}{% else %}<span class="text-danger">no bed</span>{% endif %}</td>
+            <td class="text-end">{{ r.days }}</td>
+            <td>
+              {% if r.bill.is_paid %}<span class="badge bg-success">Paid</span>
+              {% elif r.bill %}<span class="badge bg-secondary">Unpaid</span>{% else %}<span class="text-muted">none</span>{% endif %}
+              {% if r.advances %}<br><small>advances ₹{{ r.advances }}</small>{% endif %}
+              <br><a href="{% url 'hms:admission_bill' r.a.id %}" target="_blank" class="small">open bill</a>
+            </td>
+            <td>
+              <form method="post" class="d-flex flex-wrap gap-1 align-items-center">
+                {% csrf_token %}
+                <input type="hidden" name="admission_id" value="{{ r.a.id }}">
+                <input type="hidden" name="action" value="discharge">
+                <input type="datetime-local" name="discharge_at" class="form-control form-control-sm" style="width:190px;" required
+                       max="{% now 'Y-m-d\TH:i' %}" title="When the patient actually left">
+                {% if not r.bill.is_paid %}<input type="text" name="reason" class="form-control form-control-sm" style="width:180px;" placeholder="reason (bill unpaid)" required>{% endif %}
+                <button class="btn btn-sm btn-success">Discharge</button>
+              </form>
+            </td>
+            <td>
+              {% if r.has_charges %}
+                <small class="text-muted">has charges/payments</small>
+              {% else %}
+              <form method="post" class="d-flex gap-1" onsubmit="return confirm('Cancel {{ r.a.ipd_no }} as entered in error?');">
+                {% csrf_token %}
+                <input type="hidden" name="admission_id" value="{{ r.a.id }}">
+                <input type="hidden" name="action" value="cancel">
+                <input type="text" name="reason" class="form-control form-control-sm" style="width:140px;" placeholder="duplicate of…">
+                <button class="btn btn-sm btn-outline-danger">Cancel</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-center text-muted p-4">No open admissions.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

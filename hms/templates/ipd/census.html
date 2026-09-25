@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}IPD Census | Shradha HMS{% endblock %}
+{% block content %}
+<div class="container-fluid mt-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h2 class="mb-0">📊 IPD Census — bed occupancy &amp; length of stay</h2>
+    <a href="{% url 'hms:ipd_dashboard' %}" class="btn btn-secondary">← IPD board</a>
+  </div>
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-auto"><input type="date" name="from" value="{{ date_from|date:'Y-m-d' }}" class="form-control"></div>
+    <div class="col-auto"><input type="date" name="to" value="{{ date_to|date:'Y-m-d' }}" class="form-control"></div>
+    <div class="col-auto"><button class="btn btn-primary">Show</button></div>
+  </form>
+
+  {% if stale_count %}
+  <div class="alert alert-warning py-2">
+    {{ stale_count }} admission(s) have been open for more than 10 days — if those patients have actually gone home,
+    occupancy here is overstated. Close them from <a href="{% url 'hms:ipd_review' %}">Review open admissions</a> (admin).
+  </div>
+  {% endif %}
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="card p-3"><div class="text-muted small">Bed occupancy rate</div><div class="fs-3 fw-bold">{{ avg_occupancy }}%</div><div class="small text-muted">{{ bed_days }} bed-days / ({{ total_beds }} beds × {{ days|length }} days)</div></div></div>
+    <div class="col-md-3"><div class="card p-3"><div class="text-muted small">Average length of stay</div><div class="fs-3 fw-bold">{% if alos is not None %}{{ alos }} days{% else %}—{% endif %}</div><div class="small text-muted">over {{ discharged_count }} discharge(s) in the period</div></div></div>
+    <div class="col-md-6"><div class="card p-3 small text-muted">
+      Occupancy is a midnight census (beds occupied at the end of each day). Length of stay uses the billing rule: nights stayed, minimum 1.
+      Both are NABH key performance indicators.
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0">
+      <table class="table table-sm mb-0 align-middle">
+        <thead><tr><th>Date</th><th class="text-end">Occupied at midnight</th><th class="text-end">Occupancy</th><th class="text-end">Admissions</th><th class="text-end">Discharges</th></tr></thead>
+        <tbody>
+        {% for d in days reversed %}
+          <tr>
+            <td>{{ d.date|date:"D d M Y" }}</td>
+            <td class="text-end">{{ d.occupied }} / {{ total_beds }}</td>
+            <td class="text-end">{{ d.pct }}%</td>
+            <td class="text-end">{{ d.admissions }}</td>
+            <td class="text-end">{{ d.discharges }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

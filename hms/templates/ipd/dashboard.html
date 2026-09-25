@@ -111,6 +111,18 @@
     background:#111111; border:1px dashed #2a2a2a; border-radius:12px;
     padding:30px; text-align:center; color:#8892a4; font-size:14px;
 }
+.bed-cleaning{ background:#3a2f12; border:1px solid #a16207; color:#fcd34d; }
+.bed-blocked{ background:#1f1f1f; border:1px dashed #555; color:#8892a4; }
+.bed-days{ font-size:11px; color:#8892a4; margin-top:2px; }
+.bed-mini-form{ display:inline; margin:0; }
+.bed-mini-btn{ background:#1e293b; color:#cbd5e1; border:none; padding:3px 8px; border-radius:5px; font-size:11px; cursor:pointer; margin-top:6px; }
+.ipd-summary{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+.ipd-summary .pill{ background:#111; border:1px solid #2a2a2a; border-radius:10px; padding:8px 14px; color:#e2e8f0; font-size:13px; }
+.ipd-summary .pill b{ color:#00d4c0; font-size:16px; }
+.ipd-links a{ color:#00d4c0; margin-right:14px; font-size:13px; }
+.ipd-msg{ padding:8px 12px; border-radius:8px; margin-bottom:10px; font-size:13px; }
+.ipd-msg-success{ background:#0f3d2e; color:#4ade80; } .ipd-msg-error{ background:#3a1418; color:#fca5a5; }
+.warn-box{ background:#3a2f12; border:1px solid #a16207; color:#fcd34d; border-radius:10px; padding:10px 14px; margin-bottom:14px; font-size:13px; }
 </style>
 
 <div class="ipd-wrap">
@@ -120,39 +132,72 @@
     <p>Live ward occupancy &amp; patient admission overview</p>
 </div>
 
+{% for m in messages %}<div class="ipd-msg ipd-msg-{{ m.tags }}">{{ m }}</div>{% endfor %}
+
+<div class="ipd-summary">
+    <div class="pill">Occupied <b>{{ occupied_beds }}</b> / {{ total_beds }} beds</div>
+    <div class="pill">Occupancy <b>{{ occupancy_pct }}%</b></div>
+    <div class="pill">Admitted <b>{{ admissions|length }}</b></div>
+    <div class="pill ipd-links">
+        <a href="{% url 'hms:admit_patient' %}">+ Admit patient</a>
+        <a href="{% url 'hms:ipd_census' %}">Census &amp; ALOS</a>
+        {% if is_admin %}<a href="{% url 'hms:ipd_review' %}">Review open admissions</a>{% endif %}
+    </div>
+</div>
+
+{% if no_bed %}
+<div class="warn-box">
+    ⚠ Admitted without a bed: {% for a in no_bed %}{{ a.ipd_no }} {{ a.patient.full_name }}{% if not forloop.last %}, {% endif %}{% endfor %}.
+    Their bed charges can't be billed — assign a bed with Transfer{% if is_admin %}, or close duplicates in <a href="{% url 'hms:ipd_review' %}" style="color:#fcd34d;">Review open admissions</a>{% endif %}.
+</div>
+{% endif %}
+
 <!-- ================= BED CARDS ================= -->
 
-{% for ward in wards %}
+{% for w in wards %}
 <div class="ward-block">
 
     <div class="ward-title">
-        {{ ward.name }}
-        <span class="ward-count">{{ ward.bed_set.all|length }} beds</span>
+        {{ w.ward.name }}
+        <span class="ward-count">{{ w.occupied }}/{{ w.beds|length }} occupied · {{ w.free }} free{% if w.ward.bed_charge_item %} · ₹{{ w.ward.bed_charge_item.price|floatformat:0 }}/day{% else %} · no rate set{% endif %}</span>
     </div>
 
     <div class="bed-grid">
-    {% for bed in ward.bed_set.all|dictsort:"bed_number" %}
+    {% for bed in w.beds %}
 
         {% if bed.is_occupied %}
             <div class="bed-card bed-occupied">
                 <b>Bed {{ bed.bed_number }}</b>
-                {% for admission in admissions %}
-                    {% if admission.bed.id == bed.id %}
-                        <div class="bed-patient">{{ admission.patient.full_name }}</div>
-                        <div class="bed-ipdno">{{ admission.ipd_no }}</div>
-                        <div class="bed-actions">
-                            <a class="bed-btn bed-btn-open" href="{% url 'hms:ipd_patient_file' admission.id %}">Open</a>
-                            <a class="bed-btn bed-btn-discharge"
-                               href="{% url 'hms:ipd_discharge' admission.id %}"
-                               onclick="return confirm('Discharge {{ admission.patient.full_name }}?')">Discharge</a>
-                        </div>
-                    {% endif %}
-                {% endfor %}
+                {% if bed.admission %}
+                    <div class="bed-patient">{{ bed.admission.patient.full_name }}</div>
+                    <div class="bed-ipdno">{{ bed.admission.ipd_no }}</div>
+                    <div class="bed-days">Day {{ bed.admission.days_in }}{% if bed.admission.doctor %} · Dr. {{ bed.admission.doctor.full_name }}{% endif %}</div>
+                    <div class="bed-actions">
+                        <a class="bed-btn bed-btn-open" href="{% url 'hms:ipd_patient_file' bed.admission.id %}">Open</a>
+                        <a class="bed-btn bed-btn-open" href="{% url 'hms:ipd_transfer' bed.admission.id %}">Transfer</a>
+                        <a class="bed-btn bed-btn-discharge" href="{% url 'hms:admission_bill' bed.admission.id %}">Bill / Discharge</a>
+                    </div>
+                {% else %}
+                    <div class="bed-days">Marked occupied, no admission</div>
+                {% endif %}
+            </div>
+        {% elif bed.housekeeping %}
+            <div class="bed-card {% if bed.housekeeping == 'CLEANING' %}bed-cleaning{% else %}bed-blocked{% endif %}">
+                <b>Bed {{ bed.bed_number }}</b>
+                <div class="bed-days">{{ bed.get_housekeeping_display }}</div>
+                <form method="post" action="{% url 'hms:bed_housekeeping' bed.id %}" class="bed-mini-form">
+                    {% csrf_token %}<input type="hidden" name="housekeeping" value="">
+                    <button class="bed-mini-btn" type="submit">✓ Ready</button>
+                </form>
             </div>
         {% else %}
-            <a class="bed-card bed-free" href="{% url 'hms:admit_bed' bed.id %}">
-                Bed {{ bed.bed_number }}
-            </a>
+            <div class="bed-card bed-free">
+                <a href="{% url 'hms:admit_bed' bed.id %}" style="color:inherit;text-decoration:none;">Bed {{ bed.bed_number }}<div class="bed-days">Free — admit</div></a>
+                <form method="post" action="{% url 'hms:bed_housekeeping' bed.id %}" class="bed-mini-form">
+                    {% csrf_token %}<input type="hidden" name="housekeeping" value="BLOCKED">
+                    <button class="bed-mini-btn" type="submit" title="Take out of use (maintenance)">Block</button>
+                </form>
+            </div>
         {% endif %}
 
     {% endfor %}
@@ -183,6 +228,7 @@
             <th>Department</th>
             <th>Diagnosis</th>
             <th>Admission Date</th>
+            <th>Days</th>
             <th>Ward / Bed</th>
             <th>Action</th>
         </tr>
@@ -199,12 +245,12 @@
             <td>{% if admission.doctor.department %}{{ admission.doctor.department.name }}{% else %}—{% endif %}</td>
             <td>{{ admission.diagnosis|default:"—" }}</td>
             <td>{{ admission.admission_date|date:"d M Y" }}</td>
-            <td><span class="ward-bed-pill">{{ admission.ward.name }} / Bed {{ admission.bed.bed_number }}</span></td>
+            <td>{{ admission.days_in }}</td>
+            <td><span class="ward-bed-pill">{% if admission.bed %}{{ admission.ward.name }} / Bed {{ admission.bed.bed_number }}{% else %}No bed{% endif %}</span></td>
             <td>
                 <a class="action-open" href="{% url 'hms:ipd_patient_file' admission.id %}">Open</a>
-                <a class="action-discharge"
-                   href="{% url 'hms:ipd_discharge' admission.id %}"
-                   onclick="return confirm('Discharge {{ admission.patient.full_name }}?')">Discharge</a>
+                <a class="action-open" href="{% url 'hms:ipd_transfer' admission.id %}">{% if admission.bed %}Transfer{% else %}Assign bed{% endif %}</a>
+                <a class="action-discharge" href="{% url 'hms:admission_bill' admission.id %}">Bill / Discharge</a>
             </td>
         </tr>
     {% endfor %}

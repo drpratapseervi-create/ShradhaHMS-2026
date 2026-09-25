@@ -375,7 +375,7 @@ def sync_ipd_pharmacy_charge(discharge_bill, admission):
     if total > 0:
         if line is None:
             line = DischargeBillItem(bill=discharge_bill, item=bill_item)
-        line.quantity, line.price, line.total = 1, total, total
+        line.quantity, line.price, line.total, line.auto_synced = 1, total, total, True
         line.save()
     elif line is not None:
         line.delete()

@@ -31,7 +31,10 @@ class DischargeBill(models.Model):
         ("FREE",   "Free of Cost"),
     ]
 
-    patient      = models.OneToOneField(Patient, on_delete=models.CASCADE)
+    # One bill per admission (was one per patient, which broke on readmission).
+    patient      = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="discharge_bills")
+    admission    = models.OneToOneField("IPDAdmission", on_delete=models.CASCADE, null=True, blank=True,
+                                        related_name="discharge_bill")
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     discount     = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     advance_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -54,6 +57,8 @@ class DischargeBillItem(models.Model):
     quantity = models.IntegerField(default=1)
     price    = models.DecimalField(max_digits=10, decimal_places=2)
     total    = models.DecimalField(max_digits=10, decimal_places=2)
+    # Maintained by the per-day sync (bed/nursing/consultation, IPD pharmacy); removed by it when no longer due.
+    auto_synced = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -71,6 +76,8 @@ class IPDAdvance(models.Model):
     ]
 
     patient      = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='advances')
+    admission    = models.ForeignKey("IPDAdmission", on_delete=models.CASCADE, null=True, blank=True,
+                                     related_name="advances")
     amount       = models.DecimalField(max_digits=10, decimal_places=2)
     payment_mode = models.CharField(max_length=20, choices=PAYMENT_MODES, default='CASH')
     note         = models.CharField(max_length=200, blank=True, default='')

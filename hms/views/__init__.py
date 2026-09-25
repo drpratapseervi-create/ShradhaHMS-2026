@@ -88,6 +88,10 @@ from .ipd import (
     ipd_dashboard,
     admit_bed,
     ipd_discharge,
+    ipd_transfer,
+    bed_housekeeping,
+    ipd_census,
+    ipd_review,
     admit_patient,
     procedure_performed_text,
     chief_complaint_text,
@@ -98,6 +102,9 @@ from .ipd import (
 
 from .billing import (
     discharge_bill,
+    admission_bill,
+    admission_advance_receipt,
+    admission_final_receipt,
     delete_bill_item,
     discharge_bill_pdf,
     advance_payment_receipt,

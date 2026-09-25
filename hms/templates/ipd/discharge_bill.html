@@ -175,6 +175,7 @@
 <div class="container py-4">
 
   <h4 class="mb-3" style="color:#e2e8f0 !important;">Discharge Bill</h4>
+  {% for m in messages %}<div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} py-2">{{ m }}</div>{% endfor %}
 
   {% if error %}
   <div class="alert alert-danger">{{ error }}</div>
@@ -352,7 +353,7 @@
     </div>
     <div class="dbill-body dbill-actions">
       <a href="{% url 'hms:discharge_bill_pdf' admission.id %}" class="dbill-btn dbill-btn-teal">🖨️ Print Discharge Bill</a>
-      <a href="{% url 'hms:advance_payment_receipt' patient.id %}" class="dbill-btn dbill-btn-blue">🧾 Print Advance Receipts</a>
+      <a href="{% url 'hms:admission_advance_receipt' admission.id %}" class="dbill-btn dbill-btn-blue">🧾 Print Advance Receipts</a>
     </div>
   </div>
 
@@ -366,7 +367,7 @@
       <div class="alert alert-success" style="margin:0 0 12px;">
         ✅ Payment Received — {{ bill.get_payment_mode_display }} on {{ bill.paid_at|date:"d-m-Y H:i" }}
       </div>
-      <a href="{% url 'hms:final_payment_receipt' patient.id %}" class="dbill-btn dbill-btn-blue">Print Final Receipt</a>
+      <a href="{% url 'hms:admission_final_receipt' admission.id %}" class="dbill-btn dbill-btn-blue">Print Final Receipt</a>
       {% else %}
       <form method="post" class="dbill-form-row" style="margin-bottom:0;">
         {% csrf_token %}
@@ -381,11 +382,52 @@
           </select>
         </div>
         <div class="dbill-field">
+          <label>Paid on</label>
+          <input type="date" name="paid_on" value="{% now 'Y-m-d' %}" max="{% now 'Y-m-d' %}" min="{{ admission.admission_date|date:'Y-m-d' }}" required>
+        </div>
+        <div class="dbill-field">
           <label>Balance Amount</label>
           <div class="dbill-balance">₹ {{ net_amount }}</div>
         </div>
-        <button type="submit" class="dbill-btn dbill-btn-success">Mark Paid &amp; Print Receipt</button>
+        <button type="submit" class="dbill-btn dbill-btn-success"
+                onclick="var d=this.form.paid_on.value; return d==='{% now 'Y-m-d' %}' || confirm('Record this payment as received on ' + d + '? It will count in that day\'s collection, not today\'s.');">Mark Paid &amp; Print Receipt</button>
       </form>
+      <div class="dbill-field" style="margin-top:8px;font-size:12px;color:#8892a4;">
+        Only mark paid for money actually received, on the day it was received. For a patient billed outside the system, don't mark paid here; discharge with dues and a reason instead.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ═══ Discharge ═══ -->
+  <div class="dbill-card">
+    <div class="dbill-head">
+      <h5>{% if admission.status == 'DISCHARGED' %}🏠 Discharged{% else %}🏠 Discharge patient{% endif %}</h5>
+    </div>
+    <div class="dbill-body">
+      {% if admission.status == 'DISCHARGED' %}
+        <div class="alert alert-success" style="margin:0;">
+          Discharged {{ admission.discharge_date|date:"d-m-Y H:i" }}{% if admission.discharged_by %} by {{ admission.discharged_by.username }}{% endif %}.
+          {% if admission.discharge_override_reason %}<br>Discharged with dues: {{ admission.discharge_override_reason }}{% endif %}
+        </div>
+      {% elif bill.is_paid %}
+        <form method="post" action="{% url 'hms:ipd_discharge' admission.id %}" class="dbill-form-row" style="margin-bottom:0;"
+              onsubmit="return confirm('Discharge {{ admission.patient.full_name|escapejs }} now? The bed will be freed for cleaning.');">
+          {% csrf_token %}
+          <div class="dbill-field">Bill paid. Discharging frees {% if admission.bed %}{{ admission.bed }}{% else %}the bed{% endif %} (marked for cleaning).</div>
+          <button type="submit" class="dbill-btn dbill-btn-success">Discharge now</button>
+        </form>
+      {% elif can_discharge_with_dues %}
+        <form method="post" action="{% url 'hms:ipd_discharge' admission.id %}" class="dbill-form-row" style="margin-bottom:0;">
+          {% csrf_token %}
+          <div class="dbill-field" style="flex:1;">
+            <label>The bill is not paid. Admin only: reason for discharging with dues</label>
+            <input type="text" name="override_reason" required placeholder="e.g. balance to be paid by insurer / LAMA">
+          </div>
+          <button type="submit" class="dbill-btn dbill-btn-blue">Discharge with dues</button>
+        </form>
+      {% else %}
+        <div class="dbill-field">Collect the final payment above to discharge. (Only an admin can discharge with dues.)</div>
       {% endif %}
     </div>
   </div>

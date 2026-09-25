@@ -11,7 +11,7 @@ from .lab import (
 )
 from .imaging import MedicalImage, USGReport, USGImpressionOption
 from .ipd import (
-    Ward, Bed, IPDAdmission, IPDVital, IPDMedication,
+    Ward, Bed, BedStay, IPDAdmission, IPDVital, IPDMedication,
     IPDDischargeMedication, DischargeTemplate, IPDProgressNote,
     IPDSymptomHistory, IPDTreatmentHistory, IPDProcedure,
 )
