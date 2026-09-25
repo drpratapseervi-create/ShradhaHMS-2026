@@ -16,6 +16,7 @@ from ..models import (
     ProcedureBill, Consultation, InvestigationBill, InvestigationBillItem,
     IPDAdvance, IPDAdmission, DischargeBill, Appointment, Expense, Doctor,
 )
+from ..pharmacy.dispensing import counter_collection
 from ._shared import logger
 
 
@@ -63,6 +64,10 @@ def daily_report(request):
         created_at__date=filter_date
     ).aggregate(total=Sum('net_amount'))['total'] or 0
 
+    # ---------------- PHARMACY COLLECTION ----------------
+    # Counter sales less refunds; IPD issues are collected on the discharge bill.
+    pharmacy = counter_collection(filter_date, filter_date)[0]
+
     # ---------------- IPD ADVANCE ----------------
     advance = IPDAdvance.objects.filter(
         date__date=filter_date
@@ -80,7 +85,7 @@ def daily_report(request):
     ).aggregate(total=Sum('amount'))['total'] or 0
 
     # ---------------- FINAL CALCULATION ----------------
-    total_collection = opd + lab + procedure + advance + discharge
+    total_collection = opd + lab + procedure + pharmacy + advance + discharge
     net_collection   = total_collection - expenses
 
     return render(request, "daily_report.html", {
@@ -96,6 +101,7 @@ def daily_report(request):
         "endoscopy":        endoscopy,
         "lab":              lab,
         "procedure":        procedure,
+        "pharmacy":         pharmacy,
         "advance":          advance,
         "discharge":        discharge,
         "expenses":         expenses,

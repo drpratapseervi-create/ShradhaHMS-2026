@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Opening Stock Import | Shradha HMS{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Opening Stock Import</h2>
+    <a href="{% url 'hms:pharmacy_home' %}" class="btn btn-secondary">← Counter</a>
+  </div>
+  {% if messages %}{% for m in messages %}<div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} py-2">{{ m }}</div>{% endfor %}{% endif %}
+  <div class="card p-4">
+    <ol class="mb-3">
+      <li><a href="?template=1">Download the Excel template</a>.</li>
+      <li>Enter one row per <strong>batch</strong> on the shelf. Quantity is in units (tablets, bottles); prices are per unit.</li>
+      <li>Upload it here. If any row has a problem, nothing is imported and the rows to fix are listed.</li>
+    </ol>
+    <p class="text-muted small mb-3">Columns: {{ columns|join:" · " }}. A name that already exists adds a new batch to that item; a new name creates the item and links it to the Drug Master entry with the same name.</p>
+    <form method="post" enctype="multipart/form-data" class="d-flex gap-2">
+      {% csrf_token %}
+      <input type="file" name="file" accept=".xlsx" class="form-control" required>
+      <button class="btn btn-success">Import</button>
+    </form>
+    {% if results.errors %}
+      <div class="alert alert-danger mt-3 mb-0">
+        <strong>Rows to fix:</strong>
+        <ul class="mb-0">{% for row, err in results.errors %}<li>Row {{ row }}: {{ err }}</li>{% endfor %}</ul>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

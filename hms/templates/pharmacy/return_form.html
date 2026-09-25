@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Return Items | Shradha HMS{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="mb-0">↩ Return items — {{ bill.bill_no }}</h2>
+      <div>{{ bill.display_name }} · {{ bill.created_at|date:"d M Y h:i A" }} ·
+        {% if bill.is_ipd %}charged to {{ bill.admission.ipd_no }}{% else %}paid by {{ bill.get_payment_mode_display }}{% endif %}</div>
+    </div>
+    <a href="{% url 'hms:pharmacy_bill_print' bill.id %}" class="btn btn-secondary">← Bill</a>
+  </div>
+  {% if messages %}{% for m in messages %}<div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} py-2">{{ m }}</div>{% endfor %}{% endif %}
+
+  <form method="post" id="return-form">
+    {% csrf_token %}
+    <div class="card">
+      <div class="card-body p-0">
+        <table class="table align-middle mb-0">
+          <thead><tr><th>Medicine</th><th>Batch</th><th class="text-end">Sold</th><th class="text-end">Already returned</th><th style="width:130px;">Return now</th><th class="text-end">Refund</th></tr></thead>
+          <tbody>
+          {% for it in items %}
+            <tr data-rate="{{ it.mrp }}">
+              <td>{{ it.item.name }}</td>
+              <td>{{ it.batch.batch_no|default:"—" }}</td>
+              <td class="text-end">{{ it.quantity }}</td>
+              <td class="text-end">{{ it.returned_quantity }}</td>
+              <td>
+                {% if it.returnable_quantity %}
+                  <input type="number" name="ret_{{ it.id }}" min="0" max="{{ it.returnable_quantity }}" class="form-control form-control-sm ret-qty" placeholder="max {{ it.returnable_quantity }}">
+                {% else %}<span class="text-muted">—</span>{% endif %}
+              </td>
+              <td class="text-end refund">—</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="row mt-3 g-2 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label">Reason</label>
+        <input type="text" name="reason" class="form-control" placeholder="e.g. course changed, patient discharged early">
+      </div>
+      <div class="col-md-3 fs-5 fw-bold">
+        {% if bill.is_ipd %}Reduce IPD charge{% else %}Refund{% endif %}: <span id="total">₹0.00</span>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-warning w-100">Save Return</button>
+      </div>
+    </div>
+    {% if factor < 1 %}<p class="small text-muted mt-2">This bill had a discount, so each unit is refunded at the price actually charged, not full MRP.</p>{% endif %}
+  </form>
+</div>
+<script>
+(function () {
+  var factor = parseFloat("{{ factor }}".replace(',', '.')) || 0;
+  function recalc() {
+    var total = 0;
+    document.querySelectorAll('#return-form tbody tr').forEach(function (tr) {
+      var input = tr.querySelector('.ret-qty');
+      if (!input) return;
+      var q = Math.min(parseInt(input.value || '0', 10), parseInt(input.max, 10));
+      var amt = Math.round(q * parseFloat(tr.dataset.rate) * factor * 100) / 100;
+      tr.querySelector('.refund').textContent = q ? '₹' + amt.toFixed(2) : '—';
+      total += amt;
+    });
+    document.getElementById('total').textContent = '₹' + total.toFixed(2);
+  }
+  document.getElementById('return-form').addEventListener('input', recalc);
+})();
+</script>
+{% endblock %}

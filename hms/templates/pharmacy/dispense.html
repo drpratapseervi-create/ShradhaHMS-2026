@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}Dispense | Shradha HMS{% endblock %}
+{% block content %}
+<style>
+.rx-text { font-size:12px; color:#8892a4; }
+.qty-input { width:80px; }
+.stock-short { color:#dc3545; font-weight:600; }
+.search-results { max-height:260px; overflow-y:auto; }
+.search-results button { text-align:left; }
+tr.row-off td { opacity:.45; }
+</style>
+<div class="container-fluid mt-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="mb-0">💊 {% if admission %}Issue to Inpatient{% elif consultation %}Dispense Prescription{% else %}Walk-in Sale{% endif %}</h2>
+      {% if admission %}
+        <div><strong>{{ patient.full_name }}</strong> · {{ admission.ipd_no }} · {% if admission.bed %}{{ admission.bed.ward.name }} / Bed {{ admission.bed.bed_number }}{% else %}no bed{% endif %}
+        · Dr. {{ admission.doctor.full_name|default:"—" }} · admitted {{ admission.admission_date|date:"d M Y" }}
+        · medicines so far <a href="{% url 'hms:pharmacy_ipd_statement' admission.id %}">₹{{ ipd_total }}</a></div>
+      {% elif patient %}
+        <div><strong>{{ patient.full_name }}</strong> · {{ patient.uhid }} · {{ patient.age|default:"" }}{% if patient.age %} y{% endif %} {{ patient.gender }}
+        · Dr. {{ consultation.appointment.doctor.full_name }} · {{ consultation.appointment.date|date:"d M Y" }}</div>
+      {% endif %}
+    </div>
+    <a href="{% url 'hms:pharmacy_home' %}" class="btn btn-secondary">← Counter</a>
+  </div>
+
+  {% if messages %}{% for m in messages %}<div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} py-2">{{ m }}</div>{% endfor %}{% endif %}
+
+  <form method="post" id="dispense-form">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-body p-0">
+            <table class="table align-middle mb-0" id="lines">
+              <thead><tr><th style="width:36px;"></th><th>Medicine</th><th>Qty</th><th>In stock</th><th>MRP/unit</th><th class="text-end">Amount</th><th></th></tr></thead>
+              <tbody>
+              {% for l in lines %}
+                <tr data-mrp="{{ l.mrp|default:0 }}" data-available="{{ l.available }}" data-schedule="{{ l.item.schedule|default:'' }}" {% if l.already_dispensed or l.skipped_before %}class="row-off"{% endif %}>
+                  <td><input type="checkbox" name="include" value="{{ forloop.counter0 }}" class="form-check-input line-on" {% if l.item and l.quantity and l.available and not l.already_dispensed and not l.skipped_before %}checked{% endif %}></td>
+                  <td>
+                    <input type="hidden" name="item_id" value="{{ l.item.id|default:'' }}">
+                    <input type="hidden" name="prescription_id" value="{{ l.prescription.id|default:'' }}">
+                    <div class="item-name fw-semibold">{% if l.item %}{{ l.item.name }}{% if l.item.schedule != 'OTC' %} <span class="badge bg-warning text-dark">{{ l.item.schedule }}</span>{% endif %}{% else %}<span class="text-danger">Not in stock list</span>{% endif %}</div>
+                    {% if l.order %}
+                    <div class="rx-text">Order: {{ l.order.medicine_name }} · {{ l.order.dose }} · {{ l.order.route }} · {{ l.order.frequency }}</div>
+                    {% else %}
+                    <div class="rx-text">Rx: {{ l.prescription.medicine }} · {{ l.prescription.dose }} · {{ l.prescription.frequency }} · {{ l.prescription.duration }}</div>
+                    {% endif %}
+                    {% if l.already_dispensed %}<div class="rx-text text-warning">Already dispensed on an earlier bill</div>{% elif l.skipped_before %}<div class="rx-text text-warning">Skipped on an earlier bill (not dispensed)</div>{% elif l.new_since_bill %}<div class="rx-text"><span class="badge bg-warning text-dark">New</span> added by the doctor after the last bill</div>{% endif %}
+                  </td>
+                  <td><input type="number" name="quantity" min="0" value="{{ l.quantity|default:'' }}" class="form-control form-control-sm qty-input" {% if not l.quantity %}placeholder="?"{% endif %}></td>
+                  <td class="available">{{ l.available }}{% if l.item %} {{ l.item.unit|lower }}{% endif %}</td>
+                  <td class="mrp">{% if l.mrp %}₹{{ l.mrp }}{% else %}—{% endif %}</td>
+                  <td class="text-end amount">—</td>
+                  <td><button type="button" class="btn btn-sm btn-outline-secondary change-btn">Change</button></td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+            {% if not lines %}<p class="text-muted p-3 mb-0" id="empty-note">Search below to add medicines.</p>{% endif %}
+          </div>
+        </div>
+
+        <div class="card mt-3">
+          <div class="card-body">
+            <label class="form-label fw-semibold" id="search-label">Add medicine</label>
+            <input type="text" id="item-search" class="form-control" placeholder="Search by brand or generic name…" autocomplete="off">
+            <div class="search-results list-group mt-2" id="search-results"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-body">
+            {% if not patient %}
+              <div class="mb-2"><label class="form-label">Customer name</label><input name="customer_name" class="form-control" required></div>
+              <div class="mb-2"><label class="form-label">Mobile</label><input name="customer_mobile" class="form-control"></div>
+              <div class="mb-2">
+                <label class="form-label">Prescribing doctor</label>
+                <select name="doctor_id" class="form-select mb-1" id="doctor-id">
+                  <option value="">— Outside doctor / none —</option>
+                  {% for d in doctors %}<option value="{{ d.id }}">{{ d.full_name }}</option>{% endfor %}
+                </select>
+                <input name="doctor_name" id="doctor-name" class="form-control" placeholder="Outside doctor's name">
+              </div>
+            {% endif %}
+            <div id="h1-warning" class="alert alert-warning py-2 small" style="display:none;">
+              Schedule H1 medicine on this bill: it will be entered in the H1 register with the patient and prescriber. Sell only against a prescription.
+            </div>
+            {% if admission %}
+            <table class="table table-sm mb-2">
+              <tr class="fw-bold fs-5"><td>This issue</td><td class="text-end" id="net">₹0.00</td></tr>
+            </table>
+            <span id="gross" hidden></span>
+            <div class="alert alert-info py-2 small">Charged to <strong>{{ admission.ipd_no }}</strong>'s discharge bill — nothing is collected at the counter. Unused medicines can be returned later from the issue slip.</div>
+            <div class="small text-muted mb-2">Stock is taken from the earliest-expiring batch first.</div>
+            <button type="submit" class="btn btn-success w-100 btn-lg" id="save-btn">Issue &amp; Print Slip</button>
+            {% else %}
+            <table class="table table-sm mb-2">
+              <tr><td>Gross</td><td class="text-end" id="gross">₹0.00</td></tr>
+              <tr><td>Discount</td><td class="text-end"><input type="number" name="discount" id="discount" value="0" min="0" step="0.01" class="form-control form-control-sm text-end"></td></tr>
+              <tr class="fw-bold fs-5"><td>Net</td><td class="text-end" id="net">₹0.00</td></tr>
+            </table>
+            <div class="mb-3">
+              {% for code, label in payment_modes %}
+              <div class="form-check form-check-inline">
+                <input class="form-check-input pay-mode" type="radio" name="payment_mode" id="pm-{{ code }}" value="{{ code }}" {% if code == 'CASH' %}checked{% endif %}>
+                <label class="form-check-label" for="pm-{{ code }}">{{ label }}</label>
+              </div>
+              {% endfor %}
+            </div>
+            <div class="small text-muted mb-2">Stock is taken from the earliest-expiring batch first. If a line spans two batches with different MRPs, the bill uses each batch's MRP.</div>
+            <button type="submit" class="btn btn-success w-100 btn-lg" id="save-btn">Save &amp; Print Bill</button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  var tbody = document.querySelector('#lines tbody');
+  var searchUrl = "{% url 'hms:pharmacy_item_search' %}";
+  var replaceRow = null;
+
+  function money(n) { return '₹' + (Math.round(n * 100) / 100).toFixed(2); }
+
+  function recalc() {
+    var gross = 0, h1 = false;
+    tbody.querySelectorAll('tr').forEach(function (tr) {
+      var on = tr.querySelector('.line-on').checked;
+      var qty = parseInt(tr.querySelector('[name=quantity]').value || '0', 10);
+      var mrp = parseFloat(tr.dataset.mrp || '0');
+      var avail = parseInt(tr.dataset.available || '0', 10);
+      var amt = on ? qty * mrp : 0;
+      tr.querySelector('.amount').textContent = on && qty ? money(amt) : '—';
+      tr.querySelector('.available').classList.toggle('stock-short', on && qty > avail);
+      tr.classList.toggle('row-off', !on);
+      if (on && (tr.dataset.schedule === 'H1' || tr.dataset.schedule === 'X')) h1 = true;
+      gross += amt;
+    });
+    var freeEl = document.getElementById('pm-FREE'), discEl = document.getElementById('discount');
+    var free = !!(freeEl && freeEl.checked);
+    var disc = !discEl ? 0 : (free ? gross : Math.min(parseFloat(discEl.value || '0'), gross));
+    if (discEl) discEl.disabled = free;
+    document.getElementById('gross').textContent = money(gross);
+    document.getElementById('net').textContent = money(gross - disc);
+    document.getElementById('h1-warning').style.display = h1 ? 'block' : 'none';
+  }
+
+  function setRowItem(tr, it) {
+    tr.querySelector('[name=item_id]').value = it.id;
+    tr.dataset.mrp = it.mrp || 0;
+    tr.dataset.available = it.available;
+    tr.dataset.schedule = it.schedule;
+    tr.querySelector('.item-name').innerHTML = escapeHtml(it.name) +
+      (it.schedule !== 'OTC' ? ' <span class="badge bg-warning text-dark">' + it.schedule + '</span>' : '');
+    tr.querySelector('.available').textContent = it.available + ' ' + it.unit.toLowerCase();
+    tr.querySelector('.mrp').textContent = it.mrp ? '₹' + it.mrp : '—';
+    tr.querySelector('.line-on').checked = it.available > 0;
+    var q = tr.querySelector('[name=quantity]');
+    if (!q.value && !it.loose) q.value = 1;
+  }
+
+  function escapeHtml(s) { return String(s).replace(/[&<>"]/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  function addRow(it) {
+    var idx = tbody.querySelectorAll('tr').length;
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><input type="checkbox" name="include" value="' + idx + '" class="form-check-input line-on" checked></td>' +
+      '<td><input type="hidden" name="item_id"><input type="hidden" name="prescription_id" value="">' +
+      '<div class="item-name fw-semibold"></div><div class="rx-text">Added at counter</div></td>' +
+      '<td><input type="number" name="quantity" min="0" class="form-control form-control-sm qty-input"></td>' +
+      '<td class="available"></td><td class="mrp"></td><td class="text-end amount">—</td>' +
+      '<td><button type="button" class="btn btn-sm btn-outline-secondary change-btn">Change</button></td>';
+    tbody.appendChild(tr);
+    setRowItem(tr, it);
+    var note = document.getElementById('empty-note'); if (note) note.remove();
+    tr.querySelector('[name=quantity]').focus();
+    recalc();
+  }
+
+  var timer = null;
+  var searchEl = document.getElementById('item-search');
+  var resultsEl = document.getElementById('search-results');
+  searchEl.addEventListener('input', function () {
+    clearTimeout(timer);
+    var q = searchEl.value.trim();
+    if (q.length < 2) { resultsEl.innerHTML = ''; return; }
+    timer = setTimeout(function () {
+      fetch(searchUrl + '?q=' + encodeURIComponent(q)).then(function (r) { return r.json(); }).then(function (d) {
+        resultsEl.innerHTML = '';
+        d.results.forEach(function (it) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'list-group-item list-group-item-action' + (it.available ? '' : ' disabled');
+          b.innerHTML = '<strong>' + escapeHtml(it.name) + '</strong>' + (it.generic ? ' <small class="text-muted">' + escapeHtml(it.generic) + '</small>' : '') +
+            '<span class="float-end">' + it.available + ' ' + it.unit.toLowerCase() + (it.mrp ? ' · ₹' + it.mrp : '') + '</span>';
+          b.addEventListener('click', function () {
+            if (replaceRow) { setRowItem(replaceRow, it); replaceRow = null; document.getElementById('search-label').textContent = 'Add medicine'; recalc(); }
+            else addRow(it);
+            searchEl.value = ''; resultsEl.innerHTML = '';
+          });
+          resultsEl.appendChild(b);
+        });
+        if (!d.results.length) resultsEl.innerHTML = '<div class="text-muted small p-2">No match in stock list.</div>';
+      });
+    }, 250);
+  });
+
+  tbody.addEventListener('click', function (e) {
+    if (!e.target.classList.contains('change-btn')) return;
+    replaceRow = e.target.closest('tr');
+    document.getElementById('search-label').textContent = 'Choose a replacement for: ' + replaceRow.querySelector('.rx-text').textContent;
+    searchEl.focus();
+  });
+  document.getElementById('dispense-form').addEventListener('input', recalc);
+  document.getElementById('dispense-form').addEventListener('change', recalc);
+
+  document.getElementById('dispense-form').addEventListener('submit', function (e) {
+    var problems = [];
+    tbody.querySelectorAll('tr').forEach(function (tr) {
+      if (!tr.querySelector('.line-on').checked) return;
+      var name = tr.querySelector('.item-name').textContent.trim();
+      var qty = parseInt(tr.querySelector('[name=quantity]').value || '0', 10);
+      if (!tr.querySelector('[name=item_id]').value) problems.push(name + ': choose a stock item (Change)');
+      else if (!qty) problems.push(name + ': enter a quantity');
+      else if (qty > parseInt(tr.dataset.available || '0', 10)) problems.push(name + ': only ' + tr.dataset.available + ' in stock');
+    });
+    var h1 = document.getElementById('h1-warning').style.display === 'block';
+    var docId = document.getElementById('doctor-id'), docName = document.getElementById('doctor-name');
+    if (h1 && docId && !docId.value && !docName.value.trim()) problems.push('Schedule H1 medicine: enter the prescribing doctor');
+    if (problems.length) { e.preventDefault(); alert(problems.join('\n')); return; }
+    document.getElementById('save-btn').disabled = true;
+    var discEl = document.getElementById('discount');
+    if (discEl) discEl.disabled = false;
+  });
+
+  // Typing a quantity on an unticked row (e.g. an IPD order) ticks it.
+  tbody.addEventListener('input', function (e) {
+    if (e.target.name !== 'quantity') return;
+    var tr = e.target.closest('tr');
+    if (parseInt(e.target.value || '0', 10) > 0 && tr.querySelector('[name=item_id]').value) {
+      tr.querySelector('.line-on').checked = true;
+    }
+  });
+
+  recalc();
+})();
+</script>
+{% endblock %}

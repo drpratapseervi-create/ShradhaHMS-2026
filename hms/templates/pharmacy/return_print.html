@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ ret.return_no }} | Credit Note</title>
+<style>
+body { font-family:'Segoe UI', Arial, sans-serif; background:#eef1f4; margin:0; color:#111; }
+.sheet { background:#fff; width:148mm; margin:16px auto; padding:10mm; box-sizing:border-box; box-shadow:0 2px 10px rgba(0,0,0,.12); }
+.head { text-align:center; border-bottom:2px solid #b45309; padding-bottom:6px; margin-bottom:8px; }
+.head h1 { margin:0; font-size:17px; color:#b45309; }
+.sub { font-size:10.5px; }
+.meta { display:flex; justify-content:space-between; font-size:11px; margin-bottom:8px; gap:10px; line-height:1.5; }
+table { width:100%; border-collapse:collapse; font-size:11px; }
+th, td { border-bottom:1px solid #ddd; padding:4px 3px; text-align:left; }
+th { background:#fdf6ec; }
+.r { text-align:right; }
+.total { text-align:right; font-size:14px; font-weight:700; margin-top:8px; }
+.toolbar { width:148mm; margin:12px auto 0; display:flex; gap:8px; }
+.toolbar a, .toolbar button { padding:7px 12px; border-radius:6px; border:none; cursor:pointer; font-size:13px; text-decoration:none; background:#007676; color:#fff; }
+.msg { width:148mm; margin:8px auto 0; padding:8px 12px; border-radius:6px; font-size:13px; background:#e6f7ee; color:#0f5132; }
+@media print { body { background:#fff; } .sheet { margin:0; box-shadow:none; width:auto; } .toolbar, .msg { display:none; } @page { size:A5; margin:6mm; } }
+</style>
+</head>
+<body>
+{% for m in messages %}<div class="msg">{{ m }}</div>{% endfor %}
+<div class="toolbar">
+  <button onclick="window.print()">🖨 Print</button>
+  <a href="{% url 'hms:pharmacy_bill_print' ret.bill.id %}" style="background:#6c757d;">← Bill {{ ret.bill.bill_no }}</a>
+  <a href="{% url 'hms:pharmacy_home' %}" style="background:#6c757d;">Counter</a>
+</div>
+<div class="sheet">
+  <div class="head">
+    <h1>{{ pharmacy.name }}</h1>
+    <div class="sub">D.L. No: {{ pharmacy.drug_licence|default:"________" }}{% if pharmacy.gstin %} · GSTIN: {{ pharmacy.gstin }}{% endif %}</div>
+    <div style="font-weight:700;margin-top:4px;font-size:12px;">{% if ret.bill.is_ipd %}RETURN SLIP — CREDITED TO {{ ret.bill.admission.ipd_no }}{% else %}CREDIT NOTE (SALES RETURN){% endif %}</div>
+  </div>
+  <div class="meta">
+    <div><strong>Return No:</strong> {{ ret.return_no }}<br><strong>Date:</strong> {{ ret.created_at|date:"d M Y, h:i A" }}</div>
+    <div style="text-align:right;"><strong>Against bill:</strong> {{ ret.bill.bill_no }} ({{ ret.bill.created_at|date:"d M Y" }})<br><strong>Patient:</strong> {{ ret.bill.display_name }}</div>
+  </div>
+  <table>
+    <thead><tr><th>Medicine</th><th>Batch</th><th class="r">Qty</th><th class="r">MRP</th><th class="r">GST%</th><th class="r">Amount</th></tr></thead>
+    <tbody>
+    {% for ri in items %}
+      <tr>
+        <td>{{ ri.bill_item.item.name }}</td>
+        <td>{{ ri.bill_item.batch.batch_no|default:"—" }}</td>
+        <td class="r">{{ ri.quantity }}</td>
+        <td class="r">{{ ri.bill_item.mrp }}</td>
+        <td class="r">{{ ri.bill_item.gst_percent|floatformat:0 }}</td>
+        <td class="r">{{ ri.amount }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="total">{% if ret.bill.is_ipd %}Credited to IPD bill{% else %}Refunded ({{ ret.bill.get_payment_mode_display }}){% endif %}: ₹{{ ret.refund_amount }}</div>
+  {% if ret.reason %}<div style="font-size:10.5px;margin-top:6px;">Reason: {{ ret.reason }}</div>{% endif %}
+  <div style="display:flex;justify-content:space-between;font-size:10.5px;margin-top:16px;">
+    <div>Received by: {{ ret.created_by.get_full_name|default:ret.created_by.username }}</div>
+    <div>Patient signature: ____________</div>
+  </div>
+</div>
+</body>
+</html>

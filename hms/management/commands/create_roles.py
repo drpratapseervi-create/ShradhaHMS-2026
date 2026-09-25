@@ -62,6 +62,17 @@ class Command(BaseCommand):
         assign_perms(laboratory, laboratory_perms)
         self.stdout.write(self.style.SUCCESS("[OK] Laboratory role created"))
 
+        # ── PHARMACY ───────────────────────────────────────────────
+        pharmacy, _ = Group.objects.get_or_create(name="Pharmacy")
+        pharmacy_perms = [
+            "view_patient", "view_prescription", "view_drugmaster",
+            "add_inventoryitem", "change_inventoryitem", "view_inventoryitem",
+            "add_stockin", "view_stockin", "add_stockout", "view_stockout", "view_stockbatch",
+            "add_pharmacybill", "change_pharmacybill", "view_pharmacybill", "view_pharmacybillitem",
+        ]
+        assign_perms(pharmacy, pharmacy_perms)
+        self.stdout.write(self.style.SUCCESS("[OK] Pharmacy role created"))
+
         self.stdout.write(self.style.SUCCESS("\n[DONE] All HMS roles created successfully!"))
 
 

@@ -26,7 +26,8 @@ from .abdm import (
     ABDMScanShare,
 )
 from .ot import OTBooking, OTNotes
-from .inventory import Supplier, InventoryItem, StockIn, StockOut
+from .inventory import Supplier, InventoryItem, StockIn, StockOut, StockBatch
+from .pharmacy import PharmacyBill, PharmacyBillItem, PharmacyReturn, PharmacyReturnItem
 from .documents import (
     document_upload_path, HOSPITAL_DOC_TYPES, DOCTOR_DOC_TYPES,
     STAFF_DOC_TYPES, EQUIPMENT_DOC_TYPES, DOC_CATEGORY_CHOICES,

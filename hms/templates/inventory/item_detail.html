@@ -21,6 +21,10 @@
         </div>
         <div class="col-md-3">
           <p><strong>Supplier:</strong> {{ item.supplier.name|default:"—" }}</p>
+          {% if item.category == "Medicine" %}
+          <p><strong>Drug Master:</strong> {{ item.drug.name|default:"— not linked —" }}</p>
+          <p><strong>Pack:</strong> {{ item.pack_size }} · <strong>GST:</strong> {{ item.gst_percent|floatformat:0 }}% · <strong>Schedule:</strong> {{ item.schedule }}{% if item.hsn_code %} · <strong>HSN:</strong> {{ item.hsn_code }}{% endif %}</p>
+          {% endif %}
         </div>
         <div class="col-md-3 text-center">
           <h4>Current Stock</h4>
@@ -38,6 +42,28 @@
           <h2>{{ item.minimum_stock }} {{ item.unit }}</h2>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">Batches in stock (issued earliest expiry first)</div>
+    <div class="card-body p-0">
+      <table class="table table-sm mb-0">
+        <thead class="table-light"><tr><th>Batch</th><th>Expiry</th><th>Qty left</th><th>MRP/unit</th><th>Cost/unit</th></tr></thead>
+        <tbody>
+          {% for b in batches %}
+          <tr {% if b.is_expired %}class="table-danger"{% endif %}>
+            <td>{{ b.batch_no|default:"—" }}</td>
+            <td>{{ b.expiry_date|default:"—" }}{% if b.is_expired %} <span class="badge bg-danger">Expired — not sold</span>{% endif %}</td>
+            <td>{{ b.quantity_remaining }}</td>
+            <td>₹{{ b.mrp }}</td>
+            <td>₹{{ b.purchase_price }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted">No stock</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 

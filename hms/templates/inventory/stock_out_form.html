@@ -5,6 +5,7 @@
     <h2>Stock Out — Issue Items</h2>
     <a href="{% url 'hms:inventory_dashboard' %}" class="btn btn-secondary">← Back</a>
   </div>
+  {% if messages %}{% for m in messages %}<div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} py-2">{{ m }}</div>{% endfor %}{% endif %}
   <div class="card p-4">
     <form method="post">
       {% csrf_token %}

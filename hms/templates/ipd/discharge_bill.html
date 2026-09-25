@@ -261,7 +261,13 @@
               <td>{{ b.quantity }}</td>
               <td>₹ {{ b.price }}</td>
               <td>₹ {{ b.total }}</td>
-              <td><a href="{% url 'hms:delete_bill_item' b.id %}" style="color:#f87171;">Delete</a></td>
+              <td>
+                {% if b.item.name == ipd_pharmacy_item_name %}
+                  <a href="{% url 'hms:pharmacy_ipd_statement' admission.id %}" target="_blank" style="color:#00b8a9;" title="Added automatically from pharmacy issues less returns">Statement</a>
+                {% else %}
+                  <a href="{% url 'hms:delete_bill_item' b.id %}" style="color:#f87171;">Delete</a>
+                {% endif %}
+              </td>
             </tr>
             {% empty %}
             <tr><td colspan="5" class="dbill-empty">No bill items added yet.</td></tr>

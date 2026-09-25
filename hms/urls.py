@@ -234,6 +234,21 @@ urlpatterns = [
     path("inventory/suppliers/new/", views.supplier_new, name="supplier_new"),
     path("inventory/report/", views.inventory_report, name="inventory_report"),
 
+    # ── PHARMACY ──────────────────────────────────────────
+    path("pharmacy/", views.pharmacy_home, name="pharmacy_home"),
+    path("pharmacy/dispense/", views.pharmacy_dispense, name="pharmacy_dispense_walkin"),
+    path("pharmacy/dispense/<int:consultation_id>/", views.pharmacy_dispense, name="pharmacy_dispense"),
+    path("pharmacy/dispense/ipd/<int:admission_id>/", views.pharmacy_dispense, name="pharmacy_dispense_ipd"),
+    path("pharmacy/ipd/<int:admission_id>/statement/", views.pharmacy_ipd_statement, name="pharmacy_ipd_statement"),
+    path("pharmacy/items/search/", views.pharmacy_item_search, name="pharmacy_item_search"),
+    path("pharmacy/bills/", views.pharmacy_bills, name="pharmacy_bills"),
+    path("pharmacy/bills/<int:bill_id>/", views.pharmacy_bill_print, name="pharmacy_bill_print"),
+    path("pharmacy/bills/<int:bill_id>/cancel/", views.pharmacy_bill_cancel, name="pharmacy_bill_cancel"),
+    path("pharmacy/bills/<int:bill_id>/return/", views.pharmacy_return, name="pharmacy_return"),
+    path("pharmacy/returns/<int:return_id>/", views.pharmacy_return_print, name="pharmacy_return_print"),
+    path("pharmacy/h1-register/", views.pharmacy_h1_register, name="pharmacy_h1_register"),
+    path("pharmacy/stock-import/", views.pharmacy_stock_import, name="pharmacy_stock_import"),
+
     # ── DOCUMENTS ─────────────────────────────────────────
     path("documents/", views.document_dashboard, name="document_dashboard"),
     path("documents/list/", views.document_list, name="document_list"),

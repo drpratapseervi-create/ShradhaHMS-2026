@@ -370,3 +370,8 @@ WHATSAPP_API_VERSION     = os.getenv('WHATSAPP_API_VERSION', 'v20.0')
 # (Meta Business Manager > Message Templates > shows as "English" = 'en').
 WHATSAPP_TEMPLATE_LANG   = os.getenv('WHATSAPP_TEMPLATE_LANG', 'en')
 WHATSAPP_ENABLED = bool(WHATSAPP_ACCESS_TOKEN) and bool(WHATSAPP_PHONE_NUMBER_ID)
+
+# ── Pharmacy (printed on every pharmacy bill and the H1 register) ──
+PHARMACY_NAME            = os.getenv("PHARMACY_NAME", "Shradha Hospital Pharmacy")
+PHARMACY_DRUG_LICENCE_NO = os.getenv("PHARMACY_DRUG_LICENCE_NO", "")
+PHARMACY_GSTIN           = os.getenv("PHARMACY_GSTIN", "")

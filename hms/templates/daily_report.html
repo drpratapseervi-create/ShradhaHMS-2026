@@ -273,6 +273,11 @@ tfoot {
     </div>
 
     <div class="summary-card">
+      <div class="s-amount">₹ {{ pharmacy }}</div>
+      <div class="s-label">Pharmacy</div>
+    </div>
+
+    <div class="summary-card">
       <div class="s-amount">₹ {{ discharge }}</div>
       <div class="s-label">Discharge</div>
     </div>
@@ -364,6 +369,7 @@ tfoot {
       <tbody>
         <tr><td>OPD</td><td>₹ {{ opd }}</td></tr>
         <tr><td>Procedure</td><td>₹ {{ procedure }}</td></tr>
+        <tr><td>Pharmacy</td><td>₹ {{ pharmacy }}</td></tr>
         <tr><td>Discharge</td><td>₹ {{ discharge }}</td></tr>
         <tr><td>IPD Advance</td><td>₹ {{ advance }}</td></tr>
         <tr><td>Lab</td><td>₹ {{ lab }}</td></tr>
@@ -395,6 +401,7 @@ tfoot {
   var barData = [
     { label: "OPD",         value: {{ opd|floatformat:2 }},            color: "#008080" },
     { label: "Procedure",   value: {{ procedure|floatformat:2 }},      color: "#008080" },
+    { label: "Pharmacy",    value: {{ pharmacy|floatformat:2 }},       color: "#008080" },
     { label: "Discharge",   value: {{ discharge|floatformat:2 }},      color: "#008080" },
     { label: "IPD Advance", value: {{ advance|floatformat:2 }},        color: "#008080" },
     { label: "Lab Total",   value: {{ lab|floatformat:2 }},            color: "#008080" },

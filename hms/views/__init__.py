@@ -200,3 +200,17 @@ from .whatsapp import (
     whatsapp_webhook,
 )
 
+
+from .pharmacy import (
+    pharmacy_home,
+    pharmacy_dispense,
+    pharmacy_item_search,
+    pharmacy_bill_print,
+    pharmacy_bill_cancel,
+    pharmacy_bills,
+    pharmacy_h1_register,
+    pharmacy_stock_import,
+    pharmacy_return,
+    pharmacy_return_print,
+    pharmacy_ipd_statement,
+)

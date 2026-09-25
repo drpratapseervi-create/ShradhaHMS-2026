@@ -37,9 +37,33 @@
             <option value="Litre">Litre</option>
           </select>
         </div>
+        <div class="col-md-6">
+          <label class="form-label">Drug Master link <small class="text-muted">(so prescriptions find this item)</small></label>
+          <select name="drug" class="form-select">
+            <option value="">-- Not a prescribed drug --</option>
+            {% for d in drugs %}<option value="{{ d.id }}">{{ d.name }}{% if d.generic_name %} ({{ d.generic_name }}){% endif %}</option>{% endfor %}
+          </select>
+        </div>
         <div class="col-md-3">
-          <label class="form-label">Opening Stock</label>
-          <input type="number" name="current_stock" class="form-control" value="0" min="0">
+          <label class="form-label">Pack Size <small class="text-muted">(units per strip/pack)</small></label>
+          <input type="number" name="pack_size" class="form-control" value="1" min="1">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Schedule</label>
+          <select name="schedule" class="form-select">
+            {% for code, label in schedules %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">GST %</label>
+          <select name="gst_percent" class="form-select">
+            <option value="0">0%</option><option value="5">5%</option>
+            <option value="12" selected>12%</option><option value="18">18%</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">HSN Code</label>
+          <input type="text" name="hsn_code" class="form-control" placeholder="e.g. 3004">
         </div>
         <div class="col-md-3">
           <label class="form-label">Minimum Stock (Alert Level)</label>

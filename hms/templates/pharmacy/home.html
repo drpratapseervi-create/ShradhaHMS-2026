@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Pharmacy | Shradha HMS{% endblock %}
+{% block content %}
+<div class="container-fluid mt-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+      <h2 class="mb-0">💊 Pharmacy Counter</h2>
+      <small class="text-muted">{{ day|date:"l, d M Y" }}</small>
+    </div>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+      <form method="get" class="d-flex gap-2">
+        <input type="date" name="date" value="{{ day|date:'Y-m-d' }}" class="form-control form-control-sm" onchange="this.form.submit()">
+        {% if not is_today %}<a href="{% url 'hms:pharmacy_home' %}" class="btn btn-sm btn-outline-secondary">Today</a>{% endif %}
+      </form>
+      <a href="{% url 'hms:pharmacy_dispense_walkin' %}" class="btn btn-sm btn-primary">+ Walk-in Sale</a>
+      <a href="{% url 'hms:stock_in_create' %}" class="btn btn-sm btn-success">Stock In</a>
+      <a href="{% url 'hms:inventory_items' %}?category=Medicine" class="btn btn-sm btn-outline-secondary">Stock</a>
+      <a href="{% url 'hms:pharmacy_bills' %}" class="btn btn-sm btn-outline-secondary">Bills</a>
+      <a href="{% url 'hms:pharmacy_h1_register' %}" class="btn btn-sm btn-outline-secondary">H1 Register</a>
+    </div>
+  </div>
+
+  {% if messages %}{% for m in messages %}<div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} py-2">{{ m }}</div>{% endfor %}{% endif %}
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card">
+        <div class="card-header fw-bold">Prescriptions to dispense ({{ pending|length }}) <small class="text-muted fw-normal">— last {{ lookback_days }} days</small></div>
+        <div class="card-body p-0">
+          {% if pending %}
+          <table class="table table-hover mb-0 align-middle">
+            <thead><tr><th>Visit</th><th>Patient</th><th>Doctor</th><th>Medicines</th><th></th></tr></thead>
+            <tbody>
+            {% for r in pending %}
+              <tr>
+                <td>{% if r.c.appointment.date != day %}{{ r.c.appointment.date|date:"d M" }} {% endif %}{{ r.c.appointment.time|time:"h:i A" }}</td>
+                <td><strong>{{ r.c.appointment.patient.full_name }}</strong><br><small class="text-muted">{{ r.c.appointment.patient.uhid }}</small></td>
+                <td>{{ r.c.appointment.doctor.full_name }}</td>
+                <td>{{ r.rx_count }}{% if r.new %}<br><span class="badge bg-warning text-dark" title="{{ r.new|join:", " }}">{{ r.new|length }} new since dispensed</span>{% endif %}</td>
+                <td><a href="{% url 'hms:pharmacy_dispense' r.c.id %}" class="btn btn-sm btn-primary">Dispense</a></td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+            <p class="text-muted text-center p-4 mb-0">No prescriptions waiting.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if done %}
+      <div class="card mt-3">
+        <div class="card-header fw-bold">Already dispensed ({{ done|length }})</div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0 align-middle">
+            <tbody>
+            {% for r in done %}
+              <tr>
+                <td>{{ r.c.appointment.patient.full_name }}</td>
+                <td class="text-end"><a href="{% url 'hms:pharmacy_dispense' r.c.id %}" class="btn btn-sm btn-outline-secondary">Dispense again</a></td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card mb-3">
+        <div class="card-header fw-bold">Admitted patients ({{ admitted|length }}) — medicines charged to discharge bill</div>
+        <div class="card-body p-0">
+          {% if admitted %}
+          <table class="table table-sm mb-0 align-middle">
+            <tbody>
+            {% for r in admitted %}
+              <tr>
+                <td><strong>{{ r.a.patient.full_name }}</strong><br><small class="text-muted">{{ r.a.ipd_no }} · {% if r.a.bed %}{{ r.a.bed.ward.name }} / {{ r.a.bed.bed_number }}{% else %}no bed{% endif %}</small></td>
+                <td class="text-end"><a href="{% url 'hms:pharmacy_ipd_statement' r.a.id %}" title="Statement">₹{{ r.pharmacy_total }}</a></td>
+                <td class="text-end"><a href="{% url 'hms:pharmacy_dispense_ipd' r.a.id %}" class="btn btn-sm btn-primary">Issue</a></td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+            <p class="text-muted text-center p-3 mb-0">No patients admitted.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header fw-bold d-flex justify-content-between">
+          <span>Counter collection</span><span>₹{{ collection }}</span>
+        </div>
+        <div class="card-body p-0">
+          {% if by_mode %}
+          <div class="px-3 pt-2 small text-muted">
+            {% for mode, amt in by_mode.items %}{{ mode }}: ₹{{ amt }}{% if not forloop.last %} · {% endif %}{% endfor %} <span class="d-block">Counter cash less refunds; IPD issues go to the discharge bill.</span>
+          </div>
+          {% endif %}
+          {% if bills %}
+          <table class="table table-sm mb-0 align-middle">
+            <tbody>
+            {% for b in bills %}
+              <tr {% if b.status == 'CANCELLED' %}class="text-decoration-line-through text-muted"{% endif %}>
+                <td><a href="{% url 'hms:pharmacy_bill_print' b.id %}">{{ b.bill_no }}</a></td>
+                <td>{{ b.display_name }}</td>
+                <td class="text-end">₹{{ b.net_amount }}</td>
+                <td><small>{% if b.is_ipd %}IPD {{ b.admission.ipd_no }}{% else %}{{ b.payment_mode }}{% endif %}{% if b.returned_amount %} · returns ₹{{ b.returned_amount }}{% endif %}</small></td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+            <p class="text-muted text-center p-4 mb-0">No sales yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

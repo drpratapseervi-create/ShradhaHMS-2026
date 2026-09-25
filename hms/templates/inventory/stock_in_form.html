@@ -5,6 +5,7 @@
     <h2>Stock In — Receive Items</h2>
     <a href="{% url 'hms:inventory_dashboard' %}" class="btn btn-secondary">← Back</a>
   </div>
+  {% if messages %}{% for m in messages %}<div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} py-2">{{ m }}</div>{% endfor %}{% endif %}
   <div class="card p-4">
     <form method="post">
       {% csrf_token %}
@@ -14,20 +15,42 @@
           <select name="item" id="item_select" class="form-select" required>
             <option value="">-- Select Item --</option>
             {% for item in items %}
-            <option value="{{ item.id }}" {% if request.GET.item == item.id|stringformat:"s" %}selected{% endif %}>
-              {{ item.name }} ({{ item.unit }}) — Stock: {{ item.current_stock }}
+            <option value="{{ item.id }}" data-pack="{{ item.pack_size }}" data-unit="{{ item.unit|lower }}"
+                    {% if request.GET.item == item.id|stringformat:"s" %}selected{% endif %}>
+              {{ item.name }} ({{ item.unit }}{% if item.pack_size > 1 %} × {{ item.pack_size }}/pack{% endif %}) — Stock: {{ item.current_stock }}
             </option>
             {% endfor %}
           </select>
         </div>
         <div class="col-md-3">
-          <label class="form-label">Quantity</label>
-          <input type="number" name="quantity" class="form-control" required min="1" placeholder="0">
+          <label class="form-label">Packs / strips received</label>
+          <input type="number" name="packs" id="packs" class="form-control" min="0" value="0">
         </div>
         <div class="col-md-3">
-          <label class="form-label">Date</label>
-          <input type="date" name="date" class="form-control" required
-                 value="{% now 'Y-m-d' %}">
+          <label class="form-label">+ Loose units</label>
+          <input type="number" name="loose_units" id="loose" class="form-control" min="0" value="0">
+        </div>
+        <div class="col-12"><small class="text-muted" id="units-note"></small></div>
+        <div class="col-md-4">
+          <label class="form-label">Batch No.</label>
+          <input type="text" name="batch_no" class="form-control" placeholder="e.g. BT2024001">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Expiry Date</label>
+          <input type="date" name="expiry_date" class="form-control">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Date received</label>
+          <input type="date" name="date" class="form-control" required value="{% now 'Y-m-d' %}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">MRP per pack (₹, incl. GST)</label>
+          <input type="number" name="mrp_pack" id="mrp_pack" class="form-control" step="0.01" min="0" value="0">
+          <small class="text-muted" id="mrp-note"></small>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Purchase price per pack (₹)</label>
+          <input type="number" name="purchase_price_pack" class="form-control" step="0.01" min="0" value="0">
         </div>
         <div class="col-md-4">
           <label class="form-label">Supplier</label>
@@ -38,21 +61,9 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-md-4">
-          <label class="form-label">Batch No.</label>
-          <input type="text" name="batch_no" class="form-control" placeholder="e.g. BT2024001">
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Expiry Date</label>
-          <input type="date" name="expiry_date" class="form-control">
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Purchase Price (per unit ₹)</label>
-          <input type="number" name="purchase_price" class="form-control" step="0.01" value="0">
-        </div>
-        <div class="col-md-8">
+        <div class="col-md-12">
           <label class="form-label">Notes</label>
-          <input type="text" name="notes" class="form-control" placeholder="Optional notes">
+          <input type="text" name="notes" class="form-control" placeholder="Optional notes (invoice no. etc.)">
         </div>
       </div>
       <div class="mt-4">
@@ -62,4 +73,20 @@
     </form>
   </div>
 </div>
+<script>
+(function () {
+  var sel = document.getElementById('item_select');
+  function update() {
+    var opt = sel.options[sel.selectedIndex];
+    var pack = parseInt((opt && opt.dataset.pack) || '1', 10), unit = (opt && opt.dataset.unit) || 'unit';
+    var units = (parseInt(document.getElementById('packs').value || '0', 10) * pack) + parseInt(document.getElementById('loose').value || '0', 10);
+    var mrp = parseFloat(document.getElementById('mrp_pack').value || '0');
+    document.getElementById('units-note').textContent = opt && opt.value ? ('Total: ' + units + ' ' + unit + '(s)' + (pack > 1 ? ' (' + pack + ' per pack)' : '')) : '';
+    document.getElementById('mrp-note').textContent = mrp && pack > 1 ? ('= ₹' + (mrp / pack).toFixed(2) + ' per ' + unit) : '';
+  }
+  ['item_select', 'packs', 'loose', 'mrp_pack'].forEach(function (id) { document.getElementById(id).addEventListener('input', update); });
+  sel.addEventListener('change', update);
+  update();
+})();
+</script>
 {% endblock %}

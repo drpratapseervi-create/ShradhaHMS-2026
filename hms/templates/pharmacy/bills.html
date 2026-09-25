@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Pharmacy Bills | Shradha HMS{% endblock %}
+{% block content %}
+<div class="container-fluid mt-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h2 class="mb-0">Pharmacy Bills</h2>
+    <a href="{% url 'hms:pharmacy_home' %}" class="btn btn-secondary">← Counter</a>
+  </div>
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-auto"><input type="date" name="from" value="{{ date_from|date:'Y-m-d' }}" class="form-control"></div>
+    <div class="col-auto"><input type="date" name="to" value="{{ date_to|date:'Y-m-d' }}" class="form-control"></div>
+    <div class="col-auto"><input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Bill no, name or mobile"></div>
+    <div class="col-auto"><button class="btn btn-primary">Show</button></div>
+  </form>
+  <div class="mb-2">
+    <strong>Total collected: ₹{{ total }}</strong>
+    {% for mode, amt in by_mode.items %} · {{ mode }} ₹{{ amt }}{% endfor %}
+    <span class="text-muted">(counter sales less refunds; cancelled bills excluded)</span>
+    {% if ipd_issued %}<div>Charged to IPD bills: ₹{{ ipd_issued }} <span class="text-muted">(collected on discharge)</span></div>{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0 align-middle">
+        <thead><tr><th>Bill No</th><th>Date</th><th>Patient</th><th>Mobile</th><th class="text-end">Net</th><th>Mode</th><th>Status</th><th>By</th></tr></thead>
+        <tbody>
+        {% for b in bills %}
+          <tr {% if b.status == 'CANCELLED' %}class="text-muted"{% endif %}>
+            <td><a href="{% url 'hms:pharmacy_bill_print' b.id %}">{{ b.bill_no }}</a></td>
+            <td>{{ b.created_at|date:"d M Y h:i A" }}</td>
+            <td>{{ b.display_name }}</td>
+            <td>{{ b.customer_mobile }}</td>
+            <td class="text-end">₹{{ b.net_amount }}{% if b.returned_amount %}<br><small class="text-muted">− ₹{{ b.returned_amount }} returned</small>{% endif %}</td>
+            <td>{% if b.is_ipd %}IPD {{ b.admission.ipd_no }}{% else %}{{ b.payment_mode }}{% endif %}</td>
+            <td>{% if b.status == 'CANCELLED' %}<span class="badge bg-danger">Cancelled</span>{% else %}<span class="badge bg-success">Paid</span>{% endif %}</td>
+            <td>{{ b.created_by.username }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="text-center text-muted p-4">No bills in this period.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

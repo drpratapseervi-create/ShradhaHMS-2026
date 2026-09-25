@@ -593,6 +593,11 @@ class="menu-btn {% if request.resolver_match.url_name == 'tpa_patient_list' %}ac
 
 <hr>
 
+<a href="{% url 'hms:pharmacy_home' %}"
+class="menu-btn {% if 'pharmacy' in request.resolver_match.url_name %}active{% endif %}">
+<i class="fa-solid fa-prescription-bottle-medical"></i> Pharmacy
+</a>
+
 <a href="/inventory/"
 class="menu-btn {% if request.resolver_match.url_name == 'inventory' %}active{% endif %}">
 <i class="fa-solid fa-box"></i> Inventory

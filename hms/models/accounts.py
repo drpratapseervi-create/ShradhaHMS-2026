@@ -11,6 +11,7 @@ class UserProfile(models.Model):
         ("nursing",    "Nursing Staff"),
         ("laboratory", "Laboratory"),
         ("reception",  "Reception"),
+        ("pharmacy",   "Pharmacy"),
     ]
 
     user      = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pharmacy Statement {{ admission.ipd_no }}</title>
+<style>
+body { font-family:'Segoe UI', Arial, sans-serif; background:#eef1f4; margin:0; color:#111; }
+.sheet { background:#fff; max-width:210mm; margin:16px auto; padding:10mm; box-sizing:border-box; }
+h1 { font-size:17px; margin:0; text-align:center; color:#007676; }
+.sub { text-align:center; font-size:12px; margin-bottom:10px; }
+table { width:100%; border-collapse:collapse; font-size:11px; margin-bottom:6px; }
+th, td { border-bottom:1px solid #ddd; padding:4px 5px; text-align:left; }
+th { background:#f1f5f5; }
+.r { text-align:right; }
+.bill-head { background:#f8fafa; font-weight:600; }
+.ret td { color:#b45309; }
+.cancelled td { color:#999; text-decoration:line-through; }
+.total { text-align:right; font-size:15px; font-weight:700; border-top:2px solid #333; padding-top:6px; }
+.toolbar { max-width:210mm; margin:12px auto 0; display:flex; gap:8px; }
+.toolbar a, .toolbar button { padding:7px 12px; border-radius:6px; border:none; cursor:pointer; font-size:13px; text-decoration:none; background:#007676; color:#fff; }
+@media print { body { background:#fff; } .toolbar { display:none; } .sheet { margin:0; max-width:none; } @page { size:A4; margin:10mm; } }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button onclick="window.print()">🖨 Print</button>
+  {% if admission.status == 'ADMITTED' %}<a href="{% url 'hms:pharmacy_dispense_ipd' admission.id %}">+ Issue medicines</a>{% endif %}
+  <a href="{% url 'hms:discharge_bill' admission.patient_id %}" style="background:#6c757d;">Discharge bill</a>
+</div>
+<div class="sheet">
+  <h1>{{ pharmacy_name }} — Inpatient Medicine Statement</h1>
+  <div class="sub">
+    {{ admission.patient.full_name }} ({{ admission.patient.uhid }}) · {{ admission.ipd_no }} ·
+    {% if admission.bed %}{{ admission.bed.ward.name }} / Bed {{ admission.bed.bed_number }} · {% endif %}
+    admitted {{ admission.admission_date|date:"d M Y" }}{% if admission.discharge_date %} · discharged {{ admission.discharge_date|date:"d M Y" }}{% endif %}
+  </div>
+  <table>
+    <thead><tr><th>Date</th><th>Slip / Return</th><th>Medicine</th><th>Batch</th><th class="r">Qty</th><th class="r">MRP</th><th class="r">Amount</th></tr></thead>
+    <tbody>
+    {% for b in bills %}
+      {% for it in b.items.all %}
+      <tr class="{% if b.status == 'CANCELLED' %}cancelled{% endif %}">
+        <td>{{ b.created_at|date:"d M Y" }}</td>
+        <td>{% if forloop.first %}<a href="{% url 'hms:pharmacy_bill_print' b.id %}">{{ b.bill_no }}</a>{% if b.status == 'CANCELLED' %} (cancelled){% endif %}{% endif %}</td>
+        <td>{{ it.item.name }}</td>
+        <td>{{ it.batch.batch_no|default:"—" }}</td>
+        <td class="r">{{ it.quantity }}</td>
+        <td class="r">{{ it.mrp }}</td>
+        <td class="r">{{ it.amount }}</td>
+      </tr>
+      {% endfor %}
+      {% for r in b.returns.all %}{% for ri in r.items.all %}
+      <tr class="ret {% if b.status == 'CANCELLED' %}cancelled{% endif %}">
+        <td>{{ r.created_at|date:"d M Y" }}</td>
+        <td><a href="{% url 'hms:pharmacy_return_print' r.id %}">{{ r.return_no }}</a></td>
+        <td>↩ {{ ri.bill_item.item.name }}</td>
+        <td>{{ ri.bill_item.batch.batch_no|default:"—" }}</td>
+        <td class="r">−{{ ri.quantity }}</td>
+        <td class="r">{{ ri.bill_item.mrp }}</td>
+        <td class="r">−{{ ri.amount }}</td>
+      </tr>
+      {% endfor %}{% endfor %}
+    {% empty %}
+      <tr><td colspan="7" style="text-align:center;color:#777;padding:20px;">No medicines issued to this admission yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="total">Total medicines charged: ₹{{ total }}</div>
+  <div style="font-size:10.5px;color:#555;margin-top:4px;">This total appears on the discharge bill as "IPD Pharmacy (Medicines)". Cancelled slips are shown struck through and not charged.</div>
+</div>
+</body>
+</html>

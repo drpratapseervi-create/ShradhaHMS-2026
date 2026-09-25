@@ -51,6 +51,7 @@ def redirect_by_role(user):
         "nursing":    "/dashboard/nursing/",
         "laboratory": "/lab/billing/",
         "reception":  "/dashboard/",
+        "pharmacy":   "/pharmacy/",
     }
     return redirect(redirects.get(role, "/dashboard/"))
 

@@ -10,6 +10,7 @@ from ..models import (
     Patient, Doctor, Department, IPDAdmission, BillItem, DischargeBill,
     DischargeBillItem, IPDAdvance, ProcedureItem, ProcedureBill, ProcedureBillItem,
 )
+from ..pharmacy.dispensing import IPD_PHARMACY_BILL_ITEM, sync_ipd_pharmacy_charge
 from ..services.whatsapp import send_discharge_thankyou, WhatsAppSendError
 from ..abdm.services.hip import HIPService
 from ._shared import logger
@@ -69,6 +70,8 @@ def discharge_bill(request, patient_id):
     sync_daily_charge("Bed Charge", ward_name)
     sync_daily_charge("Nursing")
     sync_daily_charge("Consultation")
+    # Medicines issued by the pharmacy to this admission (less returns).
+    sync_ipd_pharmacy_charge(bill, admission)
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -155,7 +158,8 @@ def discharge_bill(request, patient_id):
     return render(request, "ipd/discharge_bill.html", {
         "patient":       patient,
         "admission":     admission,
-        "items":         BillItem.objects.all(),
+        "items":         BillItem.objects.exclude(name=IPD_PHARMACY_BILL_ITEM),
+        "ipd_pharmacy_item_name": IPD_PHARMACY_BILL_ITEM,
         "bill_items":    bill_items,
         "total_amount":  total_amount,
         "bill":          bill,

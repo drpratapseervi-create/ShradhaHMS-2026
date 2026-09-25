@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Schedule H1 Register | {{ pharmacy_name }}</title>
+<style>
+body { font-family:'Segoe UI', Arial, sans-serif; margin:0; background:#eef1f4; color:#111; }
+.sheet { background:#fff; max-width:277mm; margin:16px auto; padding:10mm; box-sizing:border-box; }
+h1 { font-size:18px; margin:0; text-align:center; }
+.sub { text-align:center; font-size:12px; margin-bottom:10px; }
+table { width:100%; border-collapse:collapse; font-size:11px; }
+th, td { border:1px solid #999; padding:4px 5px; text-align:left; vertical-align:top; }
+th { background:#f1f5f5; }
+.toolbar { max-width:277mm; margin:12px auto 0; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.toolbar a, .toolbar button { padding:7px 12px; border-radius:6px; border:none; cursor:pointer; font-size:13px; text-decoration:none; background:#007676; color:#fff; }
+.toolbar input { padding:6px; border:1px solid #ccc; border-radius:6px; }
+@media print { body { background:#fff; } .toolbar { display:none; } .sheet { margin:0; max-width:none; } @page { size:A4 landscape; margin:8mm; } }
+</style>
+</head>
+<body>
+<form method="get" class="toolbar">
+  From <input type="date" name="from" value="{{ date_from|date:'Y-m-d' }}">
+  To <input type="date" name="to" value="{{ date_to|date:'Y-m-d' }}">
+  <button type="submit">Show</button>
+  <button type="button" onclick="window.print()">🖨 Print</button>
+  <a href="{% url 'hms:pharmacy_home' %}" style="background:#6c757d;">← Counter</a>
+</form>
+<div class="sheet">
+  <h1>Schedule H1 Drug Register</h1>
+  <div class="sub">{{ pharmacy_name }} · D.L. No: {{ drug_licence|default:"________" }} · {{ date_from|date:"d M Y" }} to {{ date_to|date:"d M Y" }}</div>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Date</th><th>Bill No</th><th>Patient name &amp; address</th><th>Prescriber</th><th>Drug</th><th>Qty</th><th>Batch</th></tr>
+    </thead>
+    <tbody>
+    {% for e in entries %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ e.bill.created_at|date:"d/m/Y" }}</td>
+        <td>{{ e.bill.bill_no }}</td>
+        <td>{{ e.bill.display_name }}{% if e.bill.patient %}<br><small>{{ e.bill.patient.address }}{% if e.bill.patient.district %}, {{ e.bill.patient.district }}{% endif %}</small>{% endif %}</td>
+        <td>{{ e.bill.prescriber|default:"—" }}</td>
+        <td>{{ e.item.name }}</td>
+        <td>{{ e.quantity }} {{ e.item.unit|lower }}{% if e.returned_quantity %} <small>({{ e.returned_quantity }} returned)</small>{% endif %}</td>
+        <td>{{ e.batch.batch_no|default:"—" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8" style="text-align:center;color:#777;padding:20px;">No Schedule H1 sales in this period.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+</body>
+</html>
