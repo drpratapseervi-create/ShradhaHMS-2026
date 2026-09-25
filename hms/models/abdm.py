@@ -1,4 +1,5 @@
 from django.db import models
+from encrypted_model_fields.fields import EncryptedCharField
 from .core import Patient
 
 
@@ -254,3 +255,52 @@ class ABDMReceivedRecord(models.Model):
 
     def __str__(self):
         return f"ReceivedRecord({self.care_context_reference})"
+
+
+# ═══════════════════════════════════════════════════════
+# ABDM M1 — SCAN & SHARE
+# ═══════════════════════════════════════════════════════
+
+class ABDMScanShare(models.Model):
+    """
+    One profile share from a patient who scanned the hospital's ABDM QR code
+    at a counter (V3 POST /api/v3/hip/patient/share). We match or create the
+    Patient, issue a same-day queue token, and reply via on-share.
+    """
+    STATUS_CHOICES = [
+        ("WAITING", "Waiting"),
+        ("DONE",    "Done"),
+    ]
+
+    request_id     = models.CharField(max_length=100, blank=True)
+    hip_id         = models.CharField(max_length=50, blank=True)
+    context        = models.CharField(max_length=100, blank=True)  # counter code from the QR
+    abha_number    = EncryptedCharField(max_length=20, blank=True, null=True)
+    abha_address   = EncryptedCharField(max_length=100, blank=True, null=True)
+    name           = models.CharField(max_length=150, blank=True)
+    gender         = models.CharField(max_length=10, blank=True)
+    year_of_birth  = models.CharField(max_length=4, blank=True)
+    month_of_birth = models.CharField(max_length=2, blank=True)
+    day_of_birth   = models.CharField(max_length=2, blank=True)
+    phone_number   = models.CharField(max_length=20, blank=True)
+    address_line   = models.CharField(max_length=255, blank=True)
+    district       = models.CharField(max_length=100, blank=True)
+    state          = models.CharField(max_length=100, blank=True)
+    pincode        = models.CharField(max_length=10, blank=True)
+
+    patient         = models.ForeignKey(Patient, on_delete=models.SET_NULL, null=True, blank=True, related_name="scan_shares")
+    patient_created = models.BooleanField(default=False)
+    token_number    = models.CharField(max_length=10, blank=True)
+    token_date      = models.DateField(db_index=True)
+    status          = models.CharField(max_length=10, choices=STATUS_CHOICES, default="WAITING")
+    on_share_sent   = models.BooleanField(default=False)
+    on_share_error  = models.CharField(max_length=255, blank=True)
+    created_at      = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = "ABDM Scan & Share"
+        verbose_name_plural = "ABDM Scan & Share"
+        ordering            = ["-created_at"]
+
+    def __str__(self):
+        return f"Token {self.token_number} — {self.name} ({self.token_date})"

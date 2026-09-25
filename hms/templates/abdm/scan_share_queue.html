@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Scan & Share Queue | Shradha HMS{% endblock %}
+{% block content %}
+{% if is_today %}<meta http-equiv="refresh" content="20">{% endif %}
+<style>
+.ss-page { color:#e2e8f0; padding:24px 28px; font-family:'Segoe UI',sans-serif; }
+.ss-head { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px; }
+.ss-head h2 { margin:0; color:#00b8a9; font-size:22px; }
+.ss-sub { color:#8892a4; font-size:13px; margin-top:4px; }
+.ss-date { display:flex; gap:8px; align-items:center; }
+.ss-date input { background:#161616; color:#e2e8f0; border:1px solid #2a2a2a; border-radius:6px; padding:6px 10px; color-scheme:dark; }
+.ss-btn { padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; text-decoration:none; display:inline-block; border:1px solid #00b8a9; background:transparent; color:#00b8a9; }
+.ss-btn-solid { background:#00b8a9; color:#fff; }
+.ss-table { width:100%; border-collapse:collapse; background:#111; border:1px solid #2a2a2a; border-radius:10px; overflow:hidden; }
+.ss-table th { text-align:left; font-size:12px; color:#8892a4; font-weight:600; padding:10px 12px; background:#161616; border-bottom:1px solid #2a2a2a; }
+.ss-table td { padding:10px 12px; border-bottom:1px solid #1e1e1e; font-size:13px; vertical-align:middle; }
+.ss-token { font-size:22px; font-weight:700; color:#00b8a9; font-family:'DM Mono',monospace; }
+.ss-done td { opacity:.45; }
+.ss-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; }
+.ss-new { background:#0f3d2e; color:#4ade80; }
+.ss-existing { background:#1e293b; color:#93c5fd; }
+.ss-warn { color:#f59e0b; font-size:11px; }
+.ss-muted { color:#8892a4; font-size:12px; }
+.ss-empty { text-align:center; color:#8892a4; padding:40px; }
+.ss-actions { display:flex; gap:6px; flex-wrap:wrap; }
+</style>
+
+<div class="ss-page">
+  <div class="ss-head">
+    <div>
+      <h2>📱 ABHA Scan &amp; Share Queue</h2>
+      <div class="ss-sub">
+        Patients who scanned the hospital's ABDM QR code and shared their ABHA profile.
+        {% if is_today %}{{ waiting_count }} waiting · refreshes every 20 s{% endif %}
+      </div>
+    </div>
+    <form method="get" class="ss-date">
+      <input type="date" name="date" value="{{ day|date:'Y-m-d' }}" onchange="this.form.submit()">
+      {% if not is_today %}<a class="ss-btn" href="{% url 'hms:scan_share_queue' %}">Today</a>{% endif %}
+    </form>
+  </div>
+
+  {% if shares %}
+  <table class="ss-table">
+    <thead>
+      <tr><th>Token</th><th>Patient</th><th>Age / Gender</th><th>Mobile</th><th>ABHA</th><th>Time</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for s in shares %}
+      <tr class="{% if s.status == 'DONE' %}ss-done{% endif %}">
+        <td><span class="ss-token">{{ s.token_number }}</span></td>
+        <td>
+          {% if s.patient %}
+            <a href="{% url 'hms:patient_update' s.patient.id %}" style="color:#e2e8f0;font-weight:600;">{{ s.patient.full_name }}</a>
+            <div class="ss-muted">{{ s.patient.uhid }}</div>
+          {% else %}
+            <strong>{{ s.name }}</strong>
+          {% endif %}
+          {% if s.patient_created %}<span class="ss-badge ss-new">New patient</span>{% elif s.patient %}<span class="ss-badge ss-existing">Existing</span>{% endif %}
+        </td>
+        <td>{% if s.patient %}{{ s.patient.age|default:"—" }} / {{ s.patient.gender }}{% else %}{{ s.year_of_birth }} / {{ s.gender }}{% endif %}</td>
+        <td>{{ s.phone_number|default:"—" }}</td>
+        <td>
+          {{ s.abha_address }}
+          {% if s.abha_number %}<div class="ss-muted">{{ s.abha_number }}</div>{% endif %}
+          {% if not s.on_share_sent %}<div class="ss-warn" title="{{ s.on_share_error }}">⚠ token not confirmed to ABDM</div>{% endif %}
+        </td>
+        <td class="ss-muted">{{ s.created_at|date:"h:i A" }}{% if s.context %}<br>Counter {{ s.context }}{% endif %}</td>
+        <td>
+          <div class="ss-actions">
+            {% if s.patient and s.status == 'WAITING' %}
+              <a class="ss-btn ss-btn-solid" href="{% url 'hms:appointment_create' %}?patient={{ s.patient.id }}">Book OPD</a>
+            {% endif %}
+            <form method="post" action="{% url 'hms:scan_share_mark' s.id %}">
+              {% csrf_token %}
+              <button class="ss-btn" type="submit">{% if s.status == 'WAITING' %}Mark done{% else %}Undo{% endif %}</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <div class="ss-empty">No Scan &amp; Share patients {% if is_today %}yet today{% else %}on {{ day|date:"d M Y" }}{% endif %}.</div>
+  {% endif %}
+</div>
+{% endblock %}

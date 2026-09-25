@@ -1,9 +1,10 @@
-from django.urls import path
+from django.urls import path, re_path
 from . import views
 from .views import ipd_dashboard
 from hms.abdm import views as abdm_views
 from hms.abdm import hiu_views as abdm_hiu_views
 from hms.abdm import hiu_ui_views as abdm_hiu_ui_views
+from hms.abdm import scan_share_views as abdm_scan_share_views
 
 app_name = "hms"
 
@@ -152,6 +153,15 @@ urlpatterns = [
          abdm_views.push_care_context, name="push_care_context"),
     path("abdm/push/lab/<int:bill_item_id>/",
          abdm_views.push_lab_report, name="push_lab_report"),
+
+    # ══════════════════════════════════════════════════
+    # ABDM M1 — SCAN & SHARE
+    # ══════════════════════════════════════════════════
+    # HIE-CM posts to the bridge path without a trailing slash; accept both,
+    # since APPEND_SLASH can't redirect a POST.
+    re_path(r"^api/v3/hip/patient/share/?$", abdm_scan_share_views.abdm_patient_share, name="abdm_patient_share"),
+    path("abdm/scan-share/", abdm_scan_share_views.scan_share_queue, name="scan_share_queue"),
+    path("abdm/scan-share/<int:share_id>/toggle/", abdm_scan_share_views.scan_share_mark, name="scan_share_mark"),
 
     # ══════════════════════════════════════════════════
     # ABDM M2 — CALLBACKS (ABDM gateway calls these)

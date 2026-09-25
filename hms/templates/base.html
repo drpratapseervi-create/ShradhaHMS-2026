@@ -514,6 +514,11 @@ class="menu-btn {% if request.resolver_match.url_name == 'appointment_create' %}
 <i class="fa-solid fa-calendar-check"></i> Appointment
 </a>
 
+<a href="{% url 'hms:scan_share_queue' %}"
+class="menu-btn {% if request.resolver_match.url_name == 'scan_share_queue' %}active{% endif %}">
+<i class="fa-solid fa-qrcode"></i> ABHA Scan &amp; Share
+</a>
+
 <hr>
 
 <a href="/opd-register/"

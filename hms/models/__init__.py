@@ -23,6 +23,7 @@ from .accounts import UserProfile, Expense
 from .abdm import (
     ABDMConsent, ABDMCareContext, ABDMLinkToken, ABDMLinkingSession,
     ABDMConsentRequest, ABDMConsentArtefact, ABDMHealthInformationRequest, ABDMReceivedRecord,
+    ABDMScanShare,
 )
 from .ot import OTBooking, OTNotes
 from .inventory import Supplier, InventoryItem, StockIn, StockOut
