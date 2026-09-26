@@ -43,13 +43,15 @@ color:#00b8a9;
 .pf-btn:hover{ background:#155555; color:#5eead4; }
 .pf-btn-bill{ background:#3a1418; color:#fca5a5; }
 .pf-btn-bill:hover{ background:#4a1a20; color:#fecaca; }
-.pf-tiles{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; padding:14px 18px 4px; }
-.pf-tile{ background:#11151f; border:1px solid #2d3148; border-radius:10px; padding:9px 12px; }
-.pf-k{ color:#10b981; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px; }
-.pf-v{ color:#fff; font-size:14px; font-weight:600; }
-.pf-s{ color:#8892a4; font-size:11.5px; margin-top:1px; }
+.pf-row{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 0; padding:10px 18px; border-bottom:1px solid #2d3148; background:#11151f; }
+.pf-item{ display:inline-flex; align-items:baseline; gap:7px; padding:0 18px; border-left:1px solid #2d3148; white-space:nowrap; }
+.pf-item:first-child{ padding-left:0; border-left:0; }
+.pf-k{ color:#10b981; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+.pf-v{ color:#fff; font-size:13.5px; font-weight:600; }
+.pf-s{ color:#8892a4; font-size:12px; }
 .pf-ipd{ color:#38bdf8; }
 .pf-clinical{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; padding:10px 18px 16px; }
+.pf-block .pf-k{ display:block; margin-bottom:3px; }
 .pf-block{ background:#11151f; border:1px solid #2d3148; border-left:3px solid #3b82f6; border-radius:8px; padding:9px 12px; }
 .pf-dx{ border-left-color:#f59e0b; }
 .pf-text{ color:#e2e8f0; font-size:13.5px; line-height:1.45; }
@@ -440,12 +442,12 @@ margin:20px 0;
     </div>
   </div>
 
-  <div class="pf-tiles">
-    <div class="pf-tile"><div class="pf-k">IPD No.</div><div class="pf-v pf-ipd">{{ admission.ipd_no }}</div></div>
-    <div class="pf-tile"><div class="pf-k">Ward / Bed</div><div class="pf-v">{% if admission.bed %}{{ admission.ward.name }} · Bed {{ admission.bed.bed_number }}{% else %}No bed{% endif %}</div></div>
-    <div class="pf-tile"><div class="pf-k">Consultant</div><div class="pf-v">{% if admission.doctor %}Dr. {{ admission.doctor.full_name }}{% else %}—{% endif %}</div>{% if admission.department %}<div class="pf-s">{{ admission.department.name }}</div>{% endif %}</div>
-    <div class="pf-tile"><div class="pf-k">Admitted</div><div class="pf-v">{{ admission.admission_date|date:"d M Y" }}</div><div class="pf-s">{{ admission.admission_date|date:"h:i A" }}</div></div>
-    {% if admission.attendant_name %}<div class="pf-tile"><div class="pf-k">Attendant</div><div class="pf-v">{{ admission.attendant_name }}</div><div class="pf-s">{{ admission.attendant_relation }}{% if admission.attendant_mobile %} · {{ admission.attendant_mobile }}{% endif %}</div></div>{% endif %}
+  <div class="pf-row">
+    <span class="pf-item"><span class="pf-k">IPD No.</span><span class="pf-v pf-ipd">{{ admission.ipd_no }}</span></span>
+    <span class="pf-item"><span class="pf-k">Ward / Bed</span><span class="pf-v">{% if admission.bed %}{{ admission.ward.name }} · Bed {{ admission.bed.bed_number }}{% else %}No bed{% endif %}</span></span>
+    <span class="pf-item"><span class="pf-k">Consultant</span><span class="pf-v">{% if admission.doctor %}Dr. {{ admission.doctor.full_name }}{% else %}—{% endif %}</span>{% if admission.department %}<span class="pf-s">({{ admission.department.name }})</span>{% endif %}</span>
+    <span class="pf-item"><span class="pf-k">Admitted</span><span class="pf-v">{{ admission.admission_date|date:"d M Y" }}</span><span class="pf-s">{{ admission.admission_date|date:"h:i A" }}</span></span>
+    {% if admission.attendant_name %}<span class="pf-item"><span class="pf-k">Attendant</span><span class="pf-v">{{ admission.attendant_name }}</span><span class="pf-s">{% if admission.attendant_relation %}({{ admission.attendant_relation }}){% endif %}{% if admission.attendant_mobile %} {{ admission.attendant_mobile }}{% endif %}</span></span>{% endif %}
   </div>
 
   <div class="pf-clinical">
