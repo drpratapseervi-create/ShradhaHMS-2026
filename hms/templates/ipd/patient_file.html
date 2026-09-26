@@ -74,6 +74,27 @@ color:#00b8a9;
 .vitals-row .vital small{ color:#94a3b8; font-size:10.5px; text-transform:none; font-weight:500; }
 .vitals-row .form-control{ margin:0 !important; width:100%; }
 .vitals-row .vitals-save{ margin:0 !important; white-space:nowrap; height:fit-content; }
+/* ── Discharge summary cards ── */
+.ds-h{ margin-bottom:14px; }
+.ds-card{ background:#11151f; border:1px solid #2d3148; border-left:3px solid #10b981; border-radius:10px; padding:14px 16px; margin-bottom:14px; }
+.ds-quick{ border-left-color:#3b82f6; }
+.ds-title{ display:flex; align-items:center; gap:8px; color:#fff; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px; }
+.ds-num{ width:22px; height:22px; border-radius:50%; background:rgba(16,185,129,.15); color:#34d399; display:inline-flex; align-items:center; justify-content:center; font-size:11.5px; }
+.ds-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 16px; }
+.ds-inv{ display:grid; grid-template-columns:repeat(6,minmax(0,1fr)) minmax(0,2fr); gap:10px; }
+@media (max-width: 900px){ .ds-grid{ grid-template-columns:1fr; } .ds-inv{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
+.ds-field{ display:flex; flex-direction:column; margin-bottom:10px; }
+.ds-field:last-child, .ds-grid .ds-field, .ds-inv .ds-field{ margin-bottom:0; }
+.ds-field label{ color:#34d399 !important; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; }
+.ds-field label small{ color:#94a3b8 !important; text-transform:none; font-weight:500; }
+.ds-field .form-control{ margin:0 !important; }
+.ds-field textarea.form-control{ min-height:78px; resize:vertical; }
+.ds-quick-row{ display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+.ds-quick-row .ds-field{ margin-bottom:0; }
+.ds-hint{ color:#94a3b8; font-size:12px; }
+.ds-help{ margin-top:8px; color:#94a3b8; font-size:12px; }
+.ds-help summary{ cursor:pointer; color:#93c5fd; font-weight:600; }
+.ds-help p{ margin:6px 0 0; line-height:1.5; }
 .tabs{
 display:flex;
 gap:4px;
@@ -1055,81 +1076,100 @@ onclick="this.showPicker && this.showPicker();">
 
 <div id="discharge" class="tab-content">
 
-<h3>Discharge Summary</h3>
+<h3 class="ds-h">Discharge Summary</h3>
 
 {{ discharge_templates|json_script:"discharge-templates-data" }}
-
-<label>Load Template</label>
-<select id="discharge-template-select" class="form-control">
-  <option value="">— Select a procedure to prefill —</option>
-  {% for t in discharge_templates %}
-  <option value="{{ t.id }}">{{ t.procedure_name }} ({{ t.gender }})</option>
-  {% endfor %}
-</select>
-<p style="color:#64748b; font-size:12px; margin-top:4px;">Prefills the fields below from a standard procedure template — review and edit before saving.</p>
-
 {{ discharge_autofill|json_script:"discharge-autofill-data" }}
-<button type="button" id="discharge-autofill-btn" class="print-btn" style="margin-left:0; margin-top:6px; cursor:pointer;">↧ Load from patient record</button>
-<span id="discharge-autofill-msg" style="color:#64748b; font-size:12px; margin-left:10px;"></span>
-<p style="color:#64748b; font-size:12px; margin-top:4px;">Fills <b>empty</b> Diagnosis, Chief Complaints, General Examination, Investigations (Hb/TLC/Platelet/RBS/HIV/HBsAg/USG), Procedure Performed, IPD Treatment and Course in Hospital from what's already recorded on this IPD file (Diagnosis, Symptoms, Vitals, Investigations, Medication, Progress Notes &amp; Treatment tabs), plus default template text for Condition at Discharge and Discharge Advice. General Examination is built from the latest vitals reading; IPD Treatment is built from the inpatient Medication Chart; Course in Hospital is built from Progress Notes (SOAP), left blank if none were recorded. Never overwrites text you've already entered — review and edit before saving. Runs automatically when this tab is opened.</p>
+
+<div class="ds-card ds-quick">
+  <div class="ds-title"><span class="ds-num">⚡</span> Quick fill</div>
+  <div class="ds-quick-row">
+    <div class="ds-field" style="flex:1 1 320px;">
+      <label for="discharge-template-select">Load template</label>
+      <select id="discharge-template-select" class="form-control">
+        <option value="">— Select a procedure to prefill —</option>
+        {% for t in discharge_templates %}
+        <option value="{{ t.id }}">{{ t.procedure_name }} ({{ t.gender }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="ds-field">
+      <button type="button" id="discharge-autofill-btn" class="print-btn" style="margin:0; cursor:pointer;">↧ Load from patient record</button>
+    </div>
+  </div>
+  <span id="discharge-autofill-msg" class="ds-hint"></span>
+  <details class="ds-help">
+    <summary>What do these do?</summary>
+    <p><b>Load template</b> prefills the fields below from a standard procedure template — review and edit before saving.</p>
+    <p><b>Load from patient record</b> fills <b>empty</b> Diagnosis, Chief Complaints, General Examination, Investigations (Hb/TLC/Platelet/RBS/HIV/HBsAg/USG), Procedure Performed, IPD Treatment and Course in Hospital from what's already recorded on this IPD file (Diagnosis, Symptoms, Vitals, Investigations, Medication, Progress Notes &amp; Treatment tabs), plus default template text for Condition at Discharge and Discharge Advice. General Examination is built from the latest vitals reading; IPD Treatment is built from the inpatient Medication Chart; Course in Hospital is built from Progress Notes (SOAP), left blank if none were recorded. Never overwrites text you've already entered — review and edit before saving. Runs automatically when this tab is opened.</p>
+  </details>
+</div>
 
 <form method="POST" id="discharge-summary-form">
 
 {% csrf_token %}
 <input type="hidden" name="form_type" value="discharge">
 
-<label>Diagnosis</label>
-<textarea name="diagnosis" id="discharge-diagnosis" class="form-control">{{ admission.diagnosis }}</textarea>
-
-<label>Chief Complaints</label>
-<textarea name="chief_complaint" id="discharge-chief-complaints" class="form-control">{{ chief_complaint_display }}</textarea>
-
-<label>General Examination</label>
-<textarea name="general_examination" id="discharge-general-examination" class="form-control" placeholder="e.g. Temp 98.6, SpO2 98%, RR 18/min">{{ admission.general_examination }}</textarea>
-
-<label>Local Examination</label>
-<textarea name="local_examination" id="discharge-local-examination" class="form-control">{{ admission.local_examination }}</textarea>
-
-<label>Investigations</label>
-<div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
-  <div><label style="font-size:11px;">Hb</label><input type="text" name="inv_hb" id="discharge-inv-hb" class="form-control" value="{{ admission.inv_hb }}"></div>
-  <div><label style="font-size:11px;">TLC</label><input type="text" name="inv_tlc" id="discharge-inv-tlc" class="form-control" value="{{ admission.inv_tlc }}"></div>
-  <div><label style="font-size:11px;">Platelet Count</label><input type="text" name="inv_platelet_count" id="discharge-inv-platelet-count" class="form-control" value="{{ admission.inv_platelet_count }}"></div>
-  <div><label style="font-size:11px;">RBS (mg/dl)</label><input type="text" name="inv_rbs" id="discharge-inv-rbs" class="form-control" value="{{ admission.inv_rbs }}"></div>
-  <div><label style="font-size:11px;">HIV</label><input type="text" name="inv_hiv" id="discharge-inv-hiv" class="form-control" value="{{ admission.inv_hiv }}"></div>
-  <div><label style="font-size:11px;">HbsAg</label><input type="text" name="inv_hbsag" id="discharge-inv-hbsag" class="form-control" value="{{ admission.inv_hbsag }}"></div>
-  <div><label style="font-size:11px;">USG</label><input type="text" name="inv_usg" id="discharge-inv-usg" class="form-control" value="{{ admission.inv_usg }}"></div>
+<div class="ds-card">
+  <div class="ds-title"><span class="ds-num">1</span> Presentation</div>
+  <div class="ds-grid">
+    <div class="ds-field"><label>Diagnosis</label>
+      <textarea name="diagnosis" id="discharge-diagnosis" class="form-control">{{ admission.diagnosis }}</textarea></div>
+    <div class="ds-field"><label>Chief complaints</label>
+      <textarea name="chief_complaint" id="discharge-chief-complaints" class="form-control">{{ chief_complaint_display }}</textarea></div>
+    <div class="ds-field"><label>General examination</label>
+      <textarea name="general_examination" id="discharge-general-examination" class="form-control" placeholder="e.g. Temp 98.6, SpO2 98%, RR 18/min">{{ admission.general_examination }}</textarea></div>
+    <div class="ds-field"><label>Local examination</label>
+      <textarea name="local_examination" id="discharge-local-examination" class="form-control">{{ admission.local_examination }}</textarea></div>
+  </div>
 </div>
 
-<label>Procedure Performed</label>
-<textarea name="procedure_done" id="discharge-procedure-done" class="form-control">{{ procedure_done_display }}</textarea>
+<div class="ds-card">
+  <div class="ds-title"><span class="ds-num">2</span> Investigations</div>
+  <div class="ds-inv">
+    <div class="ds-field"><label>Hb</label><input type="text" name="inv_hb" id="discharge-inv-hb" class="form-control" value="{{ admission.inv_hb }}"></div>
+    <div class="ds-field"><label>TLC</label><input type="text" name="inv_tlc" id="discharge-inv-tlc" class="form-control" value="{{ admission.inv_tlc }}"></div>
+    <div class="ds-field"><label>Platelet count</label><input type="text" name="inv_platelet_count" id="discharge-inv-platelet-count" class="form-control" value="{{ admission.inv_platelet_count }}"></div>
+    <div class="ds-field"><label>RBS <small>mg/dl</small></label><input type="text" name="inv_rbs" id="discharge-inv-rbs" class="form-control" value="{{ admission.inv_rbs }}"></div>
+    <div class="ds-field"><label>HIV</label><input type="text" name="inv_hiv" id="discharge-inv-hiv" class="form-control" value="{{ admission.inv_hiv }}"></div>
+    <div class="ds-field"><label>HBsAg</label><input type="text" name="inv_hbsag" id="discharge-inv-hbsag" class="form-control" value="{{ admission.inv_hbsag }}"></div>
+    <div class="ds-field"><label>USG</label><input type="text" name="inv_usg" id="discharge-inv-usg" class="form-control" value="{{ admission.inv_usg }}"></div>
+  </div>
+</div>
 
-<label>IPD Treatment</label>
-<textarea name="ipd_treatment" id="discharge-ipd-treatment" class="form-control" placeholder="Inpatient (IV) medication given during the stay.">{{ admission.ipd_treatment }}</textarea>
+<div class="ds-card">
+  <div class="ds-title"><span class="ds-num">3</span> Hospital stay</div>
+  <div class="ds-field"><label>Procedure performed</label>
+    <textarea name="procedure_done" id="discharge-procedure-done" class="form-control">{{ procedure_done_display }}</textarea></div>
+  <div class="ds-field"><label>IPD treatment</label>
+    <textarea name="ipd_treatment" id="discharge-ipd-treatment" class="form-control" placeholder="Inpatient (IV) medication given during the stay.">{{ admission.ipd_treatment }}</textarea></div>
+  <div class="ds-field"><label>Course in hospital</label>
+    <textarea name="course_in_hospital" id="discharge-course-in-hospital" class="form-control" placeholder="Progress notes narrative, if any were recorded.">{{ admission.course_in_hospital }}</textarea></div>
+</div>
 
-<label>Course in Hospital</label>
-<textarea name="course_in_hospital" id="discharge-course-in-hospital" class="form-control" placeholder="Progress notes narrative, if any were recorded.">{{ admission.course_in_hospital }}</textarea>
-
-<label>Condition at Discharge</label>
-<textarea name="condition_at_discharge" id="discharge-condition-at-discharge" class="form-control" placeholder="Describe the patient's condition at discharge.">{{ admission.condition_at_discharge }}</textarea>
-
-<label>Discharge Advice</label>
-<textarea name="discharge_advice" id="discharge-advice" class="form-control">{{ admission.discharge_advice }}</textarea>
-
-<label>Follow Up Date</label>
-
-<input type="date" name="follow_up_date" id="discharge-follow-up-date" class="form-control"
-value="{{ admission.follow_up_date|date:'Y-m-d' }}"
-onclick="this.showPicker && this.showPicker();">
+<div class="ds-card">
+  <div class="ds-title"><span class="ds-num">4</span> At discharge</div>
+  <div class="ds-grid">
+    <div class="ds-field"><label>Condition at discharge</label>
+      <textarea name="condition_at_discharge" id="discharge-condition-at-discharge" class="form-control" placeholder="Describe the patient's condition at discharge.">{{ admission.condition_at_discharge }}</textarea></div>
+    <div class="ds-field"><label>Discharge advice</label>
+      <textarea name="discharge_advice" id="discharge-advice" class="form-control">{{ admission.discharge_advice }}</textarea></div>
+  </div>
+  <div class="ds-field" style="max-width:240px; margin-top:12px;"><label>Follow-up date</label>
+    <input type="date" name="follow_up_date" id="discharge-follow-up-date" class="form-control"
+    value="{{ admission.follow_up_date|date:'Y-m-d' }}"
+    onclick="this.showPicker && this.showPicker();"></div>
+</div>
 
 </form>
 
-<h4 id="discharge-medications-section">Discharge Medications</h4>
-<p style="color:#64748b; font-size:12px;">Medicines the patient should continue after discharge. Select checkboxes on the Medication tab to copy chart entries here, or click a medicine below to add it with its Drug Master dose.</p>
+<div class="ds-card">
+<div class="ds-title" id="discharge-medications-section"><span class="ds-num">5</span> Discharge medications</div>
+<p class="ds-hint" style="margin:-4px 0 10px;">Medicines the patient should continue after discharge. Select checkboxes on the Medication tab to copy chart entries here, or click a medicine below to add it with its Drug Master dose.</p>
 
 <!-- ═══ QUICK SELECT — DISCHARGE MEDICINES ═══ -->
 <div style="margin-bottom:10px;">
-  <div style="font-size:12px;font-weight:700;color:#007676;margin-bottom:6px;">⚡ Quick Select — Medicines (from Drug Master)</div>
+  <div style="font-size:12px;font-weight:700;color:#34d399;margin-bottom:6px;">⚡ Quick Select — Medicines (from Drug Master)</div>
 
   {% if drug_masters %}
   <div id="discharge-quick-meds-top" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px;">
@@ -1149,7 +1189,7 @@ onclick="this.showPicker && this.showPicker();">
     {% regroup drug_masters|slice:"12:" by category as discharge_drug_groups %}
     {% for group in discharge_drug_groups %}
     <div style="margin-bottom:8px;">
-      <div style="font-size:10px;font-weight:700;color:#007676;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;border-bottom:1px solid #e0f2f1;padding-bottom:2px;">{{ group.grouper }}</div>
+      <div style="font-size:10px;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;border-bottom:1px solid #2d3148;padding-bottom:2px;">{{ group.grouper }}</div>
       <div style="display:flex;flex-wrap:wrap;gap:5px;">
         {% for drug in group.list %}
         <form method="POST" style="display:inline;">
@@ -1171,7 +1211,7 @@ onclick="this.showPicker && this.showPicker();">
   {% endif %}
 
   <button type="button" id="discharge-toggle-more-meds" onclick="toggleDischargeMoreMeds()"
-    style="margin-top:4px;background:none;border:none;color:#007676;font-size:12px;font-weight:600;cursor:pointer;padding:2px 0;">
+    style="margin-top:4px;background:none;border:none;color:#34d399;font-size:12px;font-weight:600;cursor:pointer;padding:2px 0;">
     ▼ Show all medicines by category
   </button>
 </div>
@@ -1217,6 +1257,7 @@ onclick="this.showPicker && this.showPicker();">
 
 </table>
 
+</div>
 <!-- Save/Print submit the discharge-summary-form above via the form=""
      attribute, so they can sit here — below Discharge Medications —
      without nesting inside the per-medicine forms in this section. -->
