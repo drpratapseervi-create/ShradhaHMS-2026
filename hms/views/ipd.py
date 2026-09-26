@@ -91,7 +91,8 @@ def bed_housekeeping(request, bed_id):
 def _admit_form_context(bed=None, selected_patient_id=None, selected_bed_id="", error=None):
     return {
         "bed": bed,
-        "free_beds": [b for b in Bed.objects.select_related("ward__bed_charge_item").order_by("ward__name", "bed_number") if b.is_available],
+        # All beds; unavailable ones are shown disabled with their status so staff can see why.
+        "all_beds": list(Bed.objects.select_related("ward__bed_charge_item").order_by("ward__name", "bed_number")),
         "patients": Patient.objects.all().order_by("full_name"),
         "doctors": Doctor.objects.select_related("department").order_by("full_name"),
         "selected_patient_id": selected_patient_id,
@@ -757,6 +758,13 @@ def progress_notes_pdf(request, admission_id):
         "admission": admission,
         "notes":     notes,
     })
+
+
+@login_required
+def attendant_pass(request, admission_id):
+    """ID-card-size attendant entry pass for an admitted patient, printed from the browser."""
+    admission = get_object_or_404(IPDAdmission.objects.select_related("patient", "bed__ward"), id=admission_id)
+    return render(request, "ipd/attendant_pass.html", {"admission": admission})
 
 
 

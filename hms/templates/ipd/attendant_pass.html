@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Attendant Pass — {{ admission.ipd_no }}</title>
+<style>
+  @page { size: A4; margin: 12mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; margin: 0; padding: 20px; background: #eef2f5; color: #111; }
+  .toolbar { margin-bottom: 16px; display: flex; gap: 10px; align-items: center; font-size: 13px; color: #555; }
+  .toolbar button { background: #0f766e; color: #fff; border: 0; border-radius: 6px; padding: 8px 18px; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+  /* Standard ID-1 card: 85.6 x 54 mm */
+  .pass { width: 85.6mm; height: 54mm; background: #fff; border: 0.3mm dashed #999; border-radius: 3mm; overflow: hidden;
+          display: flex; flex-direction: column; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+  .pass-head { background: #0f766e; color: #fff; padding: 1.6mm 3mm; display: flex; justify-content: space-between; align-items: center; }
+  .hosp { font-size: 7.6pt; font-weight: 700; line-height: 1.15; }
+  .hosp small { display: block; font-size: 5.6pt; font-weight: 400; opacity: .9; }
+  .tag { background: #fff; color: #0f766e; font-size: 6.4pt; font-weight: 800; padding: .6mm 2mm; border-radius: 1mm; letter-spacing: .3pt; white-space: nowrap; }
+  .pass-body { flex: 1; padding: 2mm 3mm 1mm; font-size: 7.4pt; line-height: 1.35; }
+  .row { display: flex; }
+  .row .k { width: 17mm; color: #555; flex: 0 0 17mm; }
+  .row .v { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .big { font-size: 9pt; }
+  .divider { border-top: 0.2mm solid #d6dde3; margin: 1mm 0; }
+  .blank { display: inline-block; border-bottom: 0.2mm solid #888; min-width: 40mm; height: 3mm; }
+  .pass-foot { display: flex; justify-content: space-between; align-items: flex-end; padding: 0 3mm 1.6mm; font-size: 5.6pt; color: #555; }
+  .sign { text-align: center; border-top: 0.2mm solid #888; padding-top: .4mm; min-width: 20mm; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .toolbar { display: none; }
+    .pass { box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button onclick="window.print()">🖨 Print pass</button>
+  <span>Prints at ID-card size (85.6 × 54 mm) — cut along the dashed line.</span>
+</div>
+
+<div class="pass">
+  <div class="pass-head">
+    <div class="hosp">Shradha Hospital &amp; Multispeciality Centre
+      <small>Pani Ki Do Tanki, Surajpole, Pali (Raj.) · 📞 9414122542</small>
+    </div>
+    <span class="tag">ATTENDANT PASS</span>
+  </div>
+  <div class="pass-body">
+    <div class="row"><span class="k">Attendant</span><span class="v big">{% if admission.attendant_name %}{{ admission.attendant_name }}{% else %}<span class="blank"></span>{% endif %}</span></div>
+    <div class="row"><span class="k">Relation</span><span class="v">{% if admission.attendant_relation %}{{ admission.attendant_relation }}{% else %}<span class="blank"></span>{% endif %}</span></div>
+    <div class="row"><span class="k">Mobile</span><span class="v">{% if admission.attendant_mobile %}{{ admission.attendant_mobile }}{% else %}<span class="blank"></span>{% endif %}</span></div>
+    <div class="divider"></div>
+    <div class="row"><span class="k">Patient</span><span class="v">{{ admission.patient.full_name }}</span></div>
+    <div class="row"><span class="k">IPD No.</span><span class="v">{{ admission.ipd_no }} · UHID {{ admission.patient.uhid }}</span></div>
+    <div class="row"><span class="k">Ward / Bed</span><span class="v">{% if admission.bed %}{{ admission.bed.ward.name }} · Bed {{ admission.bed.bed_number }}{% else %}—{% endif %}</span></div>
+  </div>
+  <div class="pass-foot">
+    <span>Admitted {{ admission.admission_date|date:"d M Y" }} · Valid till discharge<br>One attendant at a time · Return at discharge</span>
+    <span class="sign">Issued by</span>
+  </div>
+</div>
+</body>
+</html>

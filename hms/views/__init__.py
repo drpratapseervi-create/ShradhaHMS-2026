@@ -98,6 +98,7 @@ from .ipd import (
     ipd_patient_file,
     discharge_pdf,
     progress_notes_pdf,
+    attendant_pass,
 )
 
 from .billing import (

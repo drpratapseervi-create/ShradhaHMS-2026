@@ -299,10 +299,10 @@ background:#155555;
 {% else %}
 <select name="bed" class="form-control" required>
 <option value="">Select a free bed</option>
-{% regroup free_beds by ward as by_ward %}
+{% regroup all_beds by ward as by_ward %}
 {% for group in by_ward %}
 <optgroup label="{{ group.grouper.name }}{% if group.grouper.bed_charge_item %} — ₹{{ group.grouper.bed_charge_item.price|floatformat:0 }}/day{% endif %}">
-{% for b in group.list %}<option value="{{ b.id }}" {% if b.id|stringformat:"s" == selected_bed_id %}selected{% endif %}>{{ b.ward.name }} — Bed {{ b.bed_number }}</option>{% endfor %}
+{% for b in group.list %}{% if b.is_available %}<option value="{{ b.id }}" {% if b.id|stringformat:"s" == selected_bed_id %}selected{% endif %}>{{ b.ward.name }} — Bed {{ b.bed_number }}</option>{% else %}<option value="" disabled style="color:#6b7280;">{{ b.ward.name }} — Bed {{ b.bed_number }} ({% if b.is_occupied %}Occupied{% else %}{{ b.get_housekeeping_display }}{% endif %})</option>{% endif %}{% endfor %}
 </optgroup>
 {% empty %}
 <option value="" disabled>No free beds</option>
