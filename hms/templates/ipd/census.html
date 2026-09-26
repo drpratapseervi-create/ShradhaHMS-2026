@@ -3,13 +3,13 @@
 {% block content %}
 <div class="container-fluid mt-3">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h2 class="mb-0">📊 IPD Census — bed occupancy &amp; length of stay</h2>
-    <a href="{% url 'hms:ipd_dashboard' %}" class="btn btn-secondary">← IPD board</a>
+    <h5 class="mb-0 fw-semibold">📊 IPD Census <span class="fw-normal small" style="color:#10b981">— bed occupancy &amp; length of stay</span></h5>
+    <a href="{% url 'hms:ipd_dashboard' %}" class="btn btn-secondary btn-sm">← IPD board</a>
   </div>
-  <form method="get" class="row g-2 mb-3">
-    <div class="col-auto"><input type="date" name="from" value="{{ date_from|date:'Y-m-d' }}" class="form-control"></div>
-    <div class="col-auto"><input type="date" name="to" value="{{ date_to|date:'Y-m-d' }}" class="form-control"></div>
-    <div class="col-auto"><button class="btn btn-primary">Show</button></div>
+  <form method="get" class="row g-2 mb-2">
+    <div class="col-auto"><input type="date" name="from" value="{{ date_from|date:'Y-m-d' }}" class="form-control form-control-sm"></div>
+    <div class="col-auto"><input type="date" name="to" value="{{ date_to|date:'Y-m-d' }}" class="form-control form-control-sm"></div>
+    <div class="col-auto"><button class="btn btn-primary btn-sm">Show</button></div>
   </form>
 
   {% if stale_count %}
@@ -19,29 +19,37 @@
   </div>
   {% endif %}
 
-  <div class="row g-3 mb-3">
-    <div class="col-md-3"><div class="card p-3"><div class="text-muted small">Bed occupancy rate</div><div class="fs-3 fw-bold">{{ avg_occupancy }}%</div><div class="small text-muted">{{ bed_days }} bed-days / ({{ total_beds }} beds × {{ days|length }} days)</div></div></div>
-    <div class="col-md-3"><div class="card p-3"><div class="text-muted small">Average length of stay</div><div class="fs-3 fw-bold">{% if alos is not None %}{{ alos }} days{% else %}—{% endif %}</div><div class="small text-muted">over {{ discharged_count }} discharge(s) in the period</div></div></div>
-    <div class="col-md-6"><div class="card p-3 small text-muted">
+  <div class="row g-2 mb-2">
+    <div class="col-md-3"><div class="card census-green px-3 py-2 h-100"><div class="census-label">Bed occupancy rate</div><div class="fs-5 fw-bold lh-sm">{{ avg_occupancy }}%</div><div class="census-sub">{{ bed_days }} bed-days / ({{ total_beds }} beds × {{ days|length }} days)</div></div></div>
+    <div class="col-md-3"><div class="card census-green px-3 py-2 h-100"><div class="census-label">Average length of stay</div><div class="fs-5 fw-bold lh-sm">{% if alos is not None %}{{ alos }} days{% else %}—{% endif %}</div><div class="census-sub">over {{ discharged_count }} discharge(s) in the period</div></div></div>
+    <div class="col-md-6"><div class="card census-green px-3 py-2 h-100 census-sub" style="font-size:.8rem">
       Occupancy is a midnight census (beds occupied at the end of each day). Length of stay uses the billing rule: nights stayed, minimum 1.
       Both are NABH key performance indicators.
     </div></div>
   </div>
 
   <style>
-    .census-card { border-radius: 14px; overflow: hidden; }
-    .census-card .card-header { background: #252a40; border-bottom: 1px solid #2d3148; padding: .85rem 1.1rem; }
-    .census-table td, .census-table th { padding: .8rem 1.1rem; vertical-align: middle; }
-    .census-table thead th { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; }
+    .census-label { color: #fff; font-weight: 600; font-size: .85rem; }
+    .census-sub { color: #e2e8f0; font-size: .8rem; }
+    .census-green { border: 1px solid #10b981 !important; border-radius: 12px; box-shadow: 0 0 0 1px rgba(16,185,129,.15), 0 4px 18px rgba(16,185,129,.12); }
+    .census-card { border-radius: 14px; overflow: hidden; border: 1px solid #10b981 !important; box-shadow: 0 0 0 1px rgba(16,185,129,.15), 0 4px 18px rgba(16,185,129,.12); }
+    .census-card .card-header { background: #252a40; border-bottom: 1px solid rgba(16,185,129,.45); border-left: 3px solid #10b981; padding: .5rem .9rem; font-size: .9rem; }
+    .census-table td, .census-table th { padding: .4rem .9rem; vertical-align: middle; font-size: .85rem; }
+    .census-table { border-collapse: separate !important; border-spacing: 0 6px; padding: 0 .6rem; }
+    .census-table tbody td { border-top: 1px solid #3b82f6 !important; border-bottom: 1px solid #3b82f6 !important; background: rgba(59,130,246,.05) !important; }
+    .census-table tbody td:first-child { border-left: 1px solid #3b82f6 !important; border-radius: 10px 0 0 10px; }
+    .census-table tbody td:last-child { border-right: 1px solid #3b82f6 !important; border-radius: 0 10px 10px 0; }
+    .census-table tbody tr:hover td { background: rgba(59,130,246,.12) !important; }
+    .census-table thead th { color: #10b981 !important; font-weight: 700; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; }
     .census-date { font-weight: 600; }
-    .census-day { font-size: .75rem; color: #8892a4; }
-    .occ-bar { height: 8px; border-radius: 999px; background: #2d3148; overflow: hidden; min-width: 120px; }
+    .census-day { font-size: .7rem; color: #8892a4; }
+    .occ-bar { height: 6px; border-radius: 999px; background: #2d3148; overflow: hidden; min-width: 120px; }
     .occ-bar > span { display: block; height: 100%; border-radius: 999px; }
     .occ-low  { background: #38bdf8; }
     .occ-mid  { background: #22c55e; }
     .occ-high { background: #f59e0b; }
     .occ-full { background: #ef4444; }
-    .pill { display: inline-block; min-width: 2.2rem; padding: .2rem .6rem; border-radius: 999px; font-weight: 600; text-align: center; }
+    .pill { display: inline-block; min-width: 1.8rem; padding: .1rem .5rem; font-size: .8rem; border-radius: 999px; font-weight: 600; text-align: center; }
     .pill-in   { background: rgba(34,197,94,.15);  color: #4ade80; }
     .pill-out  { background: rgba(56,189,248,.15); color: #7dd3fc; }
     .pill-zero { background: transparent; color: #4b5368; }
@@ -62,8 +70,8 @@
         {% for d in page %}
           <tr>
             <td>
-              <div class="census-date">{{ d.date|date:"d M Y" }}</div>
-              <div class="census-day">{{ d.date|date:"l" }}</div>
+              <span class="census-date">{{ d.date|date:"d M Y" }}</span>
+              <span class="census-day ms-1">{{ d.date|date:"D" }}</span>
             </td>
             <td>
               <div class="d-flex align-items-center gap-3">
@@ -81,7 +89,7 @@
       </table>
     </div>
     {% if page.paginator.num_pages > 1 %}
-    <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2" style="background:#1a1d27;border-top:1px solid #2d3148;">
+    <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2 py-2" style="background:#1a1d27;border-top:1px solid #2d3148;">
       <span class="small text-muted">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
       {% with q="from="|add:date_from_str|add:"&to="|add:date_to_str %}
       <ul class="pagination pagination-sm mb-0 census-pager">
