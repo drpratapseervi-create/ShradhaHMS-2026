@@ -65,10 +65,14 @@ color:#00b8a9;
 .soap-row{ grid-template-columns:repeat(4,minmax(0,1fr)); align-items:stretch; }
 .soap-row textarea.form-control{ min-height:110px; resize:vertical; }
 @media (max-width: 900px){ .vitals-row, .med-row, .proc-row, .soap-row{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
-.med-row .select2-container{ width:100% !important; }
-.med-row .select2-container .select2-selection--single{ height:41px; background:#1e2235; border:1px solid #2d3148; border-radius:7px; }
-.med-row .select2-container .select2-selection--single .select2-selection__rendered{ line-height:39px; padding-left:12px; color:#e2e8f0; }
-.med-row .select2-container .select2-selection--single .select2-selection__arrow{ height:39px; }
+.dx-row{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.6fr); gap:16px; align-items:start; }
+@media (max-width: 900px){ .dx-row{ grid-template-columns:1fr; } }
+.dx-row .vital{ display:flex; flex-direction:column; gap:4px; margin:0; }
+.dx-row .vital > span{ color:#34d399; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.med-row .select2-container, .dx-row .select2-container{ width:100% !important; }
+.med-row .select2-container .select2-selection--single, .dx-row .select2-container .select2-selection--single{ height:41px; background:#1e2235; border:1px solid #2d3148; border-radius:7px; }
+.med-row .select2-container .select2-selection--single .select2-selection__rendered, .dx-row .select2-container .select2-selection--single .select2-selection__rendered{ line-height:39px; padding-left:12px; color:#e2e8f0; }
+.med-row .select2-container .select2-selection--single .select2-selection__arrow, .dx-row .select2-container .select2-selection--single .select2-selection__arrow{ height:39px; }
 .vitals-row .vital{ display:flex; flex-direction:column; gap:4px; margin:0; }
 .vitals-row .vital span{ color:#34d399; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
 .vitals-row .vital small{ color:#94a3b8; font-size:10.5px; text-transform:none; font-weight:500; }
@@ -736,19 +740,21 @@ Discharge Bill
 
 <h4>Diagnosis</h4>
 
-<label>Search ICD-10</label>
+<div class="dx-row">
+<div class="vital">
+<span>Search ICD-10</span>
 <select id="ipd-diagnosis-icd-search" style="width:100%"></select>
-<p style="color:#64748b; font-size:12px; margin:4px 0 10px;">Search by condition name or code — selecting a result appends it below.</p>
+<p class="ds-hint" style="margin:6px 0 0;">Search by condition name or code — picking a result adds it to the diagnosis box.</p>
+</div>
 
-<form method="POST">
+<form method="POST" class="vital">
 {% csrf_token %}
 <input type="hidden" name="form_type" value="diagnosis">
-
-<textarea name="diagnosis" id="ipd-diagnosis-text" class="form-control" rows="6" style="height:150px" placeholder="Provisional diagnosis entered at admission, ICD-10 codes, working diagnosis…">{{ admission.diagnosis }}</textarea>
-
-<button class="save-btn">Save Diagnosis</button>
-
+<span>Diagnosis</span>
+<textarea name="diagnosis" id="ipd-diagnosis-text" class="form-control" rows="4" style="min-height:110px; resize:vertical; margin:0;" placeholder="Provisional diagnosis entered at admission, ICD-10 codes, working diagnosis…">{{ admission.diagnosis }}</textarea>
+<div style="text-align:right; margin-top:10px;"><button class="save-btn" style="margin:0;">Save Diagnosis</button></div>
 </form>
+</div>
 
 </div>
 
