@@ -24,51 +24,66 @@ color:#00b8a9;
 }
 
 /* ── Patient banner ── */
-.pf-banner{ background:#161a26; border:1px solid #10b981; border-radius:14px; margin-bottom:20px; overflow:hidden;
-    box-shadow:0 0 0 1px rgba(16,185,129,.12), 0 4px 16px rgba(16,185,129,.10); }
-.pf-top{ display:flex; flex-wrap:wrap; align-items:center; gap:12px 16px; padding:14px 18px; background:#1b2130; border-bottom:1px solid #2d3148; }
-.pf-avatar{ width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,#0f766e,#10b981); color:#fff;
-    display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:700; flex:0 0 46px; }
-.pf-who{ flex:1 1 220px; min-width:0; }
-.pf-name{ color:#fff; font-size:19px; font-weight:700; line-height:1.2; }
-.pf-sub{ color:#8892a4; font-size:12.5px; margin-top:3px; }
-.pf-badges{ display:flex; gap:6px; align-items:center; }
-.pf-status{ padding:3px 12px; border-radius:999px; font-size:12px; font-weight:700; }
-.pf-status-admitted{ background:rgba(16,185,129,.15); color:#4ade80; border:1px solid rgba(16,185,129,.5); }
-.pf-status-discharged{ background:rgba(59,130,246,.15); color:#93c5fd; border:1px solid rgba(59,130,246,.5); }
-.pf-status-cancelled{ background:rgba(239,68,68,.12); color:#fca5a5; border:1px solid rgba(239,68,68,.5); }
-.pf-day{ padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; background:#252a40; color:#e2e8f0; }
-.pf-actions{ display:flex; flex-wrap:wrap; gap:6px; }
-.pf-btn{ background:#1e3a3a; color:#00d4c0; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:700; text-decoration:none; transition:.15s; }
-.pf-btn:hover{ background:#155555; color:#5eead4; }
-.pf-btn-bill{ background:#3a1418; color:#fca5a5; }
-.pf-btn-bill:hover{ background:#4a1a20; color:#fecaca; }
-.pf-row{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 0; padding:10px 18px; border-bottom:1px solid #2d3148; background:#11151f; }
-.pf-item{ display:inline-flex; align-items:baseline; gap:7px; padding:0 18px; border-left:1px solid #2d3148; white-space:nowrap; }
-.pf-item:first-child{ padding-left:0; border-left:0; }
-.pf-k{ color:#10b981; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
-.pf-v{ color:#fff; font-size:13.5px; font-weight:600; }
-.pf-s{ color:#8892a4; font-size:12px; }
-.pf-ipd{ color:#38bdf8; }
-.pf-clinical{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; padding:10px 18px 16px; }
-.pf-block .pf-k{ display:block; margin-bottom:3px; }
-.pf-block{ background:#11151f; border:1px solid #2d3148; border-left:3px solid #3b82f6; border-radius:8px; padding:9px 12px; }
-.pf-dx{ border-left-color:#f59e0b; }
-.pf-text{ color:#e2e8f0; font-size:13.5px; line-height:1.45; }
-.pf-icd{ background:#252a40; color:#fcd34d; font-size:11px; font-weight:700; padding:1px 7px; border-radius:5px; margin-left:4px; }
+.pf-banner{ background:#161a26; border:1px solid #2d3148; border-top:3px solid #10b981; border-radius:12px; margin-bottom:20px; }
+.pf-top{ display:flex; flex-wrap:wrap; align-items:center; gap:12px 16px; padding:16px 20px; }
+.pf-avatar{ width:44px; height:44px; border-radius:50%; background:#10b981; color:#04130d;
+    display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:700; flex:0 0 44px; }
+.pf-who{ flex:1 1 260px; min-width:0; }
+.pf-name{ color:#fff; font-size:19px; font-weight:700; line-height:1.25; display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.pf-sub{ color:#94a3b8; font-size:13px; margin-top:3px; }
+.pf-sub .dot{ color:#475569; margin:0 6px; }
+.pf-status{ font-size:11.5px; font-weight:600; padding:2px 10px; border-radius:999px; }
+.pf-status-admitted{ background:rgba(16,185,129,.14); color:#34d399; }
+.pf-status-discharged{ background:rgba(148,163,184,.14); color:#cbd5e1; }
+.pf-status-cancelled{ background:rgba(239,68,68,.14); color:#fca5a5; }
+.pf-actions{ display:flex; flex-wrap:wrap; gap:8px; }
+.pf-btn{ border:1px solid #334155; color:#e2e8f0; background:transparent; padding:6px 14px; border-radius:8px;
+    font-size:12.5px; font-weight:600; text-decoration:none; transition:.15s; }
+.pf-btn:hover{ border-color:#10b981; color:#34d399; }
+.pf-btn-primary{ background:#10b981; border-color:#10b981; color:#04130d; }
+.pf-btn-primary:hover{ background:#34d399; border-color:#34d399; color:#04130d; }
+.pf-facts{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); margin:0 20px 4px; background:rgba(16,185,129,.06);
+    border:1px solid #10b981; border-radius:10px; box-shadow:0 0 0 3px rgba(16,185,129,.10); overflow:hidden; }
+.pf-fact{ padding:12px 20px; border-left:1px solid rgba(16,185,129,.35); min-width:0; }
+.pf-fact:first-child{ border-left:0; }
+.pf-fact .pf-k{ color:#34d399; }
+.pf-k, .pf-clinical dt{ color:#94a3b8; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+.pf-v{ color:#fff; font-size:14.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pf-s{ color:#94a3b8; font-size:12px; margin-top:1px; }
+.pf-clinical{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); margin:12px 20px 18px; background:rgba(16,185,129,.06);
+    border:1px solid #10b981; border-radius:10px; box-shadow:0 0 0 3px rgba(16,185,129,.10); overflow:hidden; }
+.pf-clinical > div{ padding:12px 20px; border-left:1px solid rgba(16,185,129,.35); min-width:0; }
+.pf-clinical > div:first-child{ border-left:0; }
+.pf-clinical dt{ color:#34d399 !important; }
+.pf-clinical dd{ color:#e2e8f0; font-size:13.5px; line-height:1.5; margin:0; }
+.pf-clinical .pf-dx{ color:#fff; font-weight:600; }
+.pf-icd{ color:#94a3b8; font-size:11px; font-weight:600; border:1px solid #334155; padding:1px 6px; border-radius:4px; margin-left:4px; }
 
 .tabs{
 display:flex;
-gap:8px;
+gap:4px;
 margin-bottom:15px;
 flex-wrap:wrap;
+align-items:center;
+padding:8px;
+background:rgba(16,185,129,.06);
+border:1px solid #10b981;
+border-radius:10px;
+box-shadow:0 0 0 3px rgba(16,185,129,.10);
+}
+.tabs .btn-danger{
+margin-left:auto !important;
+padding:6px 12px;
+font-size:12.5px;
+white-space:nowrap;
 }
 
 .tab-btn{
-padding:8px 16px;
-border:1px solid #2a2a2a;
-background:#1a1a1a;
-color:#8892a4;
+padding:7px 11px;
+white-space:nowrap;
+border:1px solid transparent;
+background:transparent;
+color:#cbd5e1;
 cursor:pointer;
 border-radius:7px;
 font-weight:600;
@@ -76,23 +91,23 @@ font-size:13px;
 transition:.15s;
 }
 .tab-btn:hover{
-background:#1e1e1e;
-color:#e2e8f0;
+background:rgba(16,185,129,.12);
+color:#fff;
 }
 
 .tab-btn.active{
-background:#00b8a9;
-color:#000;
-border-color:#00b8a9;
+background:#10b981;
+color:#04130d;
+border-color:#10b981;
 }
 
 .tab-content{
 display:none;
-background:#111111;
-border:1px solid #2a2a2a;
+background:#161a26;
+border:1px solid #10b981;
 padding:20px;
 border-radius:10px;
-box-shadow:0 2px 8px rgba(0,0,0,0.3);
+box-shadow:0 0 0 3px rgba(16,185,129,.10);
 }
 
 .tab-content.active{
@@ -420,41 +435,38 @@ margin:20px 0;
   <div class="pf-top">
     <div class="pf-avatar">{{ admission.patient.full_name|cut:"Mrs. "|cut:"Mr. "|cut:"Ms. "|slice:":1"|upper }}</div>
     <div class="pf-who">
-      <div class="pf-name">{{ admission.patient.full_name }}</div>
+      <div class="pf-name">{{ admission.patient.full_name }}
+        <span class="pf-status pf-status-{{ admission.status|lower }}">{{ admission.get_status_display }}{% if admission.status == "ADMITTED" %} · Day {{ days_in }}{% endif %}</span>
+      </div>
       <div class="pf-sub">
-        {% if admission.patient.age %}{{ admission.patient.age }}Y · {% endif %}{{ admission.patient.gender|default:"—" }}
-        · UHID {{ admission.patient.uhid }}
-        {% if admission.patient.mobile_no %}· 📞 {{ admission.patient.mobile_no }}{% endif %}
+        {% if admission.patient.age %}{{ admission.patient.age }}Y{% endif %}{% if admission.patient.gender %} / {{ admission.patient.gender }}{% endif %}
+        <span class="dot">•</span> UHID {{ admission.patient.uhid }}
+        {% if admission.patient.mobile_no %}<span class="dot">•</span> {{ admission.patient.mobile_no }}{% endif %}
       </div>
     </div>
-    <div class="pf-badges">
-      <span class="pf-status pf-status-{{ admission.status|lower }}">{{ admission.get_status_display }}</span>
-      {% if admission.status == "ADMITTED" %}<span class="pf-day">Day {{ days_in }}</span>{% endif %}
-    </div>
     <div class="pf-actions">
-      <a href="{% url 'hms:ipd_dashboard' %}" class="pf-btn">← IPD board</a>
       {% if admission.status == "ADMITTED" %}
-      <a href="{% url 'hms:edit_admission' admission.id %}" class="pf-btn">✎ Edit</a>
+      <a href="{% url 'hms:edit_admission' admission.id %}" class="pf-btn">Edit</a>
       <a href="{% url 'hms:ipd_transfer' admission.id %}" class="pf-btn">{% if admission.bed %}Transfer{% else %}Assign bed{% endif %}</a>
-      <a href="{% url 'hms:attendant_pass' admission.id %}" target="_blank" class="pf-btn">🪪 Pass</a>
+      <a href="{% url 'hms:attendant_pass' admission.id %}" target="_blank" class="pf-btn">Attendant pass</a>
       {% endif %}
-      <a href="{% url 'hms:admission_bill' admission.id %}" class="pf-btn pf-btn-bill">Bill / Discharge</a>
+      <a href="{% url 'hms:admission_bill' admission.id %}" class="pf-btn pf-btn-primary">Bill / Discharge</a>
     </div>
   </div>
 
-  <div class="pf-row">
-    <span class="pf-item"><span class="pf-k">IPD No.</span><span class="pf-v pf-ipd">{{ admission.ipd_no }}</span></span>
-    <span class="pf-item"><span class="pf-k">Ward / Bed</span><span class="pf-v">{% if admission.bed %}{{ admission.ward.name }} · Bed {{ admission.bed.bed_number }}{% else %}No bed{% endif %}</span></span>
-    <span class="pf-item"><span class="pf-k">Consultant</span><span class="pf-v">{% if admission.doctor %}Dr. {{ admission.doctor.full_name }}{% else %}—{% endif %}</span>{% if admission.department %}<span class="pf-s">({{ admission.department.name }})</span>{% endif %}</span>
-    <span class="pf-item"><span class="pf-k">Admitted</span><span class="pf-v">{{ admission.admission_date|date:"d M Y" }}</span><span class="pf-s">{{ admission.admission_date|date:"h:i A" }}</span></span>
-    {% if admission.attendant_name %}<span class="pf-item"><span class="pf-k">Attendant</span><span class="pf-v">{{ admission.attendant_name }}</span><span class="pf-s">{% if admission.attendant_relation %}({{ admission.attendant_relation }}){% endif %}{% if admission.attendant_mobile %} {{ admission.attendant_mobile }}{% endif %}</span></span>{% endif %}
+  <div class="pf-facts">
+    <div class="pf-fact"><div class="pf-k">IPD No.</div><div class="pf-v">{{ admission.ipd_no }}</div></div>
+    <div class="pf-fact"><div class="pf-k">Ward / Bed</div><div class="pf-v">{% if admission.bed %}{{ admission.ward.name }} · Bed {{ admission.bed.bed_number }}{% else %}No bed{% endif %}</div></div>
+    <div class="pf-fact"><div class="pf-k">Consultant</div><div class="pf-v">{% if admission.doctor %}Dr. {{ admission.doctor.full_name }}{% else %}—{% endif %}</div>{% if admission.department %}<div class="pf-s">{{ admission.department.name }}</div>{% endif %}</div>
+    <div class="pf-fact"><div class="pf-k">Admitted on</div><div class="pf-v">{{ admission.admission_date|date:"d M Y" }}</div><div class="pf-s">{{ admission.admission_date|date:"h:i A" }}</div></div>
+    {% if admission.attendant_name %}<div class="pf-fact"><div class="pf-k">Attendant</div><div class="pf-v">{{ admission.attendant_name }}</div><div class="pf-s">{{ admission.attendant_relation }}{% if admission.attendant_relation and admission.attendant_mobile %} · {% endif %}{{ admission.attendant_mobile }}</div></div>{% endif %}
   </div>
 
-  <div class="pf-clinical">
-    <div class="pf-block"><div class="pf-k">Reason for admission</div><div class="pf-text">{{ admission.chief_complaint|default:"—" }}</div></div>
-    <div class="pf-block"><div class="pf-k">Signs &amp; symptoms</div><div class="pf-text">{{ admission.symptoms|default:"—" }}</div></div>
-    <div class="pf-block pf-dx"><div class="pf-k">Provisional diagnosis</div><div class="pf-text">{{ admission.diagnosis|default:"—" }}{% if admission.icd_code %} <span class="pf-icd">{{ admission.icd_code }}</span>{% endif %}</div></div>
-  </div>
+  <dl class="pf-clinical">
+    <div><dt>Reason for admission</dt><dd>{{ admission.chief_complaint|default:"—" }}</dd></div>
+    <div><dt>Signs &amp; symptoms</dt><dd>{{ admission.symptoms|default:"—" }}</dd></div>
+    <div><dt>Provisional diagnosis</dt><dd class="pf-dx">{{ admission.diagnosis|default:"—" }}{% if admission.icd_code %} <span class="pf-icd">ICD {{ admission.icd_code }}</span>{% endif %}</dd></div>
+  </dl>
 </div>
 
 
