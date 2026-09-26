@@ -1,75 +1,126 @@
 {% extends "base.html" %}
 {% block title %}Review Open Admissions | Shradha HMS{% endblock %}
 {% block content %}
+<style>
+  .rv-head h5 { color: #fff; }
+  .rv-head .sub { color: #10b981; }
+  .rv-help { background: #161a26; border: 1px solid #2d3148; border-radius: 10px; padding: 10px 14px; font-size: .82rem; color: #cbd5e1; margin-bottom: 10px; }
+  .rv-help b { color: #fff; }
+  .rv-warn { background: rgba(245,158,11,.08); border: 1px solid #a16207; border-radius: 10px; padding: 10px 14px; font-size: .82rem; color: #fcd34d; margin-bottom: 16px; }
+  .rv-card { background: #161a26; border: 1px solid #10b981; border-radius: 12px; margin-bottom: 14px; overflow: hidden;
+             box-shadow: 0 0 0 1px rgba(16,185,129,.12), 0 4px 14px rgba(16,185,129,.08); }
+  .rv-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 14px; background: #1b2130; border-bottom: 1px solid #2d3148; }
+  .rv-name { color: #fff; font-weight: 700; font-size: 1rem; }
+  .rv-meta { color: #8892a4; font-size: .78rem; }
+  .rv-pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+  .rv-ipd  { background: #0f1e2e; color: #38bdf8; border: 1px solid #1e3a5f; }
+  .rv-bed  { background: rgba(59,130,246,.12); color: #93c5fd; border: 1px solid #3b82f6; }
+  .rv-nobed{ background: rgba(239,68,68,.12); color: #fca5a5; border: 1px solid #ef4444; }
+  .rv-day  { background: rgba(16,185,129,.15); color: #4ade80; }
+  .rv-paid { background: rgba(16,185,129,.15); color: #4ade80; }
+  .rv-unpaid { background: rgba(245,158,11,.15); color: #fcd34d; }
+  .rv-none { background: #252a40; color: #8892a4; }
+  .rv-dup  { background: rgba(245,158,11,.15); color: #fcd34d; }
+  .rv-bill-link { color: #93c5fd; font-size: .78rem; text-decoration: none; }
+  .rv-bill-link:hover { color: #bfdbfe; text-decoration: underline; }
+  .rv-body { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; padding: 12px 14px; }
+  @media (max-width: 900px) { .rv-body { grid-template-columns: 1fr; } }
+  .rv-box { border-radius: 10px; padding: 10px 12px; margin: 0; }
+  .rv-box-title { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .rv-discharge { background: rgba(16,185,129,.06); border: 1px solid rgba(16,185,129,.35); }
+  .rv-discharge .rv-box-title { color: #34d399; }
+  .rv-cancel { background: rgba(239,68,68,.05); border: 1px solid rgba(239,68,68,.30); }
+  .rv-cancel .rv-box-title { color: #fca5a5; }
+  .rv-box label { display: block; font-size: .72rem; color: #8892a4; margin-bottom: 3px; }
+  .rv-fields { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+  .rv-note { font-size: .75rem; color: #8892a4; }
+  .rv-empty { background: #161a26; border: 1px dashed #2d3148; border-radius: 12px; padding: 30px; text-align: center; color: #8892a4; }
+</style>
+
 <div class="container-fluid mt-3">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-    <h2 class="mb-0">🧹 Review open admissions</h2>
-    <a href="{% url 'hms:ipd_dashboard' %}" class="btn btn-secondary">← IPD board</a>
+  <div class="rv-head d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+    <h5 class="mb-0 fw-semibold">🧹 Review open admissions <span class="sub fw-normal small">— {{ rows|length }} still marked admitted</span></h5>
+    <a href="{% url 'hms:ipd_dashboard' %}" class="btn btn-secondary btn-sm">← IPD board</a>
   </div>
-  <p class="text-muted">
-    Admissions still marked "Admitted". For each patient who has actually gone home, enter when they left:
-    billing days stop at that time and the bed is freed. Discharging with the bill unpaid needs a reason.
-    Cancel only admissions entered by mistake (duplicates) — that's allowed only while nothing was charged against them.
-  </p>
-  <div class="alert alert-warning">
-    <strong>Patients who went home earlier and were billed outside the system:</strong>
-    enter the date they actually left and a reason such as <em>"historical — billed outside HMS"</em>, then Discharge.
-    <strong>Don't open the bill and Mark Paid</strong> for them: that records a payment in the HMS that was never collected through it,
-    and freezes the bill with every day up to the payment date.
+
+  <div class="rv-help">
+    For each patient who has <b>actually gone home</b>, enter when they left and press <b>Discharge</b> — billing days stop at that time
+    and the bed goes to Cleaning. Discharging with the bill unpaid needs a reason.
+    Use <b>Cancel</b> only for admissions entered by mistake (duplicates); it's allowed only while nothing was charged.
   </div>
+  <div class="rv-warn">
+    <b>Went home earlier and billed outside the system?</b> Enter the date they actually left and a reason such as
+    <em>"historical — billed outside HMS"</em>, then Discharge. <b>Don't</b> open the bill and Mark Paid — that records a payment
+    the HMS never collected and bills every day up to the payment date.
+  </div>
+
   {% for m in messages %}<div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} py-2">{{ m }}</div>{% endfor %}
 
-  <div class="card">
-    <div class="card-body p-0">
-      <table class="table align-middle mb-0">
-        <thead><tr><th>Admission</th><th>Bed</th><th class="text-end">Days so far</th><th>Bill</th><th>Discharge (when the patient left)</th><th>Or cancel (duplicate)</th></tr></thead>
-        <tbody>
-        {% for r in rows %}
-          <tr>
-            <td>
-              <strong>{{ r.a.ipd_no }}</strong> · {{ r.a.patient.full_name }}<br>
-              <small class="text-muted">admitted {{ r.a.admission_date|date:"d M Y H:i" }}</small>
-              {% if r.others_open %}<br><span class="badge bg-warning text-dark">same patient has {{ r.others_open }} other open admission{{ r.others_open|pluralize }}</span>{% endif %}
-            </td>
-            <td>{% if r.a.bed %}{{ r.a.bed.ward.name }} / {{ r.a.bed.bed_number }}{% else %}<span class="text-danger">no bed</span>{% endif %}</td>
-            <td class="text-end">{{ r.days }}</td>
-            <td>
-              {% if r.bill.is_paid %}<span class="badge bg-success">Paid</span>
-              {% elif r.bill %}<span class="badge bg-secondary">Unpaid</span>{% else %}<span class="text-muted">none</span>{% endif %}
-              {% if r.advances %}<br><small>advances ₹{{ r.advances }}</small>{% endif %}
-              <br><a href="{% url 'hms:admission_bill' r.a.id %}" target="_blank" class="small">open bill</a>
-            </td>
-            <td>
-              <form method="post" class="d-flex flex-wrap gap-1 align-items-center">
-                {% csrf_token %}
-                <input type="hidden" name="admission_id" value="{{ r.a.id }}">
-                <input type="hidden" name="action" value="discharge">
-                <input type="datetime-local" name="discharge_at" class="form-control form-control-sm" style="width:190px;" required
-                       max="{% now 'Y-m-d\TH:i' %}" title="When the patient actually left">
-                {% if not r.bill.is_paid %}<input type="text" name="reason" class="form-control form-control-sm" style="width:180px;" placeholder="reason (bill unpaid)" required>{% endif %}
-                <button class="btn btn-sm btn-success">Discharge</button>
-              </form>
-            </td>
-            <td>
-              {% if r.has_charges %}
-                <small class="text-muted">has charges/payments</small>
-              {% else %}
-              <form method="post" class="d-flex gap-1" onsubmit="return confirm('Cancel {{ r.a.ipd_no }} as entered in error?');">
-                {% csrf_token %}
-                <input type="hidden" name="admission_id" value="{{ r.a.id }}">
-                <input type="hidden" name="action" value="cancel">
-                <input type="text" name="reason" class="form-control form-control-sm" style="width:140px;" placeholder="duplicate of…">
-                <button class="btn btn-sm btn-outline-danger">Cancel</button>
-              </form>
-              {% endif %}
-            </td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="6" class="text-center text-muted p-4">No open admissions.</td></tr>
-        {% endfor %}
-        </tbody>
-      </table>
+  {% for r in rows %}
+  <div class="rv-card">
+    <div class="rv-top">
+      <span class="rv-pill rv-ipd">{{ r.a.ipd_no }}</span>
+      <div>
+        <div class="rv-name">{{ r.a.patient.full_name }}</div>
+        <div class="rv-meta">Admitted {{ r.a.admission_date|date:"d M Y, H:i" }}</div>
+      </div>
+      {% if r.a.bed %}<span class="rv-pill rv-bed">{{ r.a.bed.ward.name }} · Bed {{ r.a.bed.bed_number }}</span>
+      {% else %}<span class="rv-pill rv-nobed">No bed</span>{% endif %}
+      <span class="rv-pill rv-day">Day {{ r.days }}</span>
+      <span>
+        <span class="rv-meta">Bill:</span>
+        {% if r.bill.is_paid %}<span class="rv-pill rv-paid">Paid</span>
+        {% elif r.bill %}<span class="rv-pill rv-unpaid">Unpaid</span>
+        {% else %}<span class="rv-pill rv-none">None yet</span>{% endif %}
+        {% if r.advances %}<span class="rv-meta ms-1">advances ₹{{ r.advances }}</span>{% endif %}
+        <a href="{% url 'hms:admission_bill' r.a.id %}" target="_blank" class="rv-bill-link ms-2">Open bill ↗</a>
+      </span>
+      {% if r.others_open %}<span class="rv-pill rv-dup">⚠ {{ r.others_open }} other open admission{{ r.others_open|pluralize }} for this patient</span>{% endif %}
+    </div>
+
+    <div class="rv-body">
+      <form method="post" class="rv-box rv-discharge">
+        {% csrf_token %}
+        <input type="hidden" name="admission_id" value="{{ r.a.id }}">
+        <input type="hidden" name="action" value="discharge">
+        <div class="rv-box-title">✓ Discharge — patient has gone home</div>
+        <div class="rv-fields">
+          <div>
+            <label>When the patient left</label>
+            <input type="datetime-local" name="discharge_at" class="form-control form-control-sm" style="width:200px;" required
+                   max="{% now 'Y-m-d\TH:i' %}">
+          </div>
+          {% if not r.bill.is_paid %}
+          <div class="flex-grow-1" style="min-width:200px;">
+            <label>Reason (bill not paid)</label>
+            <input type="text" name="reason" class="form-control form-control-sm" placeholder="e.g. historical — billed outside HMS" required>
+          </div>
+          {% endif %}
+          <button class="btn btn-sm btn-success px-3">Discharge</button>
+        </div>
+      </form>
+
+      <div class="rv-box rv-cancel">
+        <div class="rv-box-title">✕ Cancel — entered by mistake</div>
+        {% if r.has_charges %}
+          <div class="rv-note">Can't cancel: this admission already has charges or payments. Discharge it instead.</div>
+        {% else %}
+        <form method="post" class="rv-fields" onsubmit="return confirm('Cancel {{ r.a.ipd_no }} as entered in error?');">
+          {% csrf_token %}
+          <input type="hidden" name="admission_id" value="{{ r.a.id }}">
+          <input type="hidden" name="action" value="cancel">
+          <div class="flex-grow-1" style="min-width:140px;">
+            <label>Reason</label>
+            <input type="text" name="reason" class="form-control form-control-sm" placeholder="duplicate of IPD-…">
+          </div>
+          <button class="btn btn-sm btn-outline-danger">Cancel</button>
+        </form>
+        {% endif %}
+      </div>
     </div>
   </div>
+  {% empty %}
+  <div class="rv-empty">✅ No open admissions — nothing to review.</div>
+  {% endfor %}
 </div>
 {% endblock %}
