@@ -196,7 +196,11 @@ background:#155555;
 
 <div class="admit-wrap">
 
+{% if edit %}
+<h2>Edit Admission — {{ edit.ipd_no }}</h2>
+{% else %}
 <h2>Admit Patient</h2>
+{% endif %}
 
 {% if error %}
 <div class="error-box">{{ error }}</div>
@@ -211,6 +215,9 @@ background:#155555;
 
 <div class="form-group">
 <label>Patient</label>
+{% if edit %}
+<input type="text" class="form-control" value="{{ edit.patient.full_name }} | {{ edit.patient.uhid }}" readonly>
+{% else %}
 <select name="patient" id="patient-select" class="form-control" required>
 <option value="">Select Patient</option>
 {% for p in patients %}
@@ -225,36 +232,37 @@ background:#155555;
 </option>
 {% endfor %}
 </select>
+{% endif %}
 </div>
 
 <div class="form-group">
 <label>Father / Husband Name</label>
-<input type="text" id="guardian_name" class="form-control">
+<input type="text" id="guardian_name" class="form-control" value="{{ edit.patient.father_or_husband_name|default:'' }}" {% if edit %}readonly{% endif %}>
 </div>
 
 <div class="form-group">
 <label>Age</label>
-<input type="number" id="age" class="form-control">
+<input type="number" id="age" class="form-control" value="{{ edit.patient.age|default:'' }}" {% if edit %}readonly{% endif %}>
 </div>
 
 <div class="form-group">
 <label>Gender</label>
-<select id="gender" class="form-control">
+<select id="gender" class="form-control" {% if edit %}disabled{% endif %}>
 <option value="">Select</option>
-<option value="Male">Male</option>
-<option value="Female">Female</option>
-<option value="Other">Other</option>
+<option value="Male" {% if edit.patient.gender == "Male" %}selected{% endif %}>Male</option>
+<option value="Female" {% if edit.patient.gender == "Female" %}selected{% endif %}>Female</option>
+<option value="Other" {% if edit.patient.gender == "Other" %}selected{% endif %}>Other</option>
 </select>
 </div>
 
 <div class="form-group">
 <label>Mobile</label>
-<input type="text" id="mobile" class="form-control">
+<input type="text" id="mobile" class="form-control" value="{{ edit.patient.mobile_no|default:'' }}" {% if edit %}readonly{% endif %}>
 </div>
 
 <div class="form-group full">
 <label>Address</label>
-<textarea id="address" class="form-control"></textarea>
+<textarea id="address" class="form-control" {% if edit %}readonly{% endif %}>{{ edit.patient.address|default:'' }}</textarea>
 </div>
 
 </div>
@@ -267,22 +275,22 @@ background:#155555;
 
 <div class="form-group full">
 <label>Signs &amp; Symptoms</label>
-<textarea name="symptoms" id="symptoms-textarea" class="form-control"></textarea>
+<textarea name="symptoms" id="symptoms-textarea" class="form-control">{{ edit.symptoms|default:"" }}</textarea>
 </div>
 
 <div class="form-group full">
 <label>Provisional Diagnosis</label>
 <div class="icd-wrapper">
 <input type="text" id="icd-search" class="form-control" placeholder="Search diagnosis or ICD code to auto-fill below">
-<input type="hidden" name="icd_code" id="icd-hidden">
+<input type="hidden" name="icd_code" id="icd-hidden" value="{{ edit.icd_code|default:"" }}">
 <div class="icd-dropdown" id="icd-results"></div>
 </div>
-<textarea name="diagnosis" id="diagnosis-textarea" class="form-control" style="margin-top:8px;" placeholder="Type the provisional diagnosis, or pick one from ICD search above"></textarea>
+<textarea name="diagnosis" id="diagnosis-textarea" class="form-control" style="margin-top:8px;" placeholder="Type the provisional diagnosis, or pick one from ICD search above">{{ edit.diagnosis|default:"" }}</textarea>
 </div>
 
 <div class="form-group full">
 <label>Reason for Admission</label>
-<textarea name="chief_complaint" class="form-control"></textarea>
+<textarea name="chief_complaint" class="form-control">{{ edit.chief_complaint|default:"" }}</textarea>
 </div>
 
 </div>
@@ -294,7 +302,10 @@ background:#155555;
 
 <div class="form-group">
 <label>Bed</label>
-{% if bed %}
+{% if edit %}
+<input type="text" class="form-control" value="{% if edit.bed %}{{ edit.bed.ward.name }} — Bed {{ edit.bed.bed_number }}{% else %}No bed{% endif %}" readonly>
+<small style="color:#8892a4;font-size:11px;">To change bed use <a href="{% url 'hms:ipd_transfer' edit.id %}" style="color:#00d4c0;">Transfer</a> — keeps bed charges correct.</small>
+{% elif bed %}
 <input type="text" class="form-control" value="{{ bed.ward.name }} — Bed {{ bed.bed_number }}" readonly>
 {% else %}
 <select name="bed" class="form-control" required>
@@ -316,7 +327,7 @@ background:#155555;
 <select name="doctor" id="doctor-select" class="form-control">
 <option value="">Select Doctor</option>
 {% for d in doctors %}
-<option value="{{ d.id }}" data-dept="{{ d.department.name }}">
+<option value="{{ d.id }}" data-dept="{{ d.department.name }}" {% if edit and d.id == edit.doctor_id %}selected{% endif %}>
   Dr. {{ d.full_name }}
 </option>
 {% endfor %}
@@ -325,12 +336,17 @@ background:#155555;
 
 <div class="form-group">
 <label>Department</label>
-<input type="text" id="doctor-department" class="form-control" readonly>
+<input type="text" id="doctor-department" class="form-control" value="{{ edit.doctor.department.name|default:'' }}" readonly>
 </div>
 
 <div class="form-group">
 <label>Date &amp; Time of Admission</label>
+{% if edit %}
+<input type="text" class="form-control" value="{{ edit.admission_date|date:'d M Y, h:i A' }}" readonly>
+<small style="color:#8892a4;font-size:11px;">Locked — changing it would change bed-charge days.</small>
+{% else %}
 <input type="datetime-local" name="admission_date" id="admission-date" class="form-control">
+{% endif %}
 </div>
 
 </div>
@@ -342,24 +358,24 @@ background:#155555;
 
 <div class="form-group">
 <label>Attendant Name</label>
-<input type="text" name="attendant_name" class="form-control">
+<input type="text" name="attendant_name" class="form-control" value="{{ edit.attendant_name|default:'' }}">
 </div>
 
 <div class="form-group">
 <label>Relation</label>
-<input type="text" name="attendant_relation" class="form-control">
+<input type="text" name="attendant_relation" class="form-control" value="{{ edit.attendant_relation|default:'' }}">
 </div>
 
 <div class="form-group">
 <label>Mobile</label>
-<input type="text" name="attendant_mobile" class="form-control">
+<input type="text" name="attendant_mobile" class="form-control" value="{{ edit.attendant_mobile|default:'' }}">
 </div>
 
 </div>
 </div>
 
 <div class="btn-row">
-<button type="submit" class="btn-admit">Admit Patient</button>
+<button type="submit" class="btn-admit">{% if edit %}Save changes{% else %}Admit Patient{% endif %}</button>
 <a href="{% url 'hms:ipd_dashboard' %}" class="btn-cancel">Cancel</a>
 </div>
 
@@ -380,9 +396,10 @@ function fillPatientDetails(){
     document.getElementById("guardian_name").value = sel.dataset.guardian || ""
 }
 
-patientSelect.addEventListener("change", fillPatientDetails)
-
-if(patientSelect.value){ fillPatientDetails() }
+if(patientSelect){
+    patientSelect.addEventListener("change", fillPatientDetails)
+    if(patientSelect.value){ fillPatientDetails() }
+}
 
 /* PRE-FILL CLINICAL DETAILS FROM MOST RECENT OPD CONSULTATION */
 const RECENT_CONSULTATION_URL_TEMPLATE = "{% url 'hms:patient_recent_consultation_api' 0 %}"
@@ -417,7 +434,7 @@ function fillFromRecentConsultation(){
         .catch(() => { consultationNote.style.display = "none" })
 }
 
-if(patientSelect.value){ fillFromRecentConsultation() }
+if(patientSelect && patientSelect.value){ fillFromRecentConsultation() }
 
 /* DATE & TIME OF ADMISSION — default to now, stays editable */
 const admissionDateInput = document.getElementById("admission-date")
@@ -481,6 +498,7 @@ function selectICD(code, diagnosis){
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 $(function(){
+    if(!document.getElementById('patient-select')) return;
     $('#patient-select').select2({
         placeholder: '🔍 Search patient by name or UHID...',
         allowClear: true,

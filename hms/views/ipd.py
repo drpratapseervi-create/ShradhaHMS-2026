@@ -165,6 +165,29 @@ def admit_bed(request, bed_id):
 
 @login_required
 @role_required("doctor", "admin", "nursing")
+def edit_admission(request, admission_id):
+    """Edit an admission on the admission form. Patient, bed (use Transfer) and admission time stay locked."""
+    admission = get_object_or_404(IPDAdmission.objects.select_related("patient", "bed__ward", "doctor__department"), id=admission_id)
+    if admission.status == "CANCELLED":
+        messages.error(request, f"{admission.ipd_no} was cancelled and can't be edited.")
+        return redirect("hms:ipd_dashboard")
+    if request.method == "POST":
+        doctor = None
+        if request.POST.get("doctor"):
+            doctor = Doctor.objects.select_related("department").filter(id=int(request.POST["doctor"])).first()
+        admission.doctor = doctor
+        admission.department = doctor.department if doctor else None
+        for field in ("symptoms", "diagnosis", "icd_code", "chief_complaint",
+                      "attendant_name", "attendant_relation", "attendant_mobile"):
+            setattr(admission, field, request.POST.get(field, "").strip())
+        admission.save()
+        messages.success(request, f"{admission.ipd_no} — {admission.patient.full_name}: admission details updated.")
+        return redirect("hms:ipd_dashboard")
+    return render(request, "ipd/admit_form.html", {**_admit_form_context(), "edit": admission})
+
+
+@login_required
+@role_required("doctor", "admin", "nursing")
 def ipd_discharge(request, admission_id):
     """Discharge from the bill page (POST): the bill must be paid, or an admin gives a reason."""
     admission = get_object_or_404(IPDAdmission, id=admission_id)

@@ -106,6 +106,7 @@ urlpatterns = [
     path("ipd/discharge/<int:admission_id>/pdf/", views.discharge_pdf, name="discharge_pdf"),
     path("ipd/progress-notes/<int:admission_id>/pdf/", views.progress_notes_pdf, name="progress_notes_pdf"),
     path("ipd/pass/<int:admission_id>/", views.attendant_pass, name="attendant_pass"),
+    path("ipd/edit/<int:admission_id>/", views.edit_admission, name="edit_admission"),
     path("ot/", views.ot_dashboard, name="ot_dashboard"),
     path("ot/new/", views.ot_create, name="ot_create"),
     path("ot/<int:id>/", views.ot_detail, name="ot_detail"),

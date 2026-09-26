@@ -288,6 +288,7 @@
             <td>
                 <div class="actions">
                 <a class="action-open" href="{% url 'hms:ipd_patient_file' admission.id %}">Open</a>
+                <a class="action-open" href="{% url 'hms:edit_admission' admission.id %}" title="Edit admission details">✎ Edit</a>
                 <a class="action-open" href="{% url 'hms:ipd_transfer' admission.id %}">{% if admission.bed %}Transfer{% else %}Assign bed{% endif %}</a>
                 <a class="action-discharge" href="{% url 'hms:admission_bill' admission.id %}">Bill / Discharge</a>
                 <a class="action-open" href="{% url 'hms:attendant_pass' admission.id %}" target="_blank" title="Print attendant entry pass">🪪 Pass</a>

@@ -99,6 +99,7 @@ from .ipd import (
     discharge_pdf,
     progress_notes_pdf,
     attendant_pass,
+    edit_admission,
 )
 
 from .billing import (
