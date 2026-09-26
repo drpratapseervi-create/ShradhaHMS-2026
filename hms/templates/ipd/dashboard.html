@@ -7,7 +7,7 @@
 <style>
 .ipd-wrap{ font-family:'Segoe UI',sans-serif; padding:24px; }
 
-.ipd-header{ margin-bottom:26px; }
+.ipd-header{ margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
 .ipd-header h2{
     color:#e2e8f0; font-size:22px; font-weight:700; margin:0 0 4px;
     display:flex; align-items:center; gap:10px;
@@ -29,15 +29,17 @@
 .bed-grid{ display:flex; gap:12px; flex-wrap:wrap; }
 
 .bed-card{
-    width:150px; min-height:64px; border-radius:10px; padding:12px 14px;
-    text-decoration:none; display:block; transition:.18s;
+    width:150px; height:100px; flex:0 0 150px; border-radius:10px; padding:8px 10px;
+    text-decoration:none; transition:.18s; overflow:hidden;
+    display:flex; flex-direction:column; justify-content:space-between; text-align:left;
     box-shadow:0 2px 8px rgba(0,0,0,0.25);
 }
+.bed-card b, .bed-card .bed-title{ font-size:14px; font-weight:700; line-height:1.2; }
+.bed-card .bed-patient, .bed-card .bed-days, .bed-card .bed-ipdno{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
 
 .bed-free{
     background:#0f2e28; border:1px solid #1a6e5a;
-    color:#4ade80; font-weight:700; text-align:center;
-    display:flex; align-items:center; justify-content:center;
+    color:#4ade80; font-weight:700;
     font-size:14px; letter-spacing:.3px;
 }
 .bed-free:hover{ background:#124535; border-color:#22c68f; transform:translateY(-2px); box-shadow:0 6px 16px rgba(34,198,143,0.2); }
@@ -47,13 +49,13 @@
     color:#fca5a5;
 }
 .bed-occupied b{ color:#fff; font-size:14px; }
-.bed-patient{ font-size:12px; color:#fca5a5; margin-top:5px; font-weight:500; }
+.bed-patient{ font-size:12px; color:#fca5a5; font-weight:500; }
 .bed-ipdno{ font-size:11px; color:#f87171; opacity:.8; margin-top:2px; }
 
-.bed-actions{ display:flex; gap:6px; margin-top:8px; }
+.bed-actions{ display:flex; gap:4px; }
 .bed-btn{
     flex:1; text-align:center; font-size:10.5px; font-weight:700;
-    padding:4px 0; border-radius:6px; text-decoration:none; transition:.15s;
+    padding:3px 0; border-radius:6px; text-decoration:none; transition:.15s;
 }
 .bed-btn-open{ background:#1e3a3a; color:#00d4c0; }
 .bed-btn-open:hover{ background:#155555; }
@@ -73,19 +75,26 @@
 }
 
 .ipd-table-wrap{
-    background:#111111; border:1px solid #2a2a2a; border-radius:12px;
-    overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.3);
+    background:#111111; border:1px solid #10b981; border-radius:12px;
+    overflow-x:auto; box-shadow:0 0 0 1px rgba(16,185,129,.12), 0 4px 16px rgba(0,0,0,0.3);
 }
 .ipd-table{ width:100%; border-collapse:collapse; font-size:13px; }
-.ipd-table thead tr{ background:linear-gradient(135deg,#005555,#007676); }
+.ipd-table thead tr{ background:linear-gradient(135deg,#0b2a22,#0f3b30); border-bottom:2px solid #10b981; }
 .ipd-table th{
-    padding:12px 14px; color:#fff; font-weight:600; text-align:left;
-    font-size:11px; text-transform:uppercase; letter-spacing:.5px;
+    padding:12px 14px; color:#34d399; font-weight:700; text-align:left;
+    font-size:11px; text-transform:uppercase; letter-spacing:.08em;
 }
 .ipd-table tbody tr{ border-bottom:1px solid #1e1e1e; transition:.12s; }
 .ipd-table tbody tr:hover{ background:#161616; }
 .ipd-table td{ padding:11px 14px; color:#cbd5e1; vertical-align:middle; }
 .ipd-table td.name{ color:#e2e8f0; font-weight:600; }
+.ipd-table .main{ color:#fff; font-weight:600; font-size:13.5px; white-space:nowrap; }
+.ipd-table .sub{ color:#8892a4; font-size:11.5px; margin-top:2px; white-space:nowrap; }
+.ipd-table .dx{ max-width:240px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; color:#e2e8f0; }
+.ipd-table .sno{ color:#8892a4; width:36px; }
+.day-badge{ background:rgba(16,185,129,.15); color:#4ade80; padding:1px 8px; border-radius:999px; font-size:11px; font-weight:700; margin-left:4px; }
+.ipd-table .actions{ display:flex; gap:6px; white-space:nowrap; }
+.ipd-table .actions a{ margin-left:0; }
 
 .ipd-no-pill{
     background:#0f1e2e; color:#38bdf8; padding:3px 10px;
@@ -114,12 +123,32 @@
 .bed-cleaning{ background:#3a2f12; border:1px solid #a16207; color:#fcd34d; }
 .bed-blocked{ background:#1f1f1f; border:1px dashed #555; color:#8892a4; }
 .bed-days{ font-size:11px; color:#8892a4; margin-top:2px; }
+.bed-legend{ display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; background:#161a26; border:1px solid #2d3148;
+    border-radius:10px; padding:8px 14px; margin-bottom:18px; font-size:12px; color:#cbd5e1; }
+.bed-legend .key{ display:inline-flex; align-items:center; gap:7px; }
+.bed-legend .sw{ width:16px; height:16px; border-radius:4px; display:inline-block; }
+.bed-legend .sw-free{ background:#0f2e28; border:1px solid #1a6e5a; }
+.bed-legend .sw-occ{ background:#2a0f14; border:1px solid #7a2530; }
+.bed-legend .sw-clean{ background:#3a2f12; border:1px solid #a16207; }
+.bed-legend .sw-block{ background:#1f1f1f; border:1px dashed #555; }
+.bed-legend .hint{ color:#8892a4; }
 .bed-mini-form{ display:inline; margin:0; }
-.bed-mini-btn{ background:#1e293b; color:#cbd5e1; border:none; padding:3px 8px; border-radius:5px; font-size:11px; cursor:pointer; margin-top:6px; }
-.ipd-summary{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
-.ipd-summary .pill{ background:#111; border:1px solid #2a2a2a; border-radius:10px; padding:8px 14px; color:#e2e8f0; font-size:13px; }
-.ipd-summary .pill b{ color:#00d4c0; font-size:16px; }
-.ipd-links a{ color:#00d4c0; margin-right:14px; font-size:13px; }
+.bed-mini-btn{ background:#1e293b; color:#cbd5e1; border:none; padding:3px 8px; border-radius:5px; font-size:11px; cursor:pointer; }
+.ipd-summary{ display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:12px; margin-bottom:20px; }
+.ipd-summary .pill{ background:#161a26; border:1px solid #10b981; border-radius:12px; padding:10px 14px; color:#cbd5e1; font-size:12px;
+    box-shadow:0 0 0 1px rgba(16,185,129,.12), 0 4px 14px rgba(16,185,129,.10); }
+.ipd-summary .pill .stat{ display:block; color:#fff; font-size:22px; font-weight:700; line-height:1.2; margin-top:2px; }
+.ipd-summary .pill .stat small{ color:#8892a4; font-size:13px; font-weight:500; }
+.ipd-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.ipd-action{ display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:10px; font-size:13px; font-weight:600;
+    text-decoration:none; transition:.15s; border:1px solid transparent; }
+.ipd-action:hover{ transform:translateY(-1px); }
+.ipd-action-primary{ background:#10b981; color:#04130d; }
+.ipd-action-primary:hover{ background:#34d399; color:#04130d; }
+.ipd-action-blue{ background:rgba(59,130,246,.12); border-color:#3b82f6; color:#93c5fd; }
+.ipd-action-blue:hover{ background:rgba(59,130,246,.22); color:#bfdbfe; }
+.ipd-action-amber{ background:rgba(245,158,11,.10); border-color:#d97706; color:#fcd34d; }
+.ipd-action-amber:hover{ background:rgba(245,158,11,.20); color:#fde68a; }
 .ipd-msg{ padding:8px 12px; border-radius:8px; margin-bottom:10px; font-size:13px; }
 .ipd-msg-success{ background:#0f3d2e; color:#4ade80; } .ipd-msg-error{ background:#3a1418; color:#fca5a5; }
 .warn-box{ background:#3a2f12; border:1px solid #a16207; color:#fcd34d; border-radius:10px; padding:10px 14px; margin-bottom:14px; font-size:13px; }
@@ -128,21 +157,23 @@
 <div class="ipd-wrap">
 
 <div class="ipd-header">
-    <h2>🛏️ IPD Bed Dashboard</h2>
-    <p>Live ward occupancy &amp; patient admission overview</p>
+    <div>
+        <h2>🛏️ IPD Bed Dashboard</h2>
+        <p>Live ward occupancy &amp; patient admission overview</p>
+    </div>
+    <div class="ipd-actions">
+        <a class="ipd-action ipd-action-primary" href="{% url 'hms:admit_patient' %}">＋ Admit patient</a>
+        <a class="ipd-action ipd-action-blue" href="{% url 'hms:ipd_census' %}">📊 Census &amp; ALOS</a>
+        {% if is_admin %}<a class="ipd-action ipd-action-amber" href="{% url 'hms:ipd_review' %}">🗂 Review open admissions</a>{% endif %}
+    </div>
 </div>
 
 {% for m in messages %}<div class="ipd-msg ipd-msg-{{ m.tags }}">{{ m }}</div>{% endfor %}
 
 <div class="ipd-summary">
-    <div class="pill">Occupied <b>{{ occupied_beds }}</b> / {{ total_beds }} beds</div>
-    <div class="pill">Occupancy <b>{{ occupancy_pct }}%</b></div>
-    <div class="pill">Admitted <b>{{ admissions|length }}</b></div>
-    <div class="pill ipd-links">
-        <a href="{% url 'hms:admit_patient' %}">+ Admit patient</a>
-        <a href="{% url 'hms:ipd_census' %}">Census &amp; ALOS</a>
-        {% if is_admin %}<a href="{% url 'hms:ipd_review' %}">Review open admissions</a>{% endif %}
-    </div>
+    <div class="pill">Beds occupied<span class="stat">{{ occupied_beds }} <small>/ {{ total_beds }}</small></span></div>
+    <div class="pill">Occupancy<span class="stat">{{ occupancy_pct }}%</span></div>
+    <div class="pill">Patients admitted<span class="stat">{{ admissions|length }}</span></div>
 </div>
 
 {% if no_bed %}
@@ -151,6 +182,13 @@
     Their bed charges can't be billed — assign a bed with Transfer{% if is_admin %}, or close duplicates in <a href="{% url 'hms:ipd_review' %}" style="color:#fcd34d;">Review open admissions</a>{% endif %}.
 </div>
 {% endif %}
+
+<div class="bed-legend">
+    <span class="key"><span class="sw sw-free"></span><b>Free</b> <span class="hint">— click to admit</span></span>
+    <span class="key"><span class="sw sw-occ"></span><b>Occupied</b> <span class="hint">— patient in bed</span></span>
+    <span class="key"><span class="sw sw-clean"></span><b>Cleaning</b> <span class="hint">— just vacated, press ✓ Ready when clean</span></span>
+    <span class="key"><span class="sw sw-block"></span><b>Blocked</b> <span class="hint">— under maintenance, press ✓ Ready when fixed</span></span>
+</div>
 
 <!-- ================= BED CARDS ================= -->
 
@@ -169,13 +207,14 @@
             <div class="bed-card bed-occupied">
                 <b>Bed {{ bed.bed_number }}</b>
                 {% if bed.admission %}
-                    <div class="bed-patient">{{ bed.admission.patient.full_name }}</div>
-                    <div class="bed-ipdno">{{ bed.admission.ipd_no }}</div>
-                    <div class="bed-days">Day {{ bed.admission.days_in }}{% if bed.admission.doctor %} · Dr. {{ bed.admission.doctor.full_name }}{% endif %}</div>
+                    <div>
+                        <div class="bed-patient" title="{{ bed.admission.patient.full_name }}">{{ bed.admission.patient.full_name }}</div>
+                        <div class="bed-days" title="{{ bed.admission.ipd_no }} · Day {{ bed.admission.days_in }}{% if bed.admission.doctor %} · Dr. {{ bed.admission.doctor.full_name }}{% endif %}">{{ bed.admission.ipd_no }} · Day {{ bed.admission.days_in }}</div>
+                    </div>
                     <div class="bed-actions">
                         <a class="bed-btn bed-btn-open" href="{% url 'hms:ipd_patient_file' bed.admission.id %}">Open</a>
-                        <a class="bed-btn bed-btn-open" href="{% url 'hms:ipd_transfer' bed.admission.id %}">Transfer</a>
-                        <a class="bed-btn bed-btn-discharge" href="{% url 'hms:admission_bill' bed.admission.id %}">Bill / Discharge</a>
+                        <a class="bed-btn bed-btn-open" href="{% url 'hms:ipd_transfer' bed.admission.id %}" title="Transfer">Move</a>
+                        <a class="bed-btn bed-btn-discharge" href="{% url 'hms:admission_bill' bed.admission.id %}" title="Bill / Discharge">Bill</a>
                     </div>
                 {% else %}
                     <div class="bed-days">Marked occupied, no admission</div>
@@ -192,7 +231,7 @@
             </div>
         {% else %}
             <div class="bed-card bed-free">
-                <a href="{% url 'hms:admit_bed' bed.id %}" style="color:inherit;text-decoration:none;">Bed {{ bed.bed_number }}<div class="bed-days">Free — admit</div></a>
+                <a href="{% url 'hms:admit_bed' bed.id %}" style="color:inherit;text-decoration:none;"><span class="bed-title">Bed {{ bed.bed_number }}</span><div class="bed-days">Free — admit</div></a>
                 <form method="post" action="{% url 'hms:bed_housekeeping' bed.id %}" class="bed-mini-form">
                     {% csrf_token %}<input type="hidden" name="housekeeping" value="BLOCKED">
                     <button class="bed-mini-btn" type="submit" title="Take out of use (maintenance)">Block</button>
@@ -219,38 +258,39 @@
 <table class="ipd-table">
     <thead>
         <tr>
-            <th>S.No.</th>
-            <th>Patient Name</th>
-            <th>Age/Sex</th>
-            <th>UHID</th>
-            <th>IPD No.</th>
+            <th>#</th>
+            <th>Patient</th>
+            <th>Admission</th>
             <th>Doctor</th>
-            <th>Department</th>
             <th>Diagnosis</th>
-            <th>Admission Date</th>
-            <th>Days</th>
             <th>Ward / Bed</th>
-            <th>Action</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
     {% for admission in admissions %}
         <tr>
-            <td>{{ forloop.counter }}</td>
-            <td class="name">{{ admission.patient.full_name }}</td>
-            <td>{% if admission.patient.age %}{{ admission.patient.age }}Y{% endif %} / {{ admission.patient.gender|slice:":1" }}</td>
-            <td>{{ admission.patient.uhid }}</td>
-            <td><span class="ipd-no-pill">{{ admission.ipd_no }}</span></td>
-            <td>{% if admission.doctor %}Dr. {{ admission.doctor.full_name }}{% else %}—{% endif %}</td>
-            <td>{% if admission.doctor.department %}{{ admission.doctor.department.name }}{% else %}—{% endif %}</td>
-            <td>{{ admission.diagnosis|default:"—" }}</td>
-            <td>{{ admission.admission_date|date:"d M Y" }}</td>
-            <td>{{ admission.days_in }}</td>
-            <td><span class="ward-bed-pill">{% if admission.bed %}{{ admission.ward.name }} / Bed {{ admission.bed.bed_number }}{% else %}No bed{% endif %}</span></td>
+            <td class="sno">{{ forloop.counter }}</td>
             <td>
+                <div class="main">{{ admission.patient.full_name }}</div>
+                <div class="sub">{% if admission.patient.age %}{{ admission.patient.age }}Y · {% endif %}{{ admission.patient.gender|slice:":1" }} · {{ admission.patient.uhid }}</div>
+            </td>
+            <td>
+                <span class="ipd-no-pill">{{ admission.ipd_no }}</span>
+                <div class="sub">{{ admission.admission_date|date:"d M Y" }}<span class="day-badge">Day {{ admission.days_in }}</span></div>
+            </td>
+            <td>
+                <div class="main">{% if admission.doctor %}Dr. {{ admission.doctor.full_name }}{% else %}—{% endif %}</div>
+                <div class="sub">{% if admission.doctor.department %}{{ admission.doctor.department.name }}{% else %}—{% endif %}</div>
+            </td>
+            <td><div class="dx" title="{{ admission.diagnosis }}">{{ admission.diagnosis|default:"—" }}</div></td>
+            <td><span class="ward-bed-pill">{% if admission.bed %}{{ admission.ward.name }} · Bed {{ admission.bed.bed_number }}{% else %}No bed{% endif %}</span></td>
+            <td>
+                <div class="actions">
                 <a class="action-open" href="{% url 'hms:ipd_patient_file' admission.id %}">Open</a>
                 <a class="action-open" href="{% url 'hms:ipd_transfer' admission.id %}">{% if admission.bed %}Transfer{% else %}Assign bed{% endif %}</a>
                 <a class="action-discharge" href="{% url 'hms:admission_bill' admission.id %}">Bill / Discharge</a>
+                </div>
             </td>
         </tr>
     {% endfor %}
