@@ -59,6 +59,18 @@ color:#00b8a9;
 .pf-clinical .pf-dx{ color:#fff; font-weight:600; }
 .pf-icd{ color:#94a3b8; font-size:11px; font-weight:600; border:1px solid #334155; padding:1px 6px; border-radius:4px; margin-left:4px; }
 
+.vitals-row{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)) auto; gap:10px; align-items:end; margin-bottom:18px; }
+.med-row{ grid-template-columns:minmax(0,2.4fr) repeat(3,minmax(0,1fr)) auto; }
+@media (max-width: 900px){ .vitals-row, .med-row{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+.med-row .select2-container{ width:100% !important; }
+.med-row .select2-container .select2-selection--single{ height:41px; background:#1e2235; border:1px solid #2d3148; border-radius:7px; }
+.med-row .select2-container .select2-selection--single .select2-selection__rendered{ line-height:39px; padding-left:12px; color:#e2e8f0; }
+.med-row .select2-container .select2-selection--single .select2-selection__arrow{ height:39px; }
+.vitals-row .vital{ display:flex; flex-direction:column; gap:4px; margin:0; }
+.vitals-row .vital span{ color:#34d399; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.vitals-row .vital small{ color:#94a3b8; font-size:10.5px; text-transform:none; font-weight:500; }
+.vitals-row .form-control{ margin:0 !important; width:100%; }
+.vitals-row .vitals-save{ margin:0 !important; white-space:nowrap; height:fit-content; }
 .tabs{
 display:flex;
 gap:4px;
@@ -499,13 +511,14 @@ Discharge Bill
 {% csrf_token %}
 <input type="hidden" name="form_type" value="vitals">
 
-<input type="number" name="pulse" placeholder="Pulse" class="form-control">
-<input type="text" name="bp" placeholder="BP 120/80" class="form-control">
-<input type="text" name="temperature" placeholder="Temperature" class="form-control">
-<input type="number" name="spo2" placeholder="SpO2" class="form-control">
-<input type="number" name="rr" placeholder="Respiratory Rate" class="form-control">
-
-<button class="save-btn">Save Vitals</button>
+<div class="vitals-row">
+<label class="vital"><span>Pulse <small>/min</small></span><input type="number" name="pulse" placeholder="72" class="form-control"></label>
+<label class="vital"><span>BP <small>mmHg</small></span><input type="text" name="bp" placeholder="120/80" class="form-control"></label>
+<label class="vital"><span>Temp <small>°F</small></span><input type="text" name="temperature" placeholder="98.6" class="form-control"></label>
+<label class="vital"><span>SpO₂ <small>%</small></span><input type="number" name="spo2" placeholder="98" class="form-control"></label>
+<label class="vital"><span>Resp. rate <small>/min</small></span><input type="number" name="rr" placeholder="18" class="form-control"></label>
+<button class="save-btn vitals-save">Save Vitals</button>
+</div>
 
 </form>
 
@@ -833,12 +846,13 @@ onclick="this.showPicker && this.showPicker();">
 {% csrf_token %}
 <input type="hidden" name="form_type" value="medication">
 
-<select name="drug_id" id="ipd-medicine-search" class="form-control" style="width:100%"></select>
-<input type="text" name="dose" id="ipd-medicine-dose" placeholder="Dose" class="form-control">
-<input type="text" name="route" placeholder="Route (IV/IM/PO)" class="form-control">
-<input type="text" name="frequency" placeholder="Frequency (OD/BD/TDS)" class="form-control">
-
-<button class="save-btn">Add Medicine</button>
+<div class="vitals-row med-row">
+<div class="vital"><span>Medicine</span><select name="drug_id" id="ipd-medicine-search" class="form-control" style="width:100%"></select></div>
+<label class="vital"><span>Dose</span><input type="text" name="dose" id="ipd-medicine-dose" placeholder="e.g. 1 tab / 500 mg" class="form-control"></label>
+<label class="vital"><span>Route</span><input type="text" name="route" placeholder="IV / IM / PO" class="form-control"></label>
+<label class="vital"><span>Frequency</span><input type="text" name="frequency" placeholder="OD / BD / TDS" class="form-control"></label>
+<button class="save-btn vitals-save">Add Medicine</button>
+</div>
 
 </form>
 
