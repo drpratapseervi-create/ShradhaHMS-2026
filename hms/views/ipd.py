@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from django.core.paginator import Paginator
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from datetime import datetime, time, timedelta
@@ -793,8 +794,11 @@ def ipd_census(request):
                                                   discharge_date__date__lte=date_to))
     bed_days = sum(x["occupied"] for x in days)
     open_admissions = list(IPDAdmission.objects.filter(status="ADMITTED"))
+    page = Paginator(list(reversed(days)), 5).get_page(request.GET.get("page"))
     return render(request, "ipd/census.html", {
-        "days": days, "date_from": date_from, "date_to": date_to, "total_beds": total_beds,
+        "days": days, "page": page,
+        "date_from_str": date_from.isoformat(), "date_to_str": date_to.isoformat(),
+        "date_from": date_from, "date_to": date_to, "total_beds": total_beds,
         "avg_occupancy": round(100 * bed_days / (total_beds * len(days))) if total_beds and days else 0,
         "bed_days": bed_days,
         "discharged_count": len(discharged),
