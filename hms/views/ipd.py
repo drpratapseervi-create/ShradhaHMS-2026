@@ -736,6 +736,7 @@ def ipd_patient_file(request, admission_id):
 
     return render(request, "ipd/patient_file.html", {
         "admission":                admission,
+        "days_in":                  billable_days(admission),
         "vitals":                   vitals,
         "medications":              medications,
         "discharge_medications":    discharge_medications,
