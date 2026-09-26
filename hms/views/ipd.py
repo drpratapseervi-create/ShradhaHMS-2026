@@ -475,6 +475,17 @@ def ipd_patient_file(request, admission_id):
         return redirect(f"/ipd/patient/{admission.id}/?tab={tab}{anchor}")
 
     vitals     = IPDVital.objects.filter(admission=admission).order_by("-recorded_at")
+    vitals_chart = []
+    for vt in reversed(list(vitals)):
+        sys_bp = dia_bp = None
+        parts = (vt.bp or "").replace(" ", "").split("/")
+        if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
+            sys_bp, dia_bp = int(parts[0]), int(parts[1])
+        vitals_chart.append({
+            "t": timezone.localtime(vt.recorded_at).strftime("%d %b %H:%M"),
+            "pulse": vt.pulse, "sys": sys_bp, "dia": dia_bp,
+            "spo2": vt.spo2, "temp": vt.temperature, "rr": vt.rr,
+        })
     medications = IPDMedication.objects.filter(admission=admission)
     discharge_medications = IPDDischargeMedication.objects.filter(admission=admission).order_by("-created_at")
     drug_masters = DrugMaster.objects.filter(is_active=True).order_by("sort_order", "category", "name")
@@ -737,6 +748,7 @@ def ipd_patient_file(request, admission_id):
     return render(request, "ipd/patient_file.html", {
         "admission":                admission,
         "days_in":                  billable_days(admission),
+        "vitals_chart":             vitals_chart,
         "vitals":                   vitals,
         "medications":              medications,
         "discharge_medications":    discharge_medications,
