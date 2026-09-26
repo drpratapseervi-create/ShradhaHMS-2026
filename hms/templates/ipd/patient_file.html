@@ -62,7 +62,9 @@ color:#00b8a9;
 .vitals-row{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)) auto; gap:10px; align-items:end; margin-bottom:18px; }
 .med-row{ grid-template-columns:minmax(0,2.4fr) repeat(3,minmax(0,1fr)) auto; }
 .proc-row{ grid-template-columns:minmax(0,2.4fr) minmax(0,1fr) minmax(0,1fr) auto; }
-@media (max-width: 900px){ .vitals-row, .med-row, .proc-row{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+.soap-row{ grid-template-columns:repeat(4,minmax(0,1fr)); align-items:stretch; }
+.soap-row textarea.form-control{ min-height:110px; resize:vertical; }
+@media (max-width: 900px){ .vitals-row, .med-row, .proc-row, .soap-row{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
 .med-row .select2-container{ width:100% !important; }
 .med-row .select2-container .select2-selection--single{ height:41px; background:#1e2235; border:1px solid #2d3148; border-radius:7px; }
 .med-row .select2-container .select2-selection--single .select2-selection__rendered{ line-height:39px; padding-left:12px; color:#e2e8f0; }
@@ -999,19 +1001,13 @@ onclick="this.showPicker && this.showPicker();">
 {% csrf_token %}
 <input type="hidden" name="form_type" value="progress">
 
-<label>Subjective</label>
-<textarea name="subjective" class="form-control"></textarea>
-
-<label>Objective</label>
-<textarea name="objective" class="form-control"></textarea>
-
-<label>Assessment</label>
-<textarea name="assessment" class="form-control"></textarea>
-
-<label>Plan</label>
-<textarea name="plan" class="form-control"></textarea>
-
-<button class="save-btn">Save Note</button>
+<div class="vitals-row soap-row">
+<label class="vital"><span>S — Subjective</span><textarea name="subjective" class="form-control" placeholder="Patient's complaints"></textarea></label>
+<label class="vital"><span>O — Objective</span><textarea name="objective" class="form-control" placeholder="Exam findings, vitals"></textarea></label>
+<label class="vital"><span>A — Assessment</span><textarea name="assessment" class="form-control" placeholder="Impression / progress"></textarea></label>
+<label class="vital"><span>P — Plan</span><textarea name="plan" class="form-control" placeholder="Treatment plan"></textarea></label>
+</div>
+<div style="text-align:right; margin:-6px 0 18px;"><button class="save-btn">Save Note</button></div>
 
 </form>
 
